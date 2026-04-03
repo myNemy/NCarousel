@@ -59,35 +59,39 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
         timeoutMs: Long = 20L * 60L * 1000L,
         intervalMs: Long = 1500L,
     ): Result<PollSuccess> = withContext(Dispatchers.IO) {
-        try {
-            val deadline = System.currentTimeMillis() + timeoutMs
-            val body = "token=$token".toRequestBody("application/x-www-form-urlencoded".toMediaType())
-            while (true) {
-                if (System.currentTimeMillis() > deadline) error("Login timeout")
-                val req = Request.Builder()
-                    .url(pollEndpoint)
-                    .post(body)
-                    .build()
-                http.newCall(req).execute().use { res ->
-                    when (res.code) {
-                        200 -> {
-                            val json = JSONObject(res.body?.string().orEmpty())
-                            return@withContext Result.success(
-                                PollSuccess(
-                                    server = json.getString("server").replace("\\/", "/").trimEnd('/'),
-                                    loginName = json.getString("loginName"),
-                                    appPassword = json.getString("appPassword"),
-                                ),
-                            )
-                        }
-                        404 -> Unit // Not authorized yet: keep polling.
-                        else -> error("Poll failed: HTTP ${res.code}")
+        runCatching { pollUntilSuccess(pollEndpoint, token, timeoutMs, intervalMs) }
+    }
+
+    private suspend fun pollUntilSuccess(
+        pollEndpoint: String,
+        token: String,
+        timeoutMs: Long,
+        intervalMs: Long,
+    ): PollSuccess {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        val body = "token=$token".toRequestBody("application/x-www-form-urlencoded".toMediaType())
+        while (true) {
+            if (System.currentTimeMillis() > deadline) error("Login timeout")
+            val req = Request.Builder()
+                .url(pollEndpoint)
+                .post(body)
+                .build()
+            val done: PollSuccess? = http.newCall(req).execute().use { res ->
+                when (res.code) {
+                    200 -> {
+                        val json = JSONObject(res.body?.string().orEmpty())
+                        PollSuccess(
+                            server = json.getString("server").replace("\\/", "/").trimEnd('/'),
+                            loginName = json.getString("loginName"),
+                            appPassword = json.getString("appPassword"),
+                        )
                     }
+                    404 -> null // Not authorized yet: keep polling.
+                    else -> error("Poll failed: HTTP ${res.code}")
                 }
-                delay(intervalMs)
             }
-        } catch (t: Throwable) {
-            Result.failure(t)
+            if (done != null) return done
+            delay(intervalMs)
         }
     }
 }
