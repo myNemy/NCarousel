@@ -14,7 +14,7 @@ val ncarouselBaseVersionName = "0.2.7"
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
  */
-val ncarouselLocalVersionCode = 8
+val ncarouselLocalVersionCode = 9
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
@@ -24,6 +24,18 @@ val ncarouselVersionCode: Int =
 
 val ncarouselVersionName: String =
     System.getenv("GITHUB_RUN_NUMBER")?.let { "$ncarouselBaseVersionName+$it" } ?: ncarouselBaseVersionName
+
+/**
+ * Optional: same keystore on every CI run so debug APKs from GitHub Actions upgrade each other
+ * without uninstall (see README). Set env in workflow: NCAROUSEL_SIGNING_STORE_FILE (absolute path),
+ * NCAROUSEL_SIGNING_STORE_PASSWORD, NCAROUSEL_SIGNING_KEY_ALIAS, NCAROUSEL_SIGNING_KEY_PASSWORD.
+ */
+val ncarouselCiKeystoreFile: java.io.File? =
+    System.getenv("NCAROUSEL_SIGNING_STORE_FILE")
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { file(it) }
+        ?.takeIf { it.isFile }
 
 android {
     namespace = "dev.nemeyes.ncarousel"
@@ -37,13 +49,33 @@ android {
         versionName = ncarouselVersionName
     }
 
+    signingConfigs {
+        val ciKs = ncarouselCiKeystoreFile
+        if (ciKs != null) {
+            create("ci") {
+                storeFile = ciKs
+                storePassword = System.getenv("NCAROUSEL_SIGNING_STORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("NCAROUSEL_SIGNING_KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("NCAROUSEL_SIGNING_KEY_PASSWORD") ?: ""
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            if (ncarouselCiKeystoreFile != null) {
+                signingConfig = signingConfigs.getByName("ci")
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (ncarouselCiKeystoreFile != null) {
+                signingConfig = signingConfigs.getByName("ci")
+            }
         }
     }
 

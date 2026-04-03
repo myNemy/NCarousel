@@ -38,6 +38,32 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
+      # Without this, each runner generates a new debug.keystore → every artifact has a different
+      # signature and Android requires uninstall before installing a newer APK from Actions.
+      - name: Configure stable debug signing (optional repository secrets)
+        env:
+          KEYSTORE_B64: ${{ secrets.NCAROUSEL_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.NCAROUSEL_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NCAROUSEL_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.NCAROUSEL_KEY_PASSWORD }}
+        run: |
+          set -e
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::Secrets NCAROUSEL_* not set: debug APK signature changes each CI run; uninstall before sideloading a new build. See README (GitHub Actions APK)."
+            exit 0
+          fi
+          if [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::NCAROUSEL_KEYSTORE_B64 is set but KEYSTORE_PASSWORD, KEY_ALIAS or KEY_PASSWORD is missing."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/app/ncarousel-ci.keystore"
+          {
+            echo "NCAROUSEL_SIGNING_STORE_FILE=$GITHUB_WORKSPACE/app/ncarousel-ci.keystore"
+            echo "NCAROUSEL_SIGNING_STORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "NCAROUSEL_SIGNING_KEY_ALIAS=$KEY_ALIAS"
+            echo "NCAROUSEL_SIGNING_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
 

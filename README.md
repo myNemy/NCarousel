@@ -14,3 +14,34 @@ Note: the Gradle wrapper scripts (`gradlew`, `gradlew.bat`) are third-party file
 
 - JDK **11+** is required (Android Gradle Plugin 8.x does not run on Java 8).
 
+## GitHub Actions APK (upgrade without uninstall)
+
+Each clean GitHub runner creates a **new** default Android debug keystore, so successive **debug** APKs from workflow artifacts are signed with **different keys**. Android then blocks updates and you must uninstall before installing another build from Actions.
+
+To get a **stable signature** for CI builds:
+
+1. Create a keystore (once, keep a backup):
+
+   ```bash
+   keytool -genkeypair -v -keystore ncarousel-ci.jks -alias ncarousel -keyalg RSA -keysize 2048 -validity 36500
+   ```
+
+2. Base64-encode it (single line):
+
+   ```bash
+   base64 -w0 ncarousel-ci.jks
+   ```
+
+3. In the GitHub repo: **Settings → Secrets and variables → Actions**, add:
+
+   | Secret | Value |
+   |--------|--------|
+   | `NCAROUSEL_KEYSTORE_B64` | output of base64 |
+   | `NCAROUSEL_KEYSTORE_PASSWORD` | keystore password |
+   | `NCAROUSEL_KEY_ALIAS` | e.g. `ncarousel` |
+   | `NCAROUSEL_KEY_PASSWORD` | key password |
+
+After the next workflow run, new debug APKs from Actions will **upgrade** previous installs from Actions (still bump `versionCode` as usual).
+
+**Local `./gradlew assembleDebug`** keeps using your machine’s `~/.android/debug.keystore`. The first time you install an APK **from CI** over a **local** debug install (or the reverse), Android may still require uninstall because the signing keys differ. Use either only CI builds or point Gradle at the same keystore via the same `NCAROUSEL_SIGNING_*` environment variables when building locally.
+
