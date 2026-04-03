@@ -11,6 +11,8 @@ permissions:
   contents: read
 
 # Node 24 for JS actions (GitHub deprecation of Node 20 on runners).
+# Note: a log line mentioning "upload-artifact@v5" can still appear as a generic runner notice;
+# this file pins upload-artifact to v7.0.0 (commit below), not v5.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
