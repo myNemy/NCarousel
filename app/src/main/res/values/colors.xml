@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Allineato a [dev.nemeyes.ncarousel.ui.theme.NcBlue] e theming OCS. -->
+    <color name="nc_primary">#FF0082C9</color>
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+</resources>
