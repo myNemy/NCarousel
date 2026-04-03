@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; CI appends +run. Bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.4"
+val ncarouselBaseVersionName = "0.2.5"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -58,6 +58,13 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    packaging {
+        jniLibs {
+            // Prebuilt androidx.graphics path .so: avoids "Unable to strip" from stripDebugDebugSymbols.
+            keepDebugSymbols += "**/libandroidx.graphics.path.so"
+        }
     }
 }
 
