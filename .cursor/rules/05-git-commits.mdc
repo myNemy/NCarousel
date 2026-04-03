@@ -1,0 +1,9 @@
+---
+description: Messaggi di commit Git sempre in inglese
+alwaysApply: true
+---
+
+# Git commits
+
+- **Tutti i messaggi di commit** (titolo e corpo opzionale) devono essere scritti in **inglese**, anche se la conversazione o i commenti nel codice sono in un’altra lingua.
+- Preferire un soggetto chiaro, in imperativo dove ha senso (es. prefissi tipo `fix:`, `feat:`, `docs:`).
