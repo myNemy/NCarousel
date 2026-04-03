@@ -1,6 +1,6 @@
 package dev.nemeyes.ncarousel.data
 
-internal data class DavEntry(
+data class DavEntry(
     val hrefDecoded: String,
     val isCollection: Boolean,
     val contentType: String?,

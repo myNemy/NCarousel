@@ -59,7 +59,7 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
         timeoutMs: Long = 20L * 60L * 1000L,
         intervalMs: Long = 1500L,
     ): Result<PollSuccess> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val deadline = System.currentTimeMillis() + timeoutMs
             val body = "token=$token".toRequestBody("application/x-www-form-urlencoded".toMediaType())
             while (true) {
@@ -72,20 +72,22 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
                     when (res.code) {
                         200 -> {
                             val json = JSONObject(res.body?.string().orEmpty())
-                            return@runCatching PollSuccess(
-                                server = json.getString("server").replace("\\/", "/").trimEnd('/'),
-                                loginName = json.getString("loginName"),
-                                appPassword = json.getString("appPassword"),
+                            return@withContext Result.success(
+                                PollSuccess(
+                                    server = json.getString("server").replace("\\/", "/").trimEnd('/'),
+                                    loginName = json.getString("loginName"),
+                                    appPassword = json.getString("appPassword"),
+                                ),
                             )
                         }
-                        404 -> {
-                            // Not authorized yet: keep polling.
-                        }
+                        404 -> Unit // Not authorized yet: keep polling.
                         else -> error("Poll failed: HTTP ${res.code}")
                     }
                 }
                 delay(intervalMs)
             }
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
     }
 }
