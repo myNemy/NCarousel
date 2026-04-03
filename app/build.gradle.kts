@@ -5,6 +5,21 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+/**
+ * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
+ * - Local builds: fallback (bump when you need a local APK to upgrade over a previous local install).
+ * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
+ * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
+ */
+val ncarouselVersionCode: Int =
+    (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
+        ?: System.getenv("NCAROUSEL_VERSION_CODE")?.toIntOrNull()
+        ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.let { 1_000 + it }
+        ?: 2
+
+val ncarouselVersionName: String =
+    System.getenv("GITHUB_RUN_NUMBER")?.let { "0.2.0+$it" } ?: "0.2.0"
+
 android {
     namespace = "dev.nemeyes.ncarousel"
     compileSdk = 35
@@ -13,8 +28,8 @@ android {
         applicationId = "dev.nemeyes.ncarousel"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = ncarouselVersionCode
+        versionName = ncarouselVersionName
     }
 
     buildTypes {

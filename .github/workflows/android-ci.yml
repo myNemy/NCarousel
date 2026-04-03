@@ -30,6 +30,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug APK
+        # GITHUB_RUN_NUMBER is set by Actions; Gradle maps it to versionCode = 1000 + run (upgrade-friendly).
         run: ./gradlew :app:assembleDebug --no-daemon
 
       - name: Upload debug APK
