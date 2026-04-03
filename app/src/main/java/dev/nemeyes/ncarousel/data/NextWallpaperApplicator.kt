@@ -42,6 +42,7 @@ object NextWallpaperApplicator {
 
         val carousel = CarouselPreferences(app)
         val mode = orderModeOverride ?: carousel.orderMode
+        val wallpaperTarget = wallpaperTargetOverride ?: carousel.wallpaperTarget
         val pick = WallpaperOrderEngine(app, active.id).pickWallpaper(hrefs, mode)
             ?: return app.getString(R.string.qs_tile_err_no_image)
 
