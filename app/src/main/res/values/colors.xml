@@ -2,5 +2,6 @@
 <resources>
     <!-- Allineato a [dev.nemeyes.ncarousel.ui.theme.NcBlue] e theming OCS. -->
     <color name="nc_primary">#FF0082C9</color>
-    <color name="ic_launcher_background">#FFFFFFFF</color>
+    <!-- Adaptive icon: stesso blu base dell’app; glifo in foreground bianco (ic_launcher_logo). -->
+    <color name="ic_launcher_background">@color/nc_primary</color>
 </resources>

@@ -16,7 +16,8 @@ b64 = m.group(1).replace("&#10;", "").replace("\n", "").replace(" ", "")
 pathlib.Path("$TMP").write_bytes(base64.b64decode(b64))
 PY
 magick "$TMP" -trim +repage PNG32:"$TMP.trim.png"
-magick xc:'#0082C9' -resize 432x432! \
+# Bianco: contrasto su sfondo nc_primary nell’adaptive icon; in Compose [NCarouselLogoMark] il tint riapplica il primary OCS.
+magick xc:'#FFFFFF' -resize 432x432! \
   \( "$TMP.trim.png" -resize '400x400>' -gravity center -background none -extent 432x432 \) \
   -compose CopyOpacity -composite PNG32:"$OUT"
 rm -f "$TMP" "$TMP.trim.png"

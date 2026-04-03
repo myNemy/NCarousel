@@ -18,8 +18,8 @@ import dev.nemeyes.ncarousel.R
  * Marchio NCarousel (stesso PNG di [R.drawable.ic_launcher_logo] usato nell’adaptive icon).
  *
  * Il master è in `branding/NCarousel_alpha.svg` (Inkscape: PNG RGBA embedded, non path vettoriali).
- * Rigenera `res/drawable-nodpi/ic_launcher_logo.png` estraendo il PNG e applicando maschera + `#0082C9`
- * per il launcher; qui il parametro [tint] segue [MaterialTheme] (primary / onPrimary da OCS).
+ * Rigenera `res/drawable-nodpi/ic_launcher_logo.png` con glifo **bianco** (maschera da master SVG);
+ * sull’adaptive icon lo sfondo è [R.color.ic_launcher_background] (= [nc_primary]). In UI il [tint] applica primary/onPrimary OCS.
  */
 @Composable
 fun NCarouselLogoMark(
