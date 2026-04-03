@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -71,6 +72,13 @@ fun HomeScreen(viewModel: MainViewModel) {
         viewModel.updateShowStatusNotifications(granted)
     }
 
+    val firstLaunchNotificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        viewModel.updateShowStatusNotifications(granted)
+        viewModel.completeInitialConsentFlow()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadCachedListIfAny()
     }
@@ -92,6 +100,56 @@ fun HomeScreen(viewModel: MainViewModel) {
                 }
             }
         }
+    }
+
+    val deferInitialConsent: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            viewModel.updateShowStatusNotifications(false)
+        }
+        viewModel.completeInitialConsentFlow()
+    }
+
+    if (state.needsInitialConsent) {
+        AlertDialog(
+            onDismissRequest = deferInitialConsent,
+            title = { Text(stringResource(R.string.consent_dialog_title)) },
+            text = { Text(stringResource(R.string.consent_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            firstLaunchNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            viewModel.completeInitialConsentFlow()
+                        }
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (Build.VERSION.SDK_INT >= 33) {
+                                R.string.consent_request_notifications
+                            } else {
+                                R.string.consent_continue
+                            },
+                        ),
+                    )
+                }
+            },
+            dismissButton = if (Build.VERSION.SDK_INT >= 33) {
+                {
+                    TextButton(onClick = deferInitialConsent) {
+                        Text(stringResource(R.string.consent_later))
+                    }
+                }
+            } else {
+                null
+            },
+        )
     }
 
     Scaffold(

@@ -33,6 +33,13 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_NOTIFY_STATUS, true)
         set(value) { prefs.edit().putBoolean(KEY_NOTIFY_STATUS, value).apply() }
 
+    /**
+     * After [completeInitialConsentFlow] runs once, the app stops showing the first-launch consent dialog.
+     */
+    var initialConsentFlowCompleted: Boolean
+        get() = prefs.getBoolean(KEY_INITIAL_CONSENT_DONE, false)
+        set(value) { prefs.edit().putBoolean(KEY_INITIAL_CONSENT_DONE, value).apply() }
+
     companion object {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
@@ -40,5 +47,6 @@ class CarouselPreferences(context: Context) {
         private const val KEY_AUTO = "auto_wallpaper"
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
         private const val KEY_NOTIFY_STATUS = "show_status_notifications"
+        private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
     }
 }

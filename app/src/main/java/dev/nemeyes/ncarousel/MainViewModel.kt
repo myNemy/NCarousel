@@ -43,6 +43,8 @@ data class MainUiState(
     val autoWallpaperEnabled: Boolean = false,
     val autoIntervalMinutes: Int = 30,
     val showStatusNotifications: Boolean = true,
+    /** First launch: show consent dialog and request notification permission where required. */
+    val needsInitialConsent: Boolean = false,
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
@@ -88,6 +90,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             autoWallpaperEnabled = carousel.autoWallpaperEnabled,
             autoIntervalMinutes = carousel.autoIntervalMinutes,
             showStatusNotifications = carousel.showStatusNotifications,
+            needsInitialConsent = !carousel.initialConsentFlowCompleted,
         ),
     )
     val ui: StateFlow<MainUiState> = _ui.asStateFlow()
@@ -115,6 +118,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateShowStatusNotifications(enabled: Boolean) {
         carousel.showStatusNotifications = enabled
         _ui.update { it.copy(showStatusNotifications = enabled) }
+    }
+
+    /** Call after first-launch dialog is dismissed or notification permission result is applied. */
+    fun completeInitialConsentFlow() {
+        carousel.initialConsentFlowCompleted = true
+        _ui.update { it.copy(needsInitialConsent = false) }
     }
 
     fun saveCredentials() {

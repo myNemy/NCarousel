@@ -10,4 +10,9 @@
     <string name="notify_place_no_gps">nessun GPS nell\'immagine</string>
     <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (nessun indirizzo da geocoder locale, Nominatim né Photon)</string>
     <string name="notify_switch_label">Notifiche di stato (conteggio e luogo foto)</string>
+    <string name="consent_dialog_title">Benvenuto in NCarousel</string>
+    <string name="consent_dialog_message">L\'app scarica le foto dal tuo Nextcloud e imposta lo sfondo (permesso già incluso nell\'installazione).\n\nServe la rete per WebDAV e, se lo desideri, le notifiche di stato (progressivo, conteggio e luogo della foto). Su Android 13 e successivi il sistema chiede un permesso dedicato per le notifiche.</string>
+    <string name="consent_request_notifications">Consenti notifiche</string>
+    <string name="consent_continue">Continua</string>
+    <string name="consent_later">Più tardi</string>
 </resources>
