@@ -12,7 +12,8 @@ Note: the Gradle wrapper scripts (`gradlew`, `gradlew.bat`) are third-party file
 
 ## Build requirements
 
-- JDK **11+** is required (Android Gradle Plugin 8.x does not run on Java 8).
+- **JDK 17** (this project targets Java 17; the CI workflow uses Temurin 17).
+- Android SDK (e.g. via Android Studio); `local.properties` with `sdk.dir` for command-line builds.
 
 ## GitHub Actions APK (upgrade without uninstall)
 
@@ -26,13 +27,12 @@ To get a **stable signature** for CI builds:
    keytool -genkeypair -v -keystore ncarousel-ci.jks -alias ncarousel -keyalg RSA -keysize 2048 -validity 36500
    ```
 
-2. Base64-encode it (single line):
+2. Base64-encode it (single line of output):
 
-   ```bash
-   base64 -w0 ncarousel-ci.jks
-   ```
+   - Linux: `base64 -w0 ncarousel-ci.jks`
+   - macOS: `base64 -i ncarousel-ci.jks | tr -d '\n'`
 
-3. In the GitHub repo: **Settings → Secrets and variables → Actions**, add:
+3. In the GitHub repo: **Settings → Secrets and variables → Actions**, add these **optional** secrets (if any are missing, the workflow still builds, but the APK signature changes every run):
 
    | Secret | Value |
    |--------|--------|
