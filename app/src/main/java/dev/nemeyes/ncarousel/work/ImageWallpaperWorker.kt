@@ -77,7 +77,8 @@ class ImageWallpaperWorker(
                 b
             }
 
-            return@withContext WallpaperRepository(applicationContext).setWallpaperFromImageBytes(bytes).fold(
+            val target = carousel.wallpaperTarget
+            return@withContext WallpaperRepository(applicationContext).setWallpaperFromImageBytes(bytes, target).fold(
                 onSuccess = {
                     pick.commitSuccess()
                     CarouselStatusNotifications.maybeShowWallpaperApplied(

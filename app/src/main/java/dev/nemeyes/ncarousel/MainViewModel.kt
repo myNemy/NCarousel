@@ -15,6 +15,7 @@ import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
+import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
@@ -39,6 +40,7 @@ data class MainUiState(
     val accounts: List<AccountUi> = emptyList(),
     val activeAccountId: String? = null,
     val orderMode: OrderMode = OrderMode.RANDOM,
+    val wallpaperTarget: WallpaperTarget = WallpaperTarget.HOME_AND_LOCK,
     val maxImageSizeMb: Int = 0,
     val maxWallpaperDiskCacheMb: Int = WallpaperDiskCache.DEFAULT_MAX_MB,
     val autoWallpaperEnabled: Boolean = false,
@@ -92,6 +94,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 orderMode = carousel.orderMode,
+                wallpaperTarget = carousel.wallpaperTarget,
                 maxImageSizeMb = carousel.maxImageSizeMb,
                 maxWallpaperDiskCacheMb = carousel.maxWallpaperDiskCacheMb,
                 autoWallpaperEnabled = carousel.autoWallpaperEnabled,
@@ -144,6 +147,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updatePassword(value: String) = _ui.update { it.copy(password = value) }
     fun updateRemoteFolder(value: String) = _ui.update { it.copy(remoteFolder = value) }
     fun updateOrderMode(value: OrderMode) = _ui.update { it.copy(orderMode = value) }
+    fun updateWallpaperTarget(value: WallpaperTarget) = _ui.update { it.copy(wallpaperTarget = value) }
     fun updateMaxImageSizeMbText(value: String) = _ui.update {
         it.copy(maxImageSizeMb = value.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 0)
     }
@@ -273,6 +277,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCarouselOptions() {
         val s = _ui.value
         carousel.orderMode = s.orderMode
+        carousel.wallpaperTarget = s.wallpaperTarget
         carousel.maxImageSizeMb = s.maxImageSizeMb
         carousel.maxWallpaperDiskCacheMb = s.maxWallpaperDiskCacheMb
         carousel.autoWallpaperEnabled = s.autoWallpaperEnabled
@@ -392,7 +397,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
             val err = withContext(Dispatchers.IO) {
-                NextWallpaperApplicator.applyNext(getApplication(), s.orderMode)
+                NextWallpaperApplicator.applyNext(
+                    getApplication(),
+                    orderModeOverride = s.orderMode,
+                    wallpaperTargetOverride = s.wallpaperTarget,
+                )
             }
             _ui.update {
                 it.copy(

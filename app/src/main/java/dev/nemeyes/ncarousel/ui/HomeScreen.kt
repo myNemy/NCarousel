@@ -340,6 +340,7 @@ private fun AuthenticatedShell(
                                 },
                                 onSaveCarousel = viewModel::saveCarouselOptions,
                                 onOrderModeChange = viewModel::updateOrderMode,
+                                onWallpaperTargetChange = viewModel::updateWallpaperTarget,
                                 onMaxMbChange = viewModel::updateMaxImageSizeMbText,
                                 onMaxDiskCacheMbChange = viewModel::updateMaxWallpaperDiskCacheMbText,
                                 onClearWallpaperDiskCache = viewModel::clearWallpaperDiskCache,

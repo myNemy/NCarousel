@@ -14,6 +14,13 @@ class CarouselPreferences(context: Context) {
             ?: OrderMode.RANDOM
         set(value) { prefs.edit().putString(KEY_ORDER, value.name).apply() }
 
+    /** Home, lock, or both ([WallpaperManager] flags). */
+    var wallpaperTarget: WallpaperTarget
+        get() = prefs.getString(KEY_WALLPAPER_TARGET, null)
+            ?.let { runCatching { WallpaperTarget.valueOf(it) }.getOrNull() }
+            ?: WallpaperTarget.HOME_AND_LOCK
+        set(value) { prefs.edit().putString(KEY_WALLPAPER_TARGET, value.name).apply() }
+
     /** 0 = no limit (bytes not checked or unknown sizes kept). */
     var maxImageSizeMb: Int
         get() = prefs.getInt(KEY_MAX_MB, 0).coerceAtLeast(0)
@@ -84,6 +91,7 @@ class CarouselPreferences(context: Context) {
     companion object {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
+        private const val KEY_WALLPAPER_TARGET = "wallpaper_target"
         private const val KEY_MAX_MB = "max_image_mb"
         private const val KEY_DISK_CACHE_MB = "max_wallpaper_disk_cache_mb"
         private const val KEY_AUTO = "auto_wallpaper"

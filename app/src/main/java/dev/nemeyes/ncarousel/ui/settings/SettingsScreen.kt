@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.OrderMode
+import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 import dev.nemeyes.ncarousel.ui.components.orderModeLabel
@@ -60,6 +61,7 @@ fun SettingsScreen(
     onDeleteActiveAccount: () -> Unit,
     onSaveCarousel: () -> Unit,
     onOrderModeChange: (OrderMode) -> Unit,
+    onWallpaperTargetChange: (WallpaperTarget) -> Unit,
     onMaxMbChange: (String) -> Unit,
     onMaxDiskCacheMbChange: (String) -> Unit,
     onClearWallpaperDiskCache: () -> Unit,
@@ -69,6 +71,7 @@ fun SettingsScreen(
     onShowStatusNotificationsChange: (Boolean) -> Unit,
 ) {
     var orderExpanded by remember { mutableStateOf(false) }
+    var wallpaperTargetExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -211,6 +214,39 @@ fun SettingsScreen(
                     }
                 }
             }
+            ExposedDropdownMenuBox(
+                expanded = wallpaperTargetExpanded,
+                onExpandedChange = { wallpaperTargetExpanded = it },
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    readOnly = true,
+                    value = wallpaperTargetLabel(state.wallpaperTarget),
+                    onValueChange = {},
+                    label = { Text("Dove applicare lo sfondo") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = wallpaperTargetExpanded)
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    enabled = !state.busy,
+                )
+                ExposedDropdownMenu(
+                    expanded = wallpaperTargetExpanded,
+                    onDismissRequest = { wallpaperTargetExpanded = false },
+                ) {
+                    WallpaperTarget.entries.forEach { t ->
+                        DropdownMenuItem(
+                            text = { Text(wallpaperTargetLabel(t)) },
+                            onClick = {
+                                onWallpaperTargetChange(t)
+                                wallpaperTargetExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.maxImageSizeMb.toString(),
@@ -297,4 +333,10 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
     }
+}
+
+private fun wallpaperTargetLabel(target: WallpaperTarget): String = when (target) {
+    WallpaperTarget.HOME_AND_LOCK -> "Home e blocco schermo"
+    WallpaperTarget.HOME_ONLY -> "Solo schermata home"
+    WallpaperTarget.LOCK_ONLY -> "Solo blocco schermo"
 }

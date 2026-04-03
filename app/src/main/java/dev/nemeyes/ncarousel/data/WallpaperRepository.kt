@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.os.Build
 import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayInputStream
 import kotlin.math.max
@@ -26,9 +25,12 @@ class WallpaperRepository(private val context: Context) {
 
     /**
      * Decodes [bytes] to a bitmap scaled toward the launcher-reported desired wallpaper size,
-     * applies JPEG/EXIF orientation when present, then sets home (and lock screen on API 24+) wallpaper.
+     * applies JPEG/EXIF orientation when present, then sets wallpaper per [target] (home / lock / both).
      */
-    fun setWallpaperFromImageBytes(bytes: ByteArray): Result<Unit> = runCatching {
+    fun setWallpaperFromImageBytes(
+        bytes: ByteArray,
+        target: WallpaperTarget = WallpaperTarget.HOME_AND_LOCK,
+    ): Result<Unit> = runCatching {
         if (!isSupported()) error("Wallpaper not supported on this device")
         if (!isSetAllowed()) error("App is not allowed to set wallpaper (check device policy)")
 
@@ -60,18 +62,8 @@ class WallpaperRepository(private val context: Context) {
         val cropped = centerCropToSize(upright, targetW, targetH)
         if (cropped != upright) upright.recycle()
 
-        val which = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
-        } else {
-            WallpaperManager.FLAG_SYSTEM
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            wallpaperManager.setBitmap(cropped, null, true, which)
-        } else {
-            @Suppress("DEPRECATION")
-            wallpaperManager.setBitmap(cropped)
-        }
+        val which = target.toWallpaperSetFlags()
+        wallpaperManager.setBitmap(cropped, null, true, which)
         cropped.recycle()
     }
 

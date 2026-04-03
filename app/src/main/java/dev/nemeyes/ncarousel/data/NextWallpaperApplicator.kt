@@ -13,16 +13,25 @@ import kotlinx.coroutines.runBlocking
  * Call from a background thread. All network/Room access runs inside one [runBlocking] (IO).
  *
  * @param orderModeOverride if non-null, used instead of [CarouselPreferences.orderMode] (unsaved UI state).
+ * @param wallpaperTargetOverride if non-null, used instead of [CarouselPreferences.wallpaperTarget].
  * @return `null` on success, or a short user-facing error message.
  */
 object NextWallpaperApplicator {
 
-    fun applyNext(context: Context, orderModeOverride: OrderMode? = null): String? =
+    fun applyNext(
+        context: Context,
+        orderModeOverride: OrderMode? = null,
+        wallpaperTargetOverride: WallpaperTarget? = null,
+    ): String? =
         runBlocking(Dispatchers.IO) {
-            applyNextImpl(context.applicationContext, orderModeOverride)
+            applyNextImpl(context.applicationContext, orderModeOverride, wallpaperTargetOverride)
         }
 
-    private suspend fun applyNextImpl(app: Context, orderModeOverride: OrderMode?): String? {
+    private suspend fun applyNextImpl(
+        app: Context,
+        orderModeOverride: OrderMode?,
+        wallpaperTargetOverride: WallpaperTarget?,
+    ): String? {
         val active = NextcloudAccountStore(app).getActiveAccount()
             ?: return app.getString(R.string.qs_tile_err_no_account)
 
@@ -55,7 +64,7 @@ object NextWallpaperApplicator {
             b
         }
 
-        return WallpaperRepository(app).setWallpaperFromImageBytes(bytes).fold(
+        return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
             onSuccess = {
                 pick.commitSuccess()
                 CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, bytes)
