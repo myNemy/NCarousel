@@ -11,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.nemeyes.ncarousel.ui.HomeScreen
+import dev.nemeyes.ncarousel.ui.theme.NCarouselTheme
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 
 /**
@@ -23,8 +24,11 @@ class MainActivity : ComponentActivity() {
         WallpaperWorkScheduler.sync(this, ExistingWorkPolicy.KEEP)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            NCarouselTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
                     val vm: MainViewModel = viewModel()
                     HomeScreen(vm)
                 }

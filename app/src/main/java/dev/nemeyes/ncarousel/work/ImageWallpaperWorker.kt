@@ -66,7 +66,11 @@ class ImageWallpaperWorker(
             val pick = order.pickWallpaper(hrefs, carousel.orderMode) ?: return@withContext Result.success()
             val href = pick.href
 
-            val disk = WallpaperDiskCache(applicationContext, active.id)
+            val disk = WallpaperDiskCache(
+                applicationContext,
+                active.id,
+                carousel.maxWallpaperDiskCacheMb,
+            )
             val bytes = disk.get(href) ?: run {
                 val b = client.downloadFile(href).getOrElse { return@withContext Result.failure() }
                 disk.put(href, b)

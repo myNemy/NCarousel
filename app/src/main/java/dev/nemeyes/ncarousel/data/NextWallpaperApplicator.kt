@@ -44,7 +44,7 @@ object NextWallpaperApplicator {
             active.loginName,
             active.appPassword,
         )
-        val disk = WallpaperDiskCache(app, active.id)
+        val disk = WallpaperDiskCache(app, active.id, carousel.maxWallpaperDiskCacheMb)
         val href = pick.href
         val bytes = disk.get(href) ?: run {
             val b = client.downloadFile(href).getOrElse { e ->

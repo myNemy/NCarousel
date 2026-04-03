@@ -13,6 +13,7 @@ import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
 import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.OrderMode
+import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
@@ -38,6 +39,7 @@ data class MainUiState(
     val activeAccountId: String? = null,
     val orderMode: OrderMode = OrderMode.RANDOM,
     val maxImageSizeMb: Int = 0,
+    val maxWallpaperDiskCacheMb: Int = WallpaperDiskCache.DEFAULT_MAX_MB,
     val autoWallpaperEnabled: Boolean = false,
     val autoIntervalMinutes: Int = 30,
     val showStatusNotifications: Boolean = true,
@@ -84,6 +86,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             activeAccountId = accounts.getActiveAccountId(),
             orderMode = carousel.orderMode,
             maxImageSizeMb = carousel.maxImageSizeMb,
+            maxWallpaperDiskCacheMb = carousel.maxWallpaperDiskCacheMb,
             autoWallpaperEnabled = carousel.autoWallpaperEnabled,
             autoIntervalMinutes = carousel.autoIntervalMinutes,
             showStatusNotifications = carousel.showStatusNotifications,
@@ -102,6 +105,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateOrderMode(value: OrderMode) = _ui.update { it.copy(orderMode = value) }
     fun updateMaxImageSizeMbText(value: String) = _ui.update {
         it.copy(maxImageSizeMb = value.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 0)
+    }
+    fun updateMaxWallpaperDiskCacheMbText(value: String) = _ui.update {
+        val n = value.filter { ch -> ch.isDigit() }.toIntOrNull() ?: WallpaperDiskCache.DEFAULT_MAX_MB
+        it.copy(maxWallpaperDiskCacheMb = n.coerceIn(WallpaperDiskCache.MIN_MB, WallpaperDiskCache.MAX_MB))
     }
     fun updateAutoWallpaperEnabled(value: Boolean) = _ui.update { it.copy(autoWallpaperEnabled = value) }
     fun updateAutoIntervalMinutesText(value: String) = _ui.update {
@@ -220,6 +227,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = _ui.value
         carousel.orderMode = s.orderMode
         carousel.maxImageSizeMb = s.maxImageSizeMb
+        carousel.maxWallpaperDiskCacheMb = s.maxWallpaperDiskCacheMb
         carousel.autoWallpaperEnabled = s.autoWallpaperEnabled
         carousel.autoIntervalMinutes = s.autoIntervalMinutes.coerceAtLeast(WallpaperWorkScheduler.MIN_INTERVAL_MINUTES)
         activeOrNull()?.let { a ->
@@ -227,9 +235,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 a.remoteFolder.ifBlank { "Photos" }
             }
             accounts.upsert(a.copy(remoteFolder = folder))
+            WallpaperDiskCache(getApplication(), a.id, carousel.maxWallpaperDiskCacheMb).enforceBudget()
         }
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         _ui.update { it.copy(statusMessage = "Opzioni carosello salvate.") }
+    }
+
+    fun clearWallpaperDiskCache() {
+        val id = accounts.getActiveAccountId()
+        if (id == null) {
+            _ui.update { it.copy(statusMessage = "Nessun account attivo.") }
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            WallpaperDiskCache.clear(getApplication(), id)
+            _ui.update { it.copy(statusMessage = "Cache immagini sul disco svuotata (account attivo).") }
+        }
     }
 
     fun clearStatus() = _ui.update { it.copy(statusMessage = null) }

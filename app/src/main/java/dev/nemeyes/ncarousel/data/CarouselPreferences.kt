@@ -19,6 +19,20 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getInt(KEY_MAX_MB, 0).coerceAtLeast(0)
         set(value) { prefs.edit().putInt(KEY_MAX_MB, value.coerceAtLeast(0)).apply() }
 
+    /**
+     * Max total size for on-disk wallpaper image cache per account ([WallpaperDiskCache]).
+     * LRU eviction; stored under app cache (Android may clear it under pressure).
+     */
+    var maxWallpaperDiskCacheMb: Int
+        get() = prefs.getInt(KEY_DISK_CACHE_MB, WallpaperDiskCache.DEFAULT_MAX_MB)
+            .coerceIn(WallpaperDiskCache.MIN_MB, WallpaperDiskCache.MAX_MB)
+        set(value) {
+            prefs.edit().putInt(
+                KEY_DISK_CACHE_MB,
+                value.coerceIn(WallpaperDiskCache.MIN_MB, WallpaperDiskCache.MAX_MB),
+            ).apply()
+        }
+
     var autoWallpaperEnabled: Boolean
         get() = prefs.getBoolean(KEY_AUTO, false)
         set(value) { prefs.edit().putBoolean(KEY_AUTO, value).apply() }
@@ -44,6 +58,7 @@ class CarouselPreferences(context: Context) {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
         private const val KEY_MAX_MB = "max_image_mb"
+        private const val KEY_DISK_CACHE_MB = "max_wallpaper_disk_cache_mb"
         private const val KEY_AUTO = "auto_wallpaper"
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
         private const val KEY_NOTIFY_STATUS = "show_status_notifications"
