@@ -8,7 +8,8 @@ import okhttp3.OkHttpClient
 object HttpClientProvider {
     fun create(context: Context): OkHttpClient {
         val lang = Locale.getDefault().toLanguageTag()
-        val ua = "NCarousel (Android)"
+        // Identifiable UA for third-party APIs (e.g. Nominatim usage policy).
+        val ua = "NCarousel/0.2 (Android; +https://github.com/myNemy/NCarousel)"
         return OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)

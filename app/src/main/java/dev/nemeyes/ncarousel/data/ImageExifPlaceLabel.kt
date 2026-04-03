@@ -9,10 +9,10 @@ import java.io.ByteArrayInputStream
 import java.util.Locale
 
 /**
- * Reads GPS coordinates from image EXIF (JPEG/WebP where supported) and resolves a short place
- * label via [Geocoder], similar to desktop gallery apps showing a geographic name.
+ * Reads GPS from EXIF, then resolves a place label: platform [Geocoder] first, then
+ * [NominatimReverseGeocoder] if Google / OEM geocoding returns nothing.
  *
- * Must be called from a background thread ([Geocoder] may hit network).
+ * Must be called from a background thread.
  */
 object ImageExifPlaceLabel {
 
@@ -28,34 +28,33 @@ object ImageExifPlaceLabel {
         }
         val lat = latLong[0].toDouble()
         val lon = latLong[1].toDouble()
-        if (!Geocoder.isPresent()) {
-            return coordsOnly(context, lat, lon)
-        }
+
+        platformAddressLabel(context, lat, lon)?.let { return it }
+
+        val http = HttpClientProvider.create(context.applicationContext)
+        val lang = Locale.getDefault().toLanguageTag()
+        runCatching {
+            NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
+        }.getOrNull()?.let { return it }
+
+        return coordsOnly(context, lat, lon)
+    }
+
+    private fun platformAddressLabel(context: Context, lat: Double, lon: Double): String? {
+        if (!Geocoder.isPresent()) return null
         return try {
             @Suppress("DEPRECATION")
             val geocoder = Geocoder(context, Locale.getDefault())
             @Suppress("DEPRECATION")
             val list = geocoder.getFromLocation(lat, lon, 1)
-            val addr = list?.firstOrNull()
-            if (addr != null) {
-                addressToShortLabel(context, addr, lat, lon)
-            } else {
-                coordsOnly(context, lat, lon)
-            }
+            val addr = list?.firstOrNull() ?: return null
+            addressToLabelOrNull(addr)
         } catch (_: Exception) {
-            coordsOnly(context, lat, lon)
+            null
         }
     }
 
-    private fun coordsOnly(context: Context, lat: Double, lon: Double): String =
-        String.format(
-            Locale.getDefault(),
-            context.getString(R.string.notify_place_coords_only),
-            lat,
-            lon,
-        )
-
-    private fun addressToShortLabel(context: Context, a: Address, lat: Double, lon: Double): String {
+    private fun addressToLabelOrNull(a: Address): String? {
         val line0 = (0..a.maxAddressLineIndex)
             .mapNotNull { i -> a.getAddressLine(i)?.trim()?.takeIf { it.isNotEmpty() } }
             .firstOrNull()
@@ -66,7 +65,15 @@ object ImageExifPlaceLabel {
             a.adminArea?.takeIf { it.isNotBlank() },
             a.countryName?.takeIf { it.isNotBlank() },
         ).distinct()
-        if (parts.isNotEmpty()) return parts.joinToString(", ")
-        return coordsOnly(context, lat, lon)
+        if (parts.isEmpty()) return null
+        return parts.joinToString(", ")
     }
+
+    private fun coordsOnly(context: Context, lat: Double, lon: Double): String =
+        String.format(
+            Locale.getDefault(),
+            context.getString(R.string.notify_place_coords_only),
+            lat,
+            lon,
+        )
 }
