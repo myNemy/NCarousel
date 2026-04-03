@@ -1,8 +1,8 @@
 package dev.nemeyes.ncarousel.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,15 +15,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,6 +43,8 @@ import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
+import dev.nemeyes.ncarousel.ui.components.SettingsInlineDivider
+import dev.nemeyes.ncarousel.ui.components.SettingsSwitchRow
 import dev.nemeyes.ncarousel.ui.components.orderModeLabel
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 
@@ -77,9 +79,10 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Spacer(Modifier.height(4.dp))
 
@@ -93,7 +96,10 @@ fun SettingsScreen(
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(
+                                type = MenuAnchorType.PrimaryNotEditable,
+                                enabled = !state.busy,
+                            ),
                         readOnly = true,
                         value = activeLabel,
                         onValueChange = {},
@@ -117,10 +123,12 @@ fun SettingsScreen(
                         }
                     }
                 }
+                SettingsInlineDivider()
                 TextButton(
                     onClick = onDeleteActiveAccount,
                     enabled = !state.busy,
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Rimuovi account attivo")
                 }
@@ -164,19 +172,19 @@ fun SettingsScreen(
                 singleLine = true,
                 enabled = !state.busy,
             )
-            OutlinedButton(
-                onClick = onSaveCredentials,
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Salva credenziali")
-            }
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = onLoginV2,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Accedi con il browser (consigliato)")
+            }
+            Button(
+                onClick = onSaveCredentials,
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Salva credenziali")
             }
         }
 
@@ -188,7 +196,10 @@ fun SettingsScreen(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(
+                            type = MenuAnchorType.PrimaryNotEditable,
+                            enabled = !state.busy,
+                        ),
                     readOnly = true,
                     value = orderModeLabel(state.orderMode),
                     onValueChange = {},
@@ -221,7 +232,10 @@ fun SettingsScreen(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(
+                            type = MenuAnchorType.PrimaryNotEditable,
+                            enabled = !state.busy,
+                        ),
                     readOnly = true,
                     value = wallpaperTargetLabel(state.wallpaperTarget),
                     onValueChange = {},
@@ -275,25 +289,17 @@ fun SettingsScreen(
             TextButton(
                 onClick = onClearWallpaperDiskCache,
                 enabled = !state.busy && state.activeAccountId != null,
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Svuota cache immagini")
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "Cambio sfondo automatico",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = state.autoWallpaperEnabled,
-                    onCheckedChange = onAutoChange,
-                    enabled = !state.busy,
-                )
-            }
+            SettingsInlineDivider()
+            SettingsSwitchRow(
+                title = "Cambio sfondo automatico",
+                checked = state.autoWallpaperEnabled,
+                onCheckedChange = onAutoChange,
+                enabled = !state.busy,
+            )
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.autoIntervalMinutes.toString(),
@@ -306,23 +312,14 @@ fun SettingsScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = !state.busy && state.autoWallpaperEnabled,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(R.string.notify_switch_label),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = showStatusNotifications,
-                    onCheckedChange = onShowStatusNotificationsChange,
-                    enabled = !state.busy,
-                )
-            }
-            OutlinedButton(
+            SettingsInlineDivider()
+            SettingsSwitchRow(
+                title = stringResource(R.string.notify_switch_label),
+                checked = showStatusNotifications,
+                onCheckedChange = onShowStatusNotificationsChange,
+                enabled = !state.busy,
+            )
+            Button(
                 onClick = onSaveCarousel,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),

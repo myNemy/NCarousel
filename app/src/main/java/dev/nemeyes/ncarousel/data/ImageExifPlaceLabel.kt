@@ -20,17 +20,16 @@ import java.util.Locale
 object ImageExifPlaceLabel {
 
     fun fromImageBytes(context: Context, bytes: ByteArray): String {
-        val latLong = FloatArray(2)
-        val hasGps = try {
-            ExifInterface(ByteArrayInputStream(bytes)).getLatLong(latLong)
+        val latLong = try {
+            ExifInterface(ByteArrayInputStream(bytes)).getLatLong()
         } catch (_: Exception) {
-            false
+            null
         }
-        if (!hasGps) {
+        if (latLong == null || latLong.size < 2) {
             return context.getString(R.string.notify_place_no_gps)
         }
-        val lat = latLong[0].toDouble()
-        val lon = latLong[1].toDouble()
+        val lat = latLong[0]
+        val lon = latLong[1]
 
         val http = HttpClientProvider.create(context.applicationContext)
         val lang = Locale.getDefault().toLanguageTag()
