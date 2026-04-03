@@ -1,9 +1,11 @@
 package dev.nemeyes.ncarousel
 
 import android.app.Application
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
+import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
@@ -55,6 +57,12 @@ data class MainUiState(
     val instanceThemingPrimaryHex: String? = null,
     /** OCS capabilities.theming.color-text. */
     val instanceThemingOnPrimaryHex: String? = null,
+    /**
+     * API 23+: true se l’app non è esclusa dalle ottimizzazioni batteria (il lavoro in background può subire ritardi).
+     */
+    val batteryOptimizationMayDelayWork: Boolean = false,
+    /** Dialog di consenso prima di aprire le impostazioni di esclusione batteria. */
+    val batteryOptimizationConsentVisible: Boolean = false,
 )
 
 data class AccountUi(
@@ -64,6 +72,7 @@ data class AccountUi(
 
 sealed interface UiEvent {
     data class OpenUrl(val url: String) : UiEvent
+    data object RequestIgnoreBatteryOptimizations : UiEvent
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -103,6 +112,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 needsInitialConsent = !carousel.initialConsentFlowCompleted,
                 instanceThemingPrimaryHex = acc0?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = acc0?.let { carousel.getThemingOnPrimaryHex(it.id) },
+                batteryOptimizationMayDelayWork =
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                        BatteryOptimizationHelper.shouldPromptForExemption(getApplication()),
             )
         },
     )
@@ -111,10 +123,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
 
+    private enum class BatteryOptConsentTrigger { EnableAutoSwitch, SettingsBanner }
+
+    private var batteryOptConsentTrigger: BatteryOptConsentTrigger? = null
+
     init {
+        refreshBatteryOptimizationStatus()
         viewModelScope.launch(Dispatchers.IO) {
             refreshInstanceThemingFromNetwork()
         }
+    }
+
+    private fun computeBatteryOptimizationMayDelay(app: Application): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            BatteryOptimizationHelper.shouldPromptForExemption(app)
+
+    fun refreshBatteryOptimizationStatus() {
+        _ui.update { it.copy(batteryOptimizationMayDelayWork = computeBatteryOptimizationMayDelay(getApplication())) }
     }
 
     private suspend fun refreshInstanceThemingFromNetwork() {
@@ -155,7 +180,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val n = value.filter { ch -> ch.isDigit() }.toIntOrNull() ?: WallpaperDiskCache.DEFAULT_MAX_MB
         it.copy(maxWallpaperDiskCacheMb = n.coerceIn(WallpaperDiskCache.MIN_MB, WallpaperDiskCache.MAX_MB))
     }
-    fun updateAutoWallpaperEnabled(value: Boolean) = _ui.update { it.copy(autoWallpaperEnabled = value) }
+    fun updateAutoWallpaperEnabled(value: Boolean) {
+        if (value) {
+            if (computeBatteryOptimizationMayDelay(getApplication())) {
+                batteryOptConsentTrigger = BatteryOptConsentTrigger.EnableAutoSwitch
+                _ui.update { it.copy(batteryOptimizationConsentVisible = true) }
+                return
+            }
+            _ui.update { it.copy(autoWallpaperEnabled = true) }
+            return
+        }
+        batteryOptConsentTrigger = null
+        _ui.update {
+            it.copy(
+                autoWallpaperEnabled = false,
+                batteryOptimizationConsentVisible = false,
+            )
+        }
+    }
+
+    fun openBatteryOptimizationConsentFromSettings() {
+        if (!computeBatteryOptimizationMayDelay(getApplication())) return
+        batteryOptConsentTrigger = BatteryOptConsentTrigger.SettingsBanner
+        _ui.update { it.copy(batteryOptimizationConsentVisible = true) }
+    }
+
+    fun onBatteryOptimizationConsentConfirmed() {
+        val trigger = batteryOptConsentTrigger
+        batteryOptConsentTrigger = null
+        when (trigger) {
+            BatteryOptConsentTrigger.EnableAutoSwitch ->
+                _ui.update {
+                    it.copy(
+                        batteryOptimizationConsentVisible = false,
+                        autoWallpaperEnabled = true,
+                    )
+                }
+            BatteryOptConsentTrigger.SettingsBanner, null ->
+                _ui.update { it.copy(batteryOptimizationConsentVisible = false) }
+        }
+        _events.tryEmit(UiEvent.RequestIgnoreBatteryOptimizations)
+    }
+
+    fun onBatteryOptimizationConsentDismissed() {
+        batteryOptConsentTrigger = null
+        _ui.update { it.copy(batteryOptimizationConsentVisible = false) }
+    }
     fun updateAutoIntervalMinutesText(value: String) = _ui.update {
         it.copy(
             autoIntervalMinutes = value.filter { ch -> ch.isDigit() }.toIntOrNull()?.coerceAtLeast(
@@ -290,6 +360,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             WallpaperDiskCache(getApplication(), a.id, carousel.maxWallpaperDiskCacheMb).enforceBudget()
         }
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
+        refreshBatteryOptimizationStatus()
         _ui.update { it.copy(statusMessage = "Opzioni carosello salvate.") }
     }
 

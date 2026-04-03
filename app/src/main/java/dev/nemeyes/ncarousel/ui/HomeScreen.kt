@@ -29,16 +29,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -49,6 +53,7 @@ import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.MainViewModel
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.UiEvent
+import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
 import dev.nemeyes.ncarousel.ui.settings.SettingsScreen
@@ -99,6 +104,10 @@ fun HomeScreen(viewModel: MainViewModel) {
                 is UiEvent.OpenUrl -> {
                     val intent = CustomTabsIntent.Builder().build()
                     intent.launchUrl(context, android.net.Uri.parse(ev.url))
+                }
+                UiEvent.RequestIgnoreBatteryOptimizations -> {
+                    BatteryOptimizationHelper.startExemptionRequest(context)
+                    viewModel.refreshBatteryOptimizationStatus()
                 }
             }
         }
@@ -206,6 +215,8 @@ fun HomeScreen(viewModel: MainViewModel) {
             navController = navController,
             viewModel = viewModel,
             onNotifyChange = onNotifyChange,
+            onBatteryOptConsentConfirm = viewModel::onBatteryOptimizationConsentConfirmed,
+            onBatteryOptConsentDismiss = viewModel::onBatteryOptimizationConsentDismissed,
         )
     }
 }
@@ -218,11 +229,42 @@ private fun AuthenticatedShell(
     navController: NavHostController,
     viewModel: MainViewModel,
     onNotifyChange: (Boolean) -> Unit,
+    onBatteryOptConsentConfirm: () -> Unit,
+    onBatteryOptConsentDismiss: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val obs = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshBatteryOptimizationStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(obs)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
+    }
+
+    if (state.batteryOptimizationConsentVisible) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onBatteryOptConsentDismiss,
+            title = { Text(stringResource(R.string.battery_opt_consent_title)) },
+            text = { Text(stringResource(R.string.battery_opt_consent_message)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = onBatteryOptConsentConfirm) {
+                    Text(stringResource(R.string.battery_opt_consent_allow))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = onBatteryOptConsentDismiss) {
+                    Text(stringResource(R.string.battery_opt_consent_deny))
+                }
+            },
+        )
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -348,6 +390,7 @@ private fun AuthenticatedShell(
                                 onIntervalChange = viewModel::updateAutoIntervalMinutesText,
                                 showStatusNotifications = state.showStatusNotifications,
                                 onShowStatusNotificationsChange = onNotifyChange,
+                                onRequestBatteryOptimizationFromBanner = viewModel::openBatteryOptimizationConsentFromSettings,
                             )
                         }
                     }

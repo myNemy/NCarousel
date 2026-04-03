@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -71,6 +73,7 @@ fun SettingsScreen(
     onIntervalChange: (String) -> Unit,
     showStatusNotifications: Boolean,
     onShowStatusNotificationsChange: (Boolean) -> Unit,
+    onRequestBatteryOptimizationFromBanner: () -> Unit,
 ) {
     var orderExpanded by remember { mutableStateOf(false) }
     var wallpaperTargetExpanded by remember { mutableStateOf(false) }
@@ -300,6 +303,34 @@ fun SettingsScreen(
                 onCheckedChange = onAutoChange,
                 enabled = !state.busy,
             )
+            if (state.autoWallpaperEnabled && state.batteryOptimizationMayDelayWork) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.battery_opt_banner_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.battery_opt_banner_body),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                        TextButton(
+                            onClick = onRequestBatteryOptimizationFromBanner,
+                            enabled = !state.busy,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Text(stringResource(R.string.battery_opt_banner_action))
+                        }
+                    }
+                }
+            }
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.autoIntervalMinutes.toString(),

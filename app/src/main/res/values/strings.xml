@@ -23,4 +23,11 @@
     <string name="qs_tile_err_no_image">Nessuna immagine disponibile</string>
     <string name="qs_tile_err_download">Download fallito</string>
     <string name="qs_tile_err_wallpaper">Impossibile impostare lo sfondo</string>
+    <string name="battery_opt_banner_title">Ottimizzazioni batteria</string>
+    <string name="battery_opt_banner_body">Con le ottimizzazioni attive il sistema può ritardare o bloccare il cambio automatico dello sfondo. Escludi NCarousel dalle ottimizzazioni per un intervallo più affidabile.</string>
+    <string name="battery_opt_banner_action">Chiedi esclusione…</string>
+    <string name="battery_opt_consent_title">Consentire la modifica delle impostazioni?</string>
+    <string name="battery_opt_consent_message">Per richiedere al sistema di non limitare NCarousel in background (e permettere il cambio sfondo automatico), verrà aperta una schermata delle impostazioni Android. Puoi annullare lì se preferisci.</string>
+    <string name="battery_opt_consent_allow">Consenti e apri</string>
+    <string name="battery_opt_consent_deny">Non ora</string>
 </resources>
