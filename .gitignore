@@ -1,4 +1,6 @@
 *.iml
+# Note solo locale (non versionata, non su GitHub)
+PRIVATE_README.md
 .gradle
 /local.properties
 /.idea
