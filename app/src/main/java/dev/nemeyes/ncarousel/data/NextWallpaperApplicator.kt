@@ -46,12 +46,11 @@ object NextWallpaperApplicator {
         val disk = WallpaperDiskCache(app, active.id)
         val href = pick.href
         val bytes = disk.get(href) ?: run {
-            val b = client.downloadFile(href).getOrElse { e ->
-                return e.message?.takeIf { it.isNotBlank() }
+            val dl = runBlocking(Dispatchers.IO) { client.downloadFile(href) }
+            dl.getOrElse { e ->
+                return@applyNext e.message?.takeIf { it.isNotBlank() }
                     ?: app.getString(R.string.qs_tile_err_download)
-            }
-            disk.put(href, b)
-            b
+            }.also { disk.put(href, it) }
         }
 
         return WallpaperRepository(app).setWallpaperFromImageBytes(bytes).fold(
