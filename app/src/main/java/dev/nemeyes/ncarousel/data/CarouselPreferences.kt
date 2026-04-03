@@ -3,7 +3,7 @@ package dev.nemeyes.ncarousel.data
 import android.content.Context
 
 /**
- * Non-secret carousel options (interval, mode). Credentials stay in [NextcloudCredentialsStore].
+ * Non-secret carousel options (interval, mode). Accounts stay in [dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore].
  */
 class CarouselPreferences(context: Context) {
 

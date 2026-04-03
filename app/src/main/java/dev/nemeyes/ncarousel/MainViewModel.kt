@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
@@ -132,6 +133,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
         accounts.upsert(acc)
         accounts.setActiveAccountId(acc.id)
+        WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         _ui.update {
             it.copy(
                 hasActiveAccount = true,
@@ -184,6 +186,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     statusMessage = "Login completato: credenziali salvate (app password).",
                                 )
                             }
+                            WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
                         },
                         onFailure = { e ->
                             _ui.update {
@@ -219,7 +222,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             accounts.upsert(a.copy(remoteFolder = folder))
         }
-        WallpaperWorkScheduler.sync(getApplication())
+        WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         _ui.update { it.copy(statusMessage = "Opzioni carosello salvate.") }
     }
 
@@ -389,6 +392,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setActiveAccount(id: String) {
         accounts.setActiveAccountId(id)
+        WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         val a = accounts.getActiveAccount()
         _ui.update {
             it.copy(
