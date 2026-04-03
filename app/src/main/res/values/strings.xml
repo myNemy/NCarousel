@@ -8,6 +8,6 @@
     <string name="notify_list_title">Elenco immagini</string>
     <string name="notify_list_body">%1$d immagini nella libreria.</string>
     <string name="notify_place_no_gps">nessun GPS nell\'immagine</string>
-    <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (nessun indirizzo da geocoder locale né OpenStreetMap)</string>
+    <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (nessun indirizzo da geocoder locale, Nominatim né Photon)</string>
     <string name="notify_switch_label">Notifiche di stato (conteggio e luogo foto)</string>
 </resources>

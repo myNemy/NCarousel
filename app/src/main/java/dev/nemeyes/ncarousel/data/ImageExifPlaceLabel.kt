@@ -9,8 +9,11 @@ import java.io.ByteArrayInputStream
 import java.util.Locale
 
 /**
- * Reads GPS from EXIF, then resolves a place label: platform [Geocoder] first, then
- * [NominatimReverseGeocoder] if Google / OEM geocoding returns nothing.
+ * Reads GPS from EXIF, then resolves a place label:
+ * 1. platform [Geocoder]
+ * 2. [NominatimReverseGeocoder] (OSM)
+ * 3. [PhotonReverseGeocoder] (OSM / Komoot public instance)
+ * 4. raw coordinates string
  *
  * Must be called from a background thread.
  */
@@ -35,6 +38,10 @@ object ImageExifPlaceLabel {
         val lang = Locale.getDefault().toLanguageTag()
         runCatching {
             NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
+        }.getOrNull()?.let { return it }
+
+        runCatching {
+            PhotonReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
         }.getOrNull()?.let { return it }
 
         return coordsOnly(context, lat, lon)
