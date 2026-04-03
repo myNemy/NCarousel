@@ -4,8 +4,6 @@ import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -95,15 +93,13 @@ fun NCarouselTheme(
         parseThemingHexToColor(instanceOnPrimaryHex)
     }
     val colorScheme = remember(seedPrimary, darkTheme, onPrimaryOverride) {
-        val dynamic = runCatching {
-            if (darkTheme) dynamicDarkColorScheme(seedPrimary) else dynamicLightColorScheme(seedPrimary)
-        }.getOrNull()
-        val base = dynamic ?: if (darkTheme) FallbackDark else FallbackLight
-        if (onPrimaryOverride != null) {
-            base.copy(onPrimary = onPrimaryOverride)
-        } else {
-            base
-        }
+        val base = if (darkTheme) FallbackDark else FallbackLight
+        val onPrimary = onPrimaryOverride
+            ?: if (seedPrimary.luminance() > 0.5f) Color(0xFF1A1C1E) else Color.White
+        base.copy(
+            primary = seedPrimary,
+            onPrimary = onPrimary,
+        )
     }
     val view = LocalView.current
     val primaryLuminance = colorScheme.primary.luminance()
