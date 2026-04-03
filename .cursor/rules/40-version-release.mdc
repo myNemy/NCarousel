@@ -1,0 +1,13 @@
+---
+description: Increment app version on commit/push for upgradable APKs
+globs: "**/app/build.gradle.kts"
+alwaysApply: true
+---
+
+# Versione app (versionCode / versionName)
+
+- Ogni volta che si fa **commit e push** di modifiche che gli utenti installeranno (APK da CI o locale), aggiornare in `app/build.gradle.kts`:
+  - **`ncarouselLocalVersionCode`**: +1 (intero strettamente crescente per chi installa build senza `GITHUB_RUN_NUMBER`).
+  - **`ncarouselBaseVersionName`**: allineare al bisogno (es. patch `0.2.1` → `0.2.2` per release piccole).
+- Su **GitHub Actions**, `versionCode` usa già `1000 + GITHUB_RUN_NUMBER` (monotono a ogni run); `versionName` diventa `ncarouselBaseVersionName+$run`.
+- Non lasciare il fallback locale fermo tra un push e l’altro se si distribuiscono anche build locali.
