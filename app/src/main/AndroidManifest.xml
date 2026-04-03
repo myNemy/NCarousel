@@ -24,5 +24,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".quicksettings.NextWallpaperTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_qs_next_wallpaper"
+            android:label="@string/qs_tile_wallpaper_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

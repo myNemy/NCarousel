@@ -15,4 +15,12 @@
     <string name="consent_request_notifications">Consenti notifiche</string>
     <string name="consent_continue">Continua</string>
     <string name="consent_later">Più tardi</string>
+    <string name="qs_tile_wallpaper_label">NCarousel · prossima</string>
+    <string name="qs_tile_subtitle">Prossima immagine sullo sfondo</string>
+    <string name="qs_tile_wallpaper_ok">Sfondo aggiornato</string>
+    <string name="qs_tile_err_no_account">Nessun account Nextcloud attivo</string>
+    <string name="qs_tile_err_no_list">Aggiorna prima l\'elenco immagini dall\'app</string>
+    <string name="qs_tile_err_no_image">Nessuna immagine disponibile</string>
+    <string name="qs_tile_err_download">Download fallito</string>
+    <string name="qs_tile_err_wallpaper">Impossibile impostare lo sfondo</string>
 </resources>

@@ -10,12 +10,10 @@ import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
+import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.OrderMode
-import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
-import dev.nemeyes.ncarousel.data.WallpaperPick
-import dev.nemeyes.ncarousel.data.WallpaperRepository
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
@@ -64,7 +62,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val accounts = NextcloudAccountStore(application)
     private val carousel = CarouselPreferences(application)
     private val syncRepo = ImageSyncRepository(application)
-    private val wallpaperRepository = WallpaperRepository(application)
     private val http = HttpClientProvider.create(application)
 
     private fun activeOrNull() = accounts.getActiveAccount()
@@ -316,71 +313,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun applyNextWallpaper() {
         val s = _ui.value
-        val hrefs = s.imageHrefs
-        if (hrefs.isEmpty()) {
+        if (s.imageHrefs.isEmpty()) {
             _ui.update { it.copy(statusMessage = "Aggiorna prima l’elenco immagini.") }
             return
         }
-        val active = activeOrNull()
-        if (active == null) {
+        if (activeOrNull() == null) {
             _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
             return
         }
-        val pick: WallpaperPick = WallpaperOrderEngine(getApplication(), active.id).pickWallpaper(hrefs, s.orderMode)
-            ?: run {
-                _ui.update { it.copy(statusMessage = "Nessuna immagine disponibile.") }
-                return
-            }
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
-            val client = NextcloudWebDavClient(
-                http,
-                active.serverBaseUrl,
-                active.userId,
-                active.loginName,
-                active.appPassword,
-            )
-            val href = pick.href
-            val diskCache = WallpaperDiskCache(getApplication(), active.id)
-            val bytes = diskCache.get(href) ?: run {
-                val b = client.downloadFile(href).getOrElse { err ->
-                    _ui.update {
-                        it.copy(
-                            busy = false,
-                            statusMessage = "Download fallito: ${err.message}",
-                        )
-                    }
-                    return@launch
-                }
-                diskCache.put(href, b)
-                b
+            val err = withContext(Dispatchers.IO) {
+                NextWallpaperApplicator.applyNext(getApplication(), s.orderMode)
             }
-            val wp = wallpaperRepository.setWallpaperFromImageBytes(bytes)
-            wp.fold(
-                onSuccess = {
-                    pick.commitSuccess()
-                    _ui.update {
-                        it.copy(busy = false, statusMessage = "Sfondo aggiornato.")
-                    }
-                    val app = getApplication<Application>()
-                    viewModelScope.launch(Dispatchers.IO) {
-                        CarouselStatusNotifications.maybeShowWallpaperApplied(
-                            app,
-                            carousel,
-                            pick.progress,
-                            bytes,
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _ui.update {
-                        it.copy(
-                            busy = false,
-                            statusMessage = "Impossibile impostare sfondo: ${e.message}",
-                        )
-                    }
-                },
-            )
+            _ui.update {
+                it.copy(
+                    busy = false,
+                    statusMessage = when {
+                        err == null -> "Sfondo aggiornato."
+                        else -> err
+                    },
+                )
+            }
         }
     }
 
