@@ -351,9 +351,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(busy = false, statusMessage = "Sfondo aggiornato.")
                     }
                     val app = getApplication<Application>()
-                    val count = hrefs.size
                     viewModelScope.launch(Dispatchers.IO) {
-                        CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, count, bytes)
+                        CarouselStatusNotifications.maybeShowWallpaperApplied(
+                            app,
+                            carousel,
+                            pick.progress,
+                            bytes,
+                        )
                     }
                 },
                 onFailure = { e ->

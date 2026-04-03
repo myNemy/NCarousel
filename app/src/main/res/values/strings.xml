@@ -2,9 +2,9 @@
 <resources>
     <string name="app_name">NCarousel</string>
     <string name="notify_channel_name">Stato NCarousel</string>
-    <string name="notify_channel_desc">Conteggio libreria e luogo della foto applicata come sfondo</string>
+    <string name="notify_channel_desc">Progressivo nell\'elenco, conteggio e luogo della foto sullo sfondo</string>
     <string name="notify_wallpaper_title">Sfondo aggiornato</string>
-    <string name="notify_wallpaper_body">Libreria: %1$d immagini · Luogo: %2$s</string>
+    <string name="notify_wallpaper_body">Immagine %1$d di %2$d · Luogo: %3$s</string>
     <string name="notify_list_title">Elenco immagini</string>
     <string name="notify_list_body">%1$d immagini nella libreria.</string>
     <string name="notify_place_no_gps">nessun GPS nell\'immagine</string>

@@ -57,7 +57,7 @@ object CarouselStatusNotifications {
     fun maybeShowWallpaperApplied(
         context: Context,
         prefs: CarouselPreferences,
-        libraryCount: Int,
+        progress: PickProgress,
         imageBytes: ByteArray,
     ) {
         if (!prefs.showStatusNotifications) return
@@ -65,7 +65,12 @@ object CarouselStatusNotifications {
         ensureChannel(context)
         val app = context.applicationContext
         val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes)
-        val text = app.getString(R.string.notify_wallpaper_body, libraryCount, place)
+        val text = app.getString(
+            R.string.notify_wallpaper_body,
+            progress.current,
+            progress.total,
+            place,
+        )
         val n = NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_ncarousel)
             .setContentTitle(app.getString(R.string.notify_wallpaper_title))

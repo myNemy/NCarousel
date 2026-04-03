@@ -36,20 +36,34 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
         val sorted = hrefs.sorted()
         return when (mode) {
             OrderMode.SEQUENTIAL -> sequentialPick(sorted)
-            OrderMode.RANDOM -> WallpaperPick(sorted[Random.Default.nextInt(sorted.size)], onCommit = { })
+            OrderMode.RANDOM -> randomPick(sorted)
             OrderMode.SHUFFLE_ONCE -> shuffleOncePick(sorted)
             OrderMode.SMART_RANDOM -> smartRandomPick(sorted)
             OrderMode.NO_REPEAT_SHUFFLE -> noRepeatPick(sorted)
         }
     }
 
+    private fun randomPick(sorted: List<String>): WallpaperPick {
+        val href = sorted[Random.Default.nextInt(sorted.size)]
+        val pos = sorted.binarySearch(href) + 1
+        return WallpaperPick(
+            href,
+            PickProgress(current = pos.coerceAtLeast(1), total = sorted.size),
+            onCommit = { },
+        )
+    }
+
     private fun sequentialPick(sorted: List<String>): WallpaperPick {
         val old = prefs.getInt(KEY_SEQ_INDEX, 0).coerceAtLeast(0)
         val i = old % sorted.size
         val href = sorted[i]
-        return WallpaperPick(href, onCommit = {
-            prefs.edit().putInt(KEY_SEQ_INDEX, (old + 1) % sorted.size).apply()
-        })
+        return WallpaperPick(
+            href,
+            PickProgress(current = i + 1, total = sorted.size),
+            onCommit = {
+                prefs.edit().putInt(KEY_SEQ_INDEX, (old + 1) % sorted.size).apply()
+            },
+        )
     }
 
     private fun shuffleOncePick(sorted: List<String>): WallpaperPick {
@@ -62,9 +76,13 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
         val old = prefs.getInt(KEY_SHUFFLE_WALK, 0).coerceAtLeast(0)
         val i = old % order.size
         val href = order[i]
-        return WallpaperPick(href, onCommit = {
-            prefs.edit().putInt(KEY_SHUFFLE_WALK, (old + 1) % order.size).apply()
-        })
+        return WallpaperPick(
+            href,
+            PickProgress(current = i + 1, total = order.size),
+            onCommit = {
+                prefs.edit().putInt(KEY_SHUFFLE_WALK, (old + 1) % order.size).apply()
+            },
+        )
     }
 
     private fun smartRandomPick(sorted: List<String>): WallpaperPick {
@@ -72,10 +90,15 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
         val candidates = sorted.filter { it !in recent }
         val pool = if (candidates.isNotEmpty()) candidates else sorted
         val pick = pool[Random.Default.nextInt(pool.size)]
-        return WallpaperPick(pick, onCommit = {
-            val lines = (listOf(pick) + readLines(smartRecentFile)).distinct().take(SMART_WINDOW)
-            smartRecentFile.writeText(lines.joinToString("\n"), Charsets.UTF_8)
-        })
+        val pos = sorted.binarySearch(pick) + 1
+        return WallpaperPick(
+            pick,
+            PickProgress(current = pos.coerceAtLeast(1), total = sorted.size),
+            onCommit = {
+                val lines = (listOf(pick) + readLines(smartRecentFile)).distinct().take(SMART_WINDOW)
+                smartRecentFile.writeText(lines.joinToString("\n"), Charsets.UTF_8)
+            },
+        )
     }
 
     private fun noRepeatPick(sorted: List<String>): WallpaperPick? {
@@ -85,14 +108,19 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
             writeLines(noRepeatFile, lines)
         }
         val href = lines.firstOrNull() ?: return null
-        return WallpaperPick(href, onCommit = {
-            val rest = readLines(noRepeatFile).filter { it in sorted.toSet() }.drop(1)
-            if (rest.isEmpty()) {
-                noRepeatFile.delete()
-            } else {
-                writeLines(noRepeatFile, rest)
-            }
-        })
+        val pos = sorted.size - lines.size + 1
+        return WallpaperPick(
+            href,
+            PickProgress(current = pos.coerceIn(1, sorted.size), total = sorted.size),
+            onCommit = {
+                val rest = readLines(noRepeatFile).filter { it in sorted.toSet() }.drop(1)
+                if (rest.isEmpty()) {
+                    noRepeatFile.delete()
+                } else {
+                    writeLines(noRepeatFile, rest)
+                }
+            },
+        )
     }
 
     private fun readLines(f: File): List<String> {
@@ -123,8 +151,12 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
     }
 }
 
+/** 1-based [current] within [total] images (meaning depends on [OrderMode]). */
+data class PickProgress(val current: Int, val total: Int)
+
 data class WallpaperPick(
     val href: String,
+    val progress: PickProgress,
     private val onCommit: () -> Unit,
 ) {
     fun commitSuccess() {

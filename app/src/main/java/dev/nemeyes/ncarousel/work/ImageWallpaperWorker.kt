@@ -79,7 +79,7 @@ class ImageWallpaperWorker(
                     CarouselStatusNotifications.maybeShowWallpaperApplied(
                         applicationContext,
                         carousel,
-                        hrefs.size,
+                        pick.progress,
                         bytes,
                     )
                     Result.success()
