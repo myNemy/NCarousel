@@ -5,9 +5,16 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -34,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -54,6 +62,7 @@ import dev.nemeyes.ncarousel.MainViewModel
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.UiEvent
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
+import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
 import dev.nemeyes.ncarousel.ui.settings.SettingsScreen
@@ -188,7 +197,19 @@ fun HomeScreen(viewModel: MainViewModel) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    title = { Text("Accedi") },
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start,
+                        ) {
+                            NCarouselLogoMark(
+                                size = 30.dp,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text("Accedi")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -270,11 +291,22 @@ private fun AuthenticatedShell(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    NCarouselLogoMark(
+                        size = 56.dp,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
                 NavigationDrawerItem(
                     label = { Text("Inizio") },
                     selected = currentRoute == AppDestinations.MAIN,
@@ -317,7 +349,16 @@ private fun AuthenticatedShell(
                         Scaffold(
                             topBar = {
                                 TopAppBar(
-                                    title = { Text(stringResource(R.string.app_name)) },
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            NCarouselLogoMark(
+                                                size = 32.dp,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(stringResource(R.string.app_name))
+                                        }
+                                    },
                                     navigationIcon = {
                                         IconButton(
                                             onClick = { scope.launch { drawerState.open() } },
@@ -349,7 +390,16 @@ private fun AuthenticatedShell(
                         Scaffold(
                             topBar = {
                                 TopAppBar(
-                                    title = { Text("Impostazioni") },
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            NCarouselLogoMark(
+                                                size = 32.dp,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text("Impostazioni")
+                                        }
+                                    },
                                     navigationIcon = {
                                         IconButton(onClick = { navController.popBackStack() }) {
                                             Icon(
