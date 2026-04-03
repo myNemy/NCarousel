@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.nemeyes.ncarousel.data.CarouselPreferences
+import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
@@ -24,7 +25,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class MainUiState(
     val serverUrl: String = "",
@@ -38,6 +41,7 @@ data class MainUiState(
     val maxImageSizeMb: Int = 0,
     val autoWallpaperEnabled: Boolean = false,
     val autoIntervalMinutes: Int = 30,
+    val showStatusNotifications: Boolean = true,
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
@@ -82,6 +86,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             maxImageSizeMb = carousel.maxImageSizeMb,
             autoWallpaperEnabled = carousel.autoWallpaperEnabled,
             autoIntervalMinutes = carousel.autoIntervalMinutes,
+            showStatusNotifications = carousel.showStatusNotifications,
         ),
     )
     val ui: StateFlow<MainUiState> = _ui.asStateFlow()
@@ -104,6 +109,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
             ) ?: WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
         )
+    }
+
+    fun updateShowStatusNotifications(enabled: Boolean) {
+        carousel.showStatusNotifications = enabled
+        _ui.update { it.copy(showStatusNotifications = enabled) }
     }
 
     fun saveCredentials() {
@@ -274,6 +284,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             statusMessage = "Trovate ${list.size} immagini.",
                         )
                     }
+                    val app = getApplication<Application>()
+                    withContext(Dispatchers.IO) {
+                        CarouselStatusNotifications.maybeShowListRefreshed(app, carousel, list.size)
+                    }
                 },
                 onFailure = { e ->
                     _ui.update {
@@ -335,6 +349,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     pick.commitSuccess()
                     _ui.update {
                         it.copy(busy = false, statusMessage = "Sfondo aggiornato.")
+                    }
+                    val app = getApplication<Application>()
+                    val count = hrefs.size
+                    viewModelScope.launch(Dispatchers.IO) {
+                        CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, count, bytes)
                     }
                 },
                 onFailure = { e ->

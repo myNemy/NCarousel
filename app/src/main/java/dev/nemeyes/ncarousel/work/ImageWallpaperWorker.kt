@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.nemeyes.ncarousel.data.CarouselPreferences
+import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
@@ -75,6 +76,12 @@ class ImageWallpaperWorker(
             return@withContext WallpaperRepository(applicationContext).setWallpaperFromImageBytes(bytes).fold(
                 onSuccess = {
                     pick.commitSuccess()
+                    CarouselStatusNotifications.maybeShowWallpaperApplied(
+                        applicationContext,
+                        carousel,
+                        hrefs.size,
+                        bytes,
+                    )
                     Result.success()
                 },
                 onFailure = { Result.failure() },

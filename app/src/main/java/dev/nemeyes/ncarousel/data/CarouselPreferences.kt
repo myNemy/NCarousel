@@ -28,11 +28,17 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getInt(KEY_INTERVAL_MIN, 30).coerceAtLeast(1)
         set(value) { prefs.edit().putInt(KEY_INTERVAL_MIN, value.coerceAtLeast(1)).apply() }
 
+    /** Show notifications after list refresh / wallpaper change (count + EXIF place name when available). */
+    var showStatusNotifications: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_STATUS, true)
+        set(value) { prefs.edit().putBoolean(KEY_NOTIFY_STATUS, value).apply() }
+
     companion object {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
         private const val KEY_MAX_MB = "max_image_mb"
         private const val KEY_AUTO = "auto_wallpaper"
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
+        private const val KEY_NOTIFY_STATUS = "show_status_notifications"
     }
 }

@@ -1,5 +1,10 @@
 package dev.nemeyes.ncarousel.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,14 +44,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.MainViewModel
 import dev.nemeyes.ncarousel.UiEvent
+import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 
@@ -56,6 +64,12 @@ fun HomeScreen(viewModel: MainViewModel) {
     val state by viewModel.ui.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        viewModel.updateShowStatusNotifications(granted)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadCachedListIfAny()
@@ -113,6 +127,28 @@ fun HomeScreen(viewModel: MainViewModel) {
             onMaxMbChange = viewModel::updateMaxImageSizeMbText,
             onAutoChange = viewModel::updateAutoWallpaperEnabled,
             onIntervalChange = viewModel::updateAutoIntervalMinutesText,
+            showStatusNotifications = state.showStatusNotifications,
+            onShowStatusNotificationsChange = { want ->
+                if (!want) {
+                    viewModel.updateShowStatusNotifications(false)
+                    return@HomeContent
+                }
+                if (Build.VERSION.SDK_INT >= 33) {
+                    when (
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        )
+                    ) {
+                        PackageManager.PERMISSION_GRANTED ->
+                            viewModel.updateShowStatusNotifications(true)
+                        else ->
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else {
+                    viewModel.updateShowStatusNotifications(true)
+                }
+            },
         )
     }
 }
@@ -138,6 +174,8 @@ private fun HomeContent(
     onMaxMbChange: (String) -> Unit,
     onAutoChange: (Boolean) -> Unit,
     onIntervalChange: (String) -> Unit,
+    showStatusNotifications: Boolean,
+    onShowStatusNotificationsChange: (Boolean) -> Unit,
 ) {
     var orderExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
@@ -316,6 +354,23 @@ private fun HomeContent(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             enabled = !state.busy && state.autoWallpaperEnabled,
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.notify_switch_label),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = showStatusNotifications,
+                onCheckedChange = onShowStatusNotificationsChange,
+                enabled = !state.busy,
+            )
+        }
 
         TextButton(onClick = onSaveCarousel, enabled = !state.busy) {
             Text("Salva opzioni carosello e pianifica")

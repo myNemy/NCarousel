@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NCarousel</string>
+    <string name="notify_channel_name">Stato NCarousel</string>
+    <string name="notify_channel_desc">Conteggio libreria e luogo della foto applicata come sfondo</string>
+    <string name="notify_wallpaper_title">Sfondo aggiornato</string>
+    <string name="notify_wallpaper_body">Libreria: %1$d immagini · Luogo: %2$s</string>
+    <string name="notify_list_title">Elenco immagini</string>
+    <string name="notify_list_body">%1$d immagini nella libreria.</string>
+    <string name="notify_place_no_gps">nessun GPS nell\'immagine</string>
+    <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (luogo non risolvibile)</string>
+    <string name="notify_switch_label">Notifiche di stato (conteggio e luogo foto)</string>
 </resources>
