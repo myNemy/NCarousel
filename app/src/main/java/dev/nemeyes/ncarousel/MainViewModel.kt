@@ -203,6 +203,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         carousel.maxImageSizeMb = s.maxImageSizeMb
         carousel.autoWallpaperEnabled = s.autoWallpaperEnabled
         carousel.autoIntervalMinutes = s.autoIntervalMinutes.coerceAtLeast(WallpaperWorkScheduler.MIN_INTERVAL_MINUTES)
+        activeOrNull()?.let { a ->
+            val folder = s.remoteFolder.trim().trim('/').ifBlank {
+                a.remoteFolder.ifBlank { "Photos" }
+            }
+            accounts.upsert(a.copy(remoteFolder = folder))
+        }
         WallpaperWorkScheduler.sync(getApplication())
         _ui.update { it.copy(statusMessage = "Opzioni carosello salvate.") }
     }
@@ -218,7 +224,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = null) }
-            val client = NextcloudWebDavClient(http, active.serverBaseUrl, active.userId, active.appPassword)
+            val client = NextcloudWebDavClient(
+                http,
+                active.serverBaseUrl,
+                active.userId,
+                active.loginName,
+                active.appPassword,
+            )
             val result = client.verifyReachable()
             _ui.update {
                 it.copy(
@@ -241,9 +253,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = "Scansione cartelle in corso…") }
-            val folder = active.remoteFolder.ifBlank { "Photos" }
+            // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
+            val folder = s.remoteFolder.trim().trim('/').ifBlank {
+                active.remoteFolder.ifBlank { "Photos" }
+            }
+            val accountForSync = active.copy(remoteFolder = folder)
+            accounts.upsert(accountForSync)
             val maxBytes = s.maxImageSizeMb.toLong() * 1024L * 1024L
-            val result = syncRepo.syncFromServer(http, active.copy(remoteFolder = folder), maxBytes)
+            val result = syncRepo.syncFromServer(http, accountForSync, maxBytes)
             result.fold(
                 onSuccess = { list ->
                     val fp = WallpaperOrderEngine.libraryFingerprint(list)
@@ -253,6 +270,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             busy = false,
                             imageHrefs = list,
+                            remoteFolder = folder,
                             statusMessage = "Trovate ${list.size} immagini.",
                         )
                     }
@@ -289,7 +307,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
-            val client = NextcloudWebDavClient(http, active.serverBaseUrl, active.userId, active.appPassword)
+            val client = NextcloudWebDavClient(
+                http,
+                active.serverBaseUrl,
+                active.userId,
+                active.loginName,
+                active.appPassword,
+            )
             val href = pick.href
             val diskCache = WallpaperDiskCache(getApplication(), active.id)
             val bytes = diskCache.get(href) ?: run {

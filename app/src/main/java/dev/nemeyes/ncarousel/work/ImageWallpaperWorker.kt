@@ -36,7 +36,13 @@ class ImageWallpaperWorker(
             val listCache = ImageListCache(applicationContext, active.id)
             var hrefs = listCache.read()
             val http = HttpClientProvider.create(applicationContext)
-            val client = NextcloudWebDavClient(http, active.serverBaseUrl, active.userId, active.appPassword)
+            val client = NextcloudWebDavClient(
+                http,
+                active.serverBaseUrl,
+                active.userId,
+                active.loginName,
+                active.appPassword,
+            )
             val order = WallpaperOrderEngine(applicationContext, active.id)
 
             if (hrefs.isEmpty()) {
