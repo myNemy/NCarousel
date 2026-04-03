@@ -4,14 +4,26 @@ import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val LightColorScheme = lightColorScheme(
+/** Parses Nextcloud OCS theming hex (`#0082c9` or `0082c9`). */
+fun parseThemingHexToColor(hex: String?): Color? {
+    if (hex.isNullOrBlank()) return null
+    val t = hex.trim()
+    val normalized = if (t.startsWith("#")) t else "#$t"
+    return runCatching { Color(android.graphics.Color.parseColor(normalized)) }.getOrNull()
+}
+
+private val FallbackLight = lightColorScheme(
     primary = NcBlue,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFB8DDF2),
@@ -39,7 +51,7 @@ private val LightColorScheme = lightColorScheme(
     scrim = Color.Black,
 )
 
-private val DarkColorScheme = darkColorScheme(
+private val FallbackDark = darkColorScheme(
     primary = Color(0xFF89C9EB),
     onPrimary = Color(0xFF00344E),
     primaryContainer = Color(0xFF004E6E),
@@ -70,14 +82,35 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun NCarouselTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    /** OCS `theming.color` from the active instance; null → default Nextcloud blue. */
+    instancePrimaryHex: String? = null,
+    /** OCS `theming.color-text` for icons/text on primary (e.g. top app bar). */
+    instanceOnPrimaryHex: String? = null,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val seedPrimary = remember(instancePrimaryHex) {
+        parseThemingHexToColor(instancePrimaryHex) ?: NcBlue
+    }
+    val onPrimaryOverride = remember(instanceOnPrimaryHex) {
+        parseThemingHexToColor(instanceOnPrimaryHex)
+    }
+    val colorScheme = remember(seedPrimary, darkTheme, onPrimaryOverride) {
+        val dynamic = runCatching {
+            if (darkTheme) dynamicDarkColorScheme(seedPrimary) else dynamicLightColorScheme(seedPrimary)
+        }.getOrNull()
+        val base = dynamic ?: if (darkTheme) FallbackDark else FallbackLight
+        if (onPrimaryOverride != null) {
+            base.copy(onPrimary = onPrimaryOverride)
+        } else {
+            base
+        }
+    }
     val view = LocalView.current
+    val primaryLuminance = colorScheme.primary.luminance()
     SideEffect {
         val window = (view.context as? Activity)?.window ?: return@SideEffect
         WindowCompat.getInsetsController(window, view).apply {
-            isAppearanceLightStatusBars = false
+            isAppearanceLightStatusBars = primaryLuminance > 0.5f
             isAppearanceLightNavigationBars = !darkTheme
         }
     }

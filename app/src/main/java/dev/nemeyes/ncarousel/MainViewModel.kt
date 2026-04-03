@@ -16,6 +16,7 @@ import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
+import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,10 @@ data class MainUiState(
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
+    /** OCS capabilities.theming.color (hex); drives [NCarouselTheme]. */
+    val instanceThemingPrimaryHex: String? = null,
+    /** OCS capabilities.theming.color-text. */
+    val instanceThemingOnPrimaryHex: String? = null,
 )
 
 data class AccountUi(
@@ -76,27 +81,63 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
     private val _ui = MutableStateFlow(
-        MainUiState(
-            serverUrl = activeOrNull()?.serverBaseUrl.orEmpty(),
-            username = activeOrNull()?.userId.orEmpty(),
-            password = activeOrNull()?.appPassword.orEmpty(),
-            remoteFolder = activeOrNull()?.remoteFolder.orEmpty(),
-            hasActiveAccount = activeOrNull() != null,
-            accounts = accountsUi(),
-            activeAccountId = accounts.getActiveAccountId(),
-            orderMode = carousel.orderMode,
-            maxImageSizeMb = carousel.maxImageSizeMb,
-            maxWallpaperDiskCacheMb = carousel.maxWallpaperDiskCacheMb,
-            autoWallpaperEnabled = carousel.autoWallpaperEnabled,
-            autoIntervalMinutes = carousel.autoIntervalMinutes,
-            showStatusNotifications = carousel.showStatusNotifications,
-            needsInitialConsent = !carousel.initialConsentFlowCompleted,
-        ),
+        run {
+            val acc0 = activeOrNull()
+            MainUiState(
+                serverUrl = acc0?.serverBaseUrl.orEmpty(),
+                username = acc0?.userId.orEmpty(),
+                password = acc0?.appPassword.orEmpty(),
+                remoteFolder = acc0?.remoteFolder.orEmpty(),
+                hasActiveAccount = acc0 != null,
+                accounts = accountsUi(),
+                activeAccountId = accounts.getActiveAccountId(),
+                orderMode = carousel.orderMode,
+                maxImageSizeMb = carousel.maxImageSizeMb,
+                maxWallpaperDiskCacheMb = carousel.maxWallpaperDiskCacheMb,
+                autoWallpaperEnabled = carousel.autoWallpaperEnabled,
+                autoIntervalMinutes = carousel.autoIntervalMinutes,
+                showStatusNotifications = carousel.showStatusNotifications,
+                needsInitialConsent = !carousel.initialConsentFlowCompleted,
+                instanceThemingPrimaryHex = acc0?.let { carousel.getThemingPrimaryHex(it.id) },
+                instanceThemingOnPrimaryHex = acc0?.let { carousel.getThemingOnPrimaryHex(it.id) },
+            )
+        },
     )
     val ui: StateFlow<MainUiState> = _ui.asStateFlow()
 
     private val _events = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshInstanceThemingFromNetwork()
+        }
+    }
+
+    private suspend fun refreshInstanceThemingFromNetwork() {
+        val acc = activeOrNull() ?: return
+        OcsCapabilitiesClient(http).fetchTheming(
+            acc.serverBaseUrl,
+            acc.loginName,
+            acc.appPassword,
+        ).onSuccess { t ->
+            carousel.setThemingForAccount(acc.id, t.color, t.colorText)
+            if (activeOrNull()?.id == acc.id) {
+                _ui.update {
+                    it.copy(
+                        instanceThemingPrimaryHex = t.color,
+                        instanceThemingOnPrimaryHex = t.colorText,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun scheduleThemingRefresh() {
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshInstanceThemingFromNetwork()
+        }
+    }
 
     fun updateServerUrl(value: String) = _ui.update { it.copy(serverUrl = value) }
     fun updateUsername(value: String) = _ui.update { it.copy(username = value) }
@@ -153,8 +194,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 statusMessage = "Account salvato (cifrato sul dispositivo).",
+                instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
+                instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
             )
         }
+        scheduleThemingRefresh()
     }
 
     fun startNextcloudLoginV2() {
@@ -197,9 +241,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     password = active?.appPassword.orEmpty(),
                                     remoteFolder = active?.remoteFolder.orEmpty(),
                                     statusMessage = "Login completato: credenziali salvate (app password).",
+                                    instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
+                                    instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },
                                 )
                             }
                             WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
+                            scheduleThemingRefresh()
                         },
                         onFailure = { e ->
                             _ui.update {
@@ -388,12 +435,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 statusMessage = "Account attivo aggiornato.",
+                instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
+                instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
             )
         }
         loadCachedListIfAny()
+        scheduleThemingRefresh()
     }
 
     fun deleteAccount(id: String) {
+        carousel.clearThemingForAccount(id)
         accounts.delete(id)
         val a = accounts.getActiveAccount()
         _ui.update {
@@ -407,8 +458,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 statusMessage = "Account rimosso.",
+                instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
+                instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
             )
         }
         loadCachedListIfAny()
+        scheduleThemingRefresh()
     }
 }

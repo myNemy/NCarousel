@@ -54,6 +54,33 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_INITIAL_CONSENT_DONE, false)
         set(value) { prefs.edit().putBoolean(KEY_INITIAL_CONSENT_DONE, value).apply() }
 
+    /** Cached OCS theming [color] for [accountId] (hex, e.g. `#0082c9`). */
+    fun getThemingPrimaryHex(accountId: String): String? =
+        prefs.getString(KEY_THEMING_COLOR + sanitizeAccountKey(accountId), null)?.takeIf { it.isNotBlank() }
+
+    /** Cached OCS theming [color-text] for primary surfaces. */
+    fun getThemingOnPrimaryHex(accountId: String): String? =
+        prefs.getString(KEY_THEMING_ON_PRIMARY + sanitizeAccountKey(accountId), null)?.takeIf { it.isNotBlank() }
+
+    fun setThemingForAccount(accountId: String, color: String, colorText: String?) {
+        val k = sanitizeAccountKey(accountId)
+        val ed = prefs.edit().putString(KEY_THEMING_COLOR + k, color)
+        if (colorText != null) ed.putString(KEY_THEMING_ON_PRIMARY + k, colorText)
+        else ed.remove(KEY_THEMING_ON_PRIMARY + k)
+        ed.apply()
+    }
+
+    fun clearThemingForAccount(accountId: String) {
+        val k = sanitizeAccountKey(accountId)
+        prefs.edit()
+            .remove(KEY_THEMING_COLOR + k)
+            .remove(KEY_THEMING_ON_PRIMARY + k)
+            .apply()
+    }
+
+    private fun sanitizeAccountKey(accountId: String): String =
+        accountId.replace(Regex("[^a-zA-Z0-9._-]"), "_").take(120)
+
     companion object {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
@@ -63,5 +90,7 @@ class CarouselPreferences(context: Context) {
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
         private const val KEY_NOTIFY_STATUS = "show_status_notifications"
         private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
+        private const val KEY_THEMING_COLOR = "theming_color_"
+        private const val KEY_THEMING_ON_PRIMARY = "theming_on_primary_"
     }
 }
