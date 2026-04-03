@@ -1,0 +1,29 @@
+---
+description: Regole client Nextcloud WebDAV (PROPFIND/GET, parsing, filtri)
+globs: "app/src/main/java/**/NextcloudWebDavClient.kt"
+alwaysApply: false
+---
+
+# Nextcloud WebDAV (client)
+
+## Endpoint e auth
+
+- Usare endpoint WebDAV Nextcloud (`/remote.php/dav/files/{USERNAME}/...`).
+- Autenticazione: Basic Auth con app password (quando possibile).
+
+## PROPFIND
+
+- Richiedere solo proprietà necessarie (es. `href`, `getcontenttype`, `getcontentlength`) per ridurre payload.
+- Usare `Depth` coerente:
+  - `Depth: 0` per test connessione/metadata cartella
+  - `Depth: 1` per listing e ricorsione gestita dall’app
+
+## Parsing
+
+- Parsing XML robusto: gestire namespace e valori mancanti.
+- Normalizzare `href` (path/encoding) in modo consistente prima di usarlo come chiave o per confronto.
+
+## Filtri e limiti
+
+- Se configurato un limite dimensione (MB), filtrare usando `getcontentlength` quando presente.
+- Non assumere che `getcontentlength` esista sempre: fallback a “unknown size”.

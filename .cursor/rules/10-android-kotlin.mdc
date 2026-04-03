@@ -1,0 +1,32 @@
+---
+description: Convenzioni Android/Kotlin/Compose per questo progetto
+globs: "**/*.{kt,kts,xml}"
+alwaysApply: false
+---
+
+# Android / Kotlin / Compose
+
+## Background work
+
+- Usare WorkManager come scheduler principale.
+- Per intervalli < 15 minuti, evitare `PeriodicWorkRequest`: usare `OneTimeWorkRequest` in catena con `setInitialDelay`.
+- Impostare constraint di rete quando serve download (es. `NetworkType.CONNECTED`).
+- In Doze/standby i ritardi possono allungarsi: non “forzare” busy loop o wake lock.
+
+## Wallpaper
+
+- Usare `WallpaperManager` e rispettare le dimensioni desiderate (`desiredMinimumWidth/Height`).
+- Se si fa crop/scale: preferire un “center-crop/cover” deterministico e testabile.
+
+## Sicurezza dati
+
+- Credenziali Nextcloud solo in storage cifrato (EncryptedSharedPreferences).
+- Non loggare URL completi con credenziali o header `Authorization`.
+
+## Qualità codice
+
+- Tenere funzioni pure dove possibile (es. selezione ordine), e separare:
+  - client WebDAV (rete/parsing)
+  - repository (download/bitmap/cache/wallpaper)
+  - scheduler/worker (orchestrazione)
+  - UI/ViewModel (stato e input utente)

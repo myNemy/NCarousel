@@ -1,0 +1,29 @@
+---
+description: Contesto e vincoli core del progetto NCarousel
+alwaysApply: true
+---
+
+# NCarousel (Android) - regole core
+
+## Obiettivo
+
+- App Android che usa **immagini da Nextcloud** (WebDAV) e le imposta come **sfondo** tramite API Android ufficiali.
+
+## Stack e convenzioni
+
+- Kotlin + Gradle Kotlin DSL (`.kts`)
+- UI con Jetpack Compose
+- Background scheduling con WorkManager
+- Persistenza credenziali: **EncryptedSharedPreferences** (mai in chiaro)
+
+## Vincoli di prodotto (importanti)
+
+- L’intervallo minimo di cambio sfondo deve supportare **1 minuto**.
+  - Nota: il lavoro periodico WorkManager ha minimo 15 minuti; per 1 minuto usare catene di lavori one-shot con delay.
+- Connessioni: preferire **HTTPS** (no cleartext di default).
+
+## Regole di implementazione
+
+- Preferire sempre documentazione ufficiale (Android/Jetpack/Nextcloud) per API e vincoli di piattaforma.
+- Non introdurre dipendenze pesanti se non necessarie; mantenere il client WebDAV minimale e robusto.
+- Error handling: fallimenti di download/parsing non devono “consumare” un turno dell’ordine (avanzare stato solo dopo successo).
