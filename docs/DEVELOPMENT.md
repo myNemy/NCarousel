@@ -1,0 +1,54 @@
+# Development
+
+Notes for people who **clone**, **build**, or **maintain** CI for NCarousel—not required to simply install an APK from Actions.
+
+## Build requirements
+
+- **JDK 17** (project targets Java 17; Android Gradle Plugin 8.x does not run on Java 8).
+- Android SDK (Android Studio or `cmdline-tools`), with `local.properties` or `ANDROID_HOME` set.
+
+From the repository root:
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+APK output: `app/build/outputs/apk/debug/`.
+
+## Gradle wrapper license
+
+The Gradle wrapper scripts (`gradlew`, `gradlew.bat`) are third-party files under **Apache-2.0** (see their file headers).
+
+## GitHub Actions: stable APK signature (upgrade without uninstall)
+
+Each clean GitHub Actions runner may create a **new** default Android debug keystore, so successive **debug** APKs can be signed with **different keys**. Android then blocks in-place updates and you must uninstall before installing another build from Actions.
+
+**Maintainers** can configure a **fixed keystore** via repository secrets so every CI build uses the same signature:
+
+1. Create a keystore (once, keep a secure backup):
+
+   ```bash
+   keytool -genkeypair -v -keystore ncarousel-ci.jks -alias ncarousel -keyalg RSA -keysize 2048 -validity 36500
+   ```
+
+2. Base64-encode it (single line):
+
+   ```bash
+   base64 -w0 ncarousel-ci.jks   # Linux
+   # macOS: base64 -i ncarousel-ci.jks | tr -d '\n'
+   ```
+
+3. In the GitHub repo: **Settings → Secrets and variables → Actions**, add:
+
+   | Secret | Value |
+   |--------|--------|
+   | `NCAROUSEL_KEYSTORE_B64` | output of base64 |
+   | `NCAROUSEL_KEYSTORE_PASSWORD` | keystore password |
+   | `NCAROUSEL_KEY_ALIAS` | e.g. `ncarousel` |
+   | `NCAROUSEL_KEY_PASSWORD` | key password |
+
+After the next workflow run, new debug APKs from Actions should **upgrade** previous installs from Actions (still keep `versionCode` monotonic; CI uses `GITHUB_RUN_NUMBER` when set).
+
+**Local** `./gradlew assembleDebug` uses your machine’s `~/.android/debug.keystore` unless you set the same `NCAROUSEL_SIGNING_*` environment variables and keystore path as in `app/build.gradle.kts`. Mixing local and CI installs can still require uninstall if signing keys differ.
+
+The workflow step that decodes the keystore is defined in `.github/workflows/android-ci.yml`.
