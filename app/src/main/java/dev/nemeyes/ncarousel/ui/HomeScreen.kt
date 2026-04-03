@@ -157,9 +157,7 @@ fun HomeScreen(viewModel: MainViewModel) {
     val onNotifyChange: (Boolean) -> Unit = { want ->
         if (!want) {
             viewModel.updateShowStatusNotifications(false)
-            return@HomeScreen
-        }
-        if (Build.VERSION.SDK_INT >= 33) {
+        } else if (Build.VERSION.SDK_INT >= 33) {
             when (
                 ContextCompat.checkSelfPermission(
                     context,
