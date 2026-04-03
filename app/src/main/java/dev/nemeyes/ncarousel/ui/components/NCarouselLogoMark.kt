@@ -15,8 +15,11 @@ import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.R
 
 /**
- * Marchio NCarousel (stesso asset dell’adaptive icon), colorabile con il tema
- * ([MaterialTheme.colorScheme.primary] in superfici chiare, [onPrimary] sulla top bar).
+ * Marchio NCarousel (stesso PNG di [R.drawable.ic_launcher_logo] usato nell’adaptive icon).
+ *
+ * Il master è in `branding/NCarousel_alpha.svg` (Inkscape: PNG RGBA embedded, non path vettoriali).
+ * Rigenera `res/drawable-nodpi/ic_launcher_logo.png` estraendo il PNG e applicando maschera + `#0082C9`
+ * per il launcher; qui il parametro [tint] segue [MaterialTheme] (primary / onPrimary da OCS).
  */
 @Composable
 fun NCarouselLogoMark(
