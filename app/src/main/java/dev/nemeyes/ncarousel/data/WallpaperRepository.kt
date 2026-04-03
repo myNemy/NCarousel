@@ -4,7 +4,10 @@ import android.app.WallpaperManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Build
+import androidx.exifinterface.media.ExifInterface
+import java.io.ByteArrayInputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -22,8 +25,8 @@ class WallpaperRepository(private val context: Context) {
     fun isSetAllowed(): Boolean = wallpaperManager.isSetWallpaperAllowed
 
     /**
-     * Decodes [bytes] to a bitmap scaled toward the launcher-reported desired wallpaper size, then
-     * sets home (and lock screen on API 24+) wallpaper.
+     * Decodes [bytes] to a bitmap scaled toward the launcher-reported desired wallpaper size,
+     * applies JPEG/EXIF orientation when present, then sets home (and lock screen on API 24+) wallpaper.
      */
     fun setWallpaperFromImageBytes(bytes: ByteArray): Result<Unit> = runCatching {
         if (!isSupported()) error("Wallpaper not supported on this device")
@@ -32,16 +35,30 @@ class WallpaperRepository(private val context: Context) {
         val targetW = max(1, wallpaperManager.desiredMinimumWidth)
         val targetH = max(1, wallpaperManager.desiredMinimumHeight)
 
+        val exifOrientation = readExifOrientation(bytes)
+
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-        options.inSampleSize = computeInSampleSize(options.outWidth, options.outHeight, targetW, targetH)
+        val srcW = options.outWidth
+        val srcH = options.outHeight
+        val effW: Int
+        val effH: Int
+        if (exifOrientationSwapsDimensions(exifOrientation)) {
+            effW = srcH
+            effH = srcW
+        } else {
+            effW = srcW
+            effH = srcH
+        }
+        options.inSampleSize = computeInSampleSize(effW, effH, targetW, targetH)
         options.inJustDecodeBounds = false
 
         val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
             ?: error("Unsupported or corrupt image")
 
-        val cropped = centerCropToSize(decoded, targetW, targetH)
-        if (cropped != decoded) decoded.recycle()
+        val upright = applyExifOrientation(decoded, exifOrientation)
+        val cropped = centerCropToSize(upright, targetW, targetH)
+        if (cropped != upright) upright.recycle()
 
         val which = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
@@ -56,6 +73,56 @@ class WallpaperRepository(private val context: Context) {
             wallpaperManager.setBitmap(cropped)
         }
         cropped.recycle()
+    }
+
+    private fun readExifOrientation(bytes: ByteArray): Int =
+        runCatching {
+            ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL,
+            )
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
+    private fun exifOrientationSwapsDimensions(orientation: Int): Boolean =
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90,
+            ExifInterface.ORIENTATION_ROTATE_270,
+            ExifInterface.ORIENTATION_TRANSPOSE,
+            ExifInterface.ORIENTATION_TRANSVERSE,
+            -> true
+            else -> false
+        }
+
+    /**
+     * [BitmapFactory] ignores JPEG orientation; apply [TAG_ORIENTATION](https://developer.android.com/reference/androidx/exifinterface/media/ExifInterface#TAG_ORIENTATION)
+     * so portrait shots are not shown sideways on the wallpaper.
+     */
+    private fun applyExifOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_NORMAL,
+            ExifInterface.ORIENTATION_UNDEFINED,
+            -> return bitmap
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.setScale(-1f, 1f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.setScale(1f, -1f)
+            ExifInterface.ORIENTATION_TRANSPOSE -> {
+                matrix.setRotate(90f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_TRANSVERSE -> {
+                matrix.setRotate(270f)
+                matrix.postScale(-1f, 1f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            else -> return bitmap
+        }
+        val out = runCatching {
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        }.getOrNull() ?: return bitmap
+        if (out !== bitmap) bitmap.recycle()
+        return out
     }
 
     /** Scales uniformly to cover [dstW]×[dstH] then crops the center (similar to “crop” fill). */
