@@ -7,8 +7,8 @@ import org.json.JSONObject
 import java.util.Locale
 
 /**
- * Second external fallback: [Photon](https://photon.komoot.io/) (OSM), public reverse API without a key.
- * Used after platform [android.location.Geocoder] and [NominatimReverseGeocoder] when those return nothing.
+ * Third choice: [Photon](https://photon.komoot.io/) (Komoot public API, OSM-backed), no API key.
+ * Used after [NominatimReverseGeocoder] and platform [android.location.Geocoder] when those return nothing.
  *
  * Must be called off the main thread. Intended for occasional wallpaper notifications, not bulk geocoding.
  */

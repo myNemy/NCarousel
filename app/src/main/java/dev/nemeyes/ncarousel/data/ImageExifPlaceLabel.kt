@@ -10,9 +10,9 @@ import java.util.Locale
 
 /**
  * Reads GPS from EXIF, then resolves a place label:
- * 1. platform [Geocoder]
- * 2. [NominatimReverseGeocoder] (OSM)
- * 3. [PhotonReverseGeocoder] (OSM / Komoot public instance)
+ * 1. [NominatimReverseGeocoder] (OpenStreetMap)
+ * 2. platform [Geocoder] (often Google on devices with Play services)
+ * 3. [PhotonReverseGeocoder] (Komoot public instance, OSM-backed)
  * 4. raw coordinates string
  *
  * Must be called from a background thread.
@@ -32,13 +32,14 @@ object ImageExifPlaceLabel {
         val lat = latLong[0].toDouble()
         val lon = latLong[1].toDouble()
 
-        platformAddressLabel(context, lat, lon)?.let { return it }
-
         val http = HttpClientProvider.create(context.applicationContext)
         val lang = Locale.getDefault().toLanguageTag()
+
         runCatching {
             NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
         }.getOrNull()?.let { return it }
+
+        platformGeocoderLabel(context, lat, lon)?.let { return it }
 
         runCatching {
             PhotonReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
@@ -47,7 +48,8 @@ object ImageExifPlaceLabel {
         return coordsOnly(context, lat, lon)
     }
 
-    private fun platformAddressLabel(context: Context, lat: Double, lon: Double): String? {
+    /** [Geocoder] backend is device-dependent; on GMS builds it is typically Google. */
+    private fun platformGeocoderLabel(context: Context, lat: Double, lon: Double): String? {
         if (!Geocoder.isPresent()) return null
         return try {
             @Suppress("DEPRECATION")

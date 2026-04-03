@@ -6,8 +6,8 @@ import okhttp3.Request
 import org.json.JSONObject
 
 /**
- * Reverse geocoding fallback via [OpenStreetMap Nominatim](https://nominatim.org/release-docs/develop/api/Reverse/)
- * when the platform [android.location.Geocoder] returns nothing.
+ * Primary reverse geocoding via [OpenStreetMap Nominatim](https://nominatim.org/release-docs/develop/api/Reverse/).
+ * Further fallbacks: platform [android.location.Geocoder], then [PhotonReverseGeocoder].
  *
  * Must be called off the main thread. Use sparingly (public instance policy: no bulk; wallpaper changes are fine).
  */
