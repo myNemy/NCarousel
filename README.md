@@ -10,7 +10,10 @@ Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0
 
 ## More information
 
-The project page, including source code, is on **[GitHub](https://github.com/myNemy/NCarousel)**.
+Project page and source code:
+
+- **Forgejo**: [forgejo.it/Nemeyes/NCarousel](https://forgejo.it/Nemeyes/NCarousel)
+- **GitHub** (mirror): [github.com/myNemy/NCarousel](https://github.com/myNemy/NCarousel)
 
 ---
 
