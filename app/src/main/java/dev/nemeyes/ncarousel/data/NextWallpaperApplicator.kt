@@ -68,6 +68,7 @@ object NextWallpaperApplicator {
         return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
             onSuccess = {
                 pick.commitSuccess()
+                LastAppliedWallpaperStore.setHref(app, active.id, href)
                 CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, bytes)
                 null
             },

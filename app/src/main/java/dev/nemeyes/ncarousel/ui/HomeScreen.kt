@@ -93,9 +93,10 @@ fun HomeScreen(viewModel: MainViewModel) {
         viewModel.completeInitialConsentFlow()
     }
 
-    LaunchedEffect(state.hasActiveAccount) {
+    LaunchedEffect(state.hasActiveAccount, state.activeAccountId) {
         if (state.hasActiveAccount) {
             viewModel.loadCachedListIfAny()
+            viewModel.refreshWallpaperExif()
         }
     }
 
@@ -383,6 +384,7 @@ private fun AuthenticatedShell(
                                 onTest = viewModel::testConnection,
                                 onRefreshList = viewModel::refreshImageList,
                                 onApplyNext = viewModel::applyNextWallpaper,
+                                onRefreshWallpaperExif = viewModel::refreshWallpaperExif,
                             )
                         }
                     }
@@ -442,6 +444,10 @@ private fun AuthenticatedShell(
                                 onNotifyWallpaperAppliedChange = viewModel::updateNotifyWallpaperApplied,
                                 onNotifyLibraryRefreshedChange = viewModel::updateNotifyLibraryRefreshed,
                                 onNotifyWallpaperIncludeLocationChange = viewModel::updateNotifyWallpaperIncludeLocation,
+                                onGeocoderOrderModeChange = viewModel::updateGeocoderOrderMode,
+                                onGeocoderNominatimChange = viewModel::updateGeocoderNominatimEnabled,
+                                onGeocoderPlatformChange = viewModel::updateGeocoderPlatformEnabled,
+                                onGeocoderPhotonChange = viewModel::updateGeocoderPhotonEnabled,
                                 onRequestBatteryOptimizationFromBanner = viewModel::openBatteryOptimizationConsentFromSettings,
                             )
                         }

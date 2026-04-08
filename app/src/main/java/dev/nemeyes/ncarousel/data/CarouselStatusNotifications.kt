@@ -67,7 +67,7 @@ object CarouselStatusNotifications {
         ensureChannel(context)
         val app = context.applicationContext
         val text = if (prefs.notifyWallpaperIncludeLocation) {
-            val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes)
+            val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes, prefs)
             app.getString(
                 R.string.notify_wallpaper_body,
                 progress.current,

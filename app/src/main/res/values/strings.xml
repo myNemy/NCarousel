@@ -9,7 +9,7 @@
     <string name="notify_list_title">Elenco immagini</string>
     <string name="notify_list_body">%1$d immagini nella libreria.</string>
     <string name="notify_place_no_gps">nessun GPS nell\'immagine</string>
-    <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (nessun indirizzo da Nominatim, geocoder di piattaforma né Photon/Komoot)</string>
+    <string name="notify_place_coords_only">Coordinate: %1$.4f°, %2$.4f° (nessun indirizzo dai geocoder attivi)</string>
     <string name="notify_switch_label">Notifiche di stato</string>
     <string name="notify_sub_wallpaper">Notifica cambio sfondo</string>
     <string name="notify_sub_list">Notifica aggiornamento elenco</string>
@@ -17,6 +17,14 @@
     <string name="notify_sub_place_subtitle">EXIF e geocoding (rete); disattiva per messaggi più brevi e meno richieste esterne</string>
     <string name="notify_open_system_settings">Impostazioni notifiche di sistema…</string>
     <string name="notify_open_channel_settings">Suono e priorità canale «Stato»…</string>
+    <string name="geocoder_section_title">Geocoding (luogo nella notifica)</string>
+    <string name="geocoder_order_label">Ordine di prova</string>
+    <string name="geocoder_order_nominatim_first">Prima Nominatim (OSM)</string>
+    <string name="geocoder_order_platform_first">Prima geocoder di sistema</string>
+    <string name="geocoder_order_photon_first">Prima Photon (Komoot)</string>
+    <string name="geocoder_use_nominatim">Nominatim (OpenStreetMap)</string>
+    <string name="geocoder_use_platform">Geocoder di sistema</string>
+    <string name="geocoder_use_photon">Photon (Komoot, OSM)</string>
     <string name="consent_dialog_title">Benvenuto in NCarousel</string>
     <string name="consent_dialog_message">L\'app scarica le foto dal tuo Nextcloud e imposta lo sfondo (permesso già incluso nell\'installazione).\n\nServe la rete per WebDAV e, se lo desideri, le notifiche di stato (progressivo, conteggio e luogo della foto). Su Android 13 e successivi il sistema chiede un permesso dedicato per le notifiche.</string>
     <string name="consent_request_notifications">Consenti notifiche</string>

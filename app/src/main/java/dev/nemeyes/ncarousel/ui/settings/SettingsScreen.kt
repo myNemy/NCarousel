@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -46,6 +47,7 @@ import android.os.Build
 import android.provider.Settings
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
+import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
@@ -81,12 +83,17 @@ fun SettingsScreen(
     onNotifyWallpaperAppliedChange: (Boolean) -> Unit,
     onNotifyLibraryRefreshedChange: (Boolean) -> Unit,
     onNotifyWallpaperIncludeLocationChange: (Boolean) -> Unit,
+    onGeocoderOrderModeChange: (GeocoderOrderMode) -> Unit,
+    onGeocoderNominatimChange: (Boolean) -> Unit,
+    onGeocoderPlatformChange: (Boolean) -> Unit,
+    onGeocoderPhotonChange: (Boolean) -> Unit,
     onRequestBatteryOptimizationFromBanner: () -> Unit,
 ) {
     val context = LocalContext.current
     var orderExpanded by remember { mutableStateOf(false) }
     var wallpaperTargetExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
+    var geocoderOrderExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -378,6 +385,68 @@ fun SettingsScreen(
                 onCheckedChange = onNotifyWallpaperIncludeLocationChange,
                 enabled = !state.busy && state.showStatusNotifications && state.notifyWallpaperApplied,
             )
+            if (state.showStatusNotifications && state.notifyWallpaperApplied && state.notifyWallpaperIncludeLocation) {
+                Text(
+                    text = stringResource(R.string.geocoder_section_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                ExposedDropdownMenuBox(
+                    expanded = geocoderOrderExpanded,
+                    onExpandedChange = { geocoderOrderExpanded = it },
+                ) {
+                    OutlinedTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(
+                                type = MenuAnchorType.PrimaryNotEditable,
+                                enabled = !state.busy,
+                            ),
+                        readOnly = true,
+                        value = geocoderOrderModeLabel(state.geocoderOrderMode),
+                        onValueChange = {},
+                        label = { Text(stringResource(R.string.geocoder_order_label)) },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = geocoderOrderExpanded)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        enabled = !state.busy,
+                    )
+                    ExposedDropdownMenu(
+                        expanded = geocoderOrderExpanded,
+                        onDismissRequest = { geocoderOrderExpanded = false },
+                    ) {
+                        GeocoderOrderMode.entries.forEach { mode ->
+                            DropdownMenuItem(
+                                text = { Text(geocoderOrderModeLabel(mode)) },
+                                onClick = {
+                                    onGeocoderOrderModeChange(mode)
+                                    geocoderOrderExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+                SettingsSwitchRow(
+                    title = stringResource(R.string.geocoder_use_nominatim),
+                    checked = state.geocoderNominatimEnabled,
+                    onCheckedChange = onGeocoderNominatimChange,
+                    enabled = !state.busy,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.geocoder_use_platform),
+                    checked = state.geocoderPlatformEnabled,
+                    onCheckedChange = onGeocoderPlatformChange,
+                    enabled = !state.busy,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.geocoder_use_photon),
+                    checked = state.geocoderPhotonEnabled,
+                    onCheckedChange = onGeocoderPhotonChange,
+                    enabled = !state.busy,
+                )
+            }
             TextButton(
                 onClick = {
                     val app = context.applicationContext
@@ -424,6 +493,13 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
     }
+}
+
+@Composable
+private fun geocoderOrderModeLabel(mode: GeocoderOrderMode): String = when (mode) {
+    GeocoderOrderMode.NOMINATIM_FIRST -> stringResource(R.string.geocoder_order_nominatim_first)
+    GeocoderOrderMode.PLATFORM_FIRST -> stringResource(R.string.geocoder_order_platform_first)
+    GeocoderOrderMode.PHOTON_FIRST -> stringResource(R.string.geocoder_order_photon_first)
 }
 
 private fun wallpaperTargetLabel(target: WallpaperTarget): String = when (target) {

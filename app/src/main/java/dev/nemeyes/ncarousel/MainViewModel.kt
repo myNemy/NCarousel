@@ -9,11 +9,14 @@ import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
+import dev.nemeyes.ncarousel.data.ImageExifSummary
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
+import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
 import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
+import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
@@ -51,6 +54,10 @@ data class MainUiState(
     val notifyWallpaperApplied: Boolean = true,
     val notifyLibraryRefreshed: Boolean = true,
     val notifyWallpaperIncludeLocation: Boolean = true,
+    val geocoderNominatimEnabled: Boolean = true,
+    val geocoderPlatformEnabled: Boolean = true,
+    val geocoderPhotonEnabled: Boolean = true,
+    val geocoderOrderMode: GeocoderOrderMode = GeocoderOrderMode.NOMINATIM_FIRST,
     /** First launch: show consent dialog and request notification permission where required. */
     val needsInitialConsent: Boolean = false,
     val busy: Boolean = false,
@@ -66,6 +73,11 @@ data class MainUiState(
     val batteryOptimizationMayDelayWork: Boolean = false,
     /** Dialog di consenso prima di aprire le impostazioni di esclusione batteria. */
     val batteryOptimizationConsentVisible: Boolean = false,
+    /** Nome file (path remoto) dell’ultimo sfondo applicato da NCarousel per l’account attivo. */
+    val lastWallpaperFileLabel: String? = null,
+    val wallpaperExifLines: List<String> = emptyList(),
+    val wallpaperExifLoading: Boolean = false,
+    val wallpaperExifError: String? = null,
 )
 
 data class AccountUi(
@@ -115,6 +127,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 notifyWallpaperApplied = carousel.notifyWallpaperApplied,
                 notifyLibraryRefreshed = carousel.notifyLibraryRefreshed,
                 notifyWallpaperIncludeLocation = carousel.notifyWallpaperIncludeLocation,
+                geocoderNominatimEnabled = carousel.geocoderNominatimEnabled,
+                geocoderPlatformEnabled = carousel.geocoderPlatformEnabled,
+                geocoderPhotonEnabled = carousel.geocoderPhotonEnabled,
+                geocoderOrderMode = carousel.geocoderOrderMode,
                 needsInitialConsent = !carousel.initialConsentFlowCompleted,
                 instanceThemingPrimaryHex = acc0?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = acc0?.let { carousel.getThemingOnPrimaryHex(it.id) },
@@ -260,6 +276,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _ui.update { it.copy(notifyWallpaperIncludeLocation = enabled) }
     }
 
+    fun updateGeocoderNominatimEnabled(enabled: Boolean) {
+        carousel.geocoderNominatimEnabled = enabled
+        _ui.update { it.copy(geocoderNominatimEnabled = enabled) }
+    }
+
+    fun updateGeocoderPlatformEnabled(enabled: Boolean) {
+        carousel.geocoderPlatformEnabled = enabled
+        _ui.update { it.copy(geocoderPlatformEnabled = enabled) }
+    }
+
+    fun updateGeocoderPhotonEnabled(enabled: Boolean) {
+        carousel.geocoderPhotonEnabled = enabled
+        _ui.update { it.copy(geocoderPhotonEnabled = enabled) }
+    }
+
+    fun updateGeocoderOrderMode(mode: GeocoderOrderMode) {
+        carousel.geocoderOrderMode = mode
+        _ui.update { it.copy(geocoderOrderMode = mode) }
+    }
+
     /** Call after first-launch dialog is dismissed or notification permission result is applied. */
     fun completeInitialConsentFlow() {
         carousel.initialConsentFlowCompleted = true
@@ -377,6 +413,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         carousel.notifyWallpaperApplied = s.notifyWallpaperApplied
         carousel.notifyLibraryRefreshed = s.notifyLibraryRefreshed
         carousel.notifyWallpaperIncludeLocation = s.notifyWallpaperIncludeLocation
+        carousel.geocoderNominatimEnabled = s.geocoderNominatimEnabled
+        carousel.geocoderPlatformEnabled = s.geocoderPlatformEnabled
+        carousel.geocoderPhotonEnabled = s.geocoderPhotonEnabled
+        carousel.geocoderOrderMode = s.geocoderOrderMode
         activeOrNull()?.let { a ->
             val folder = s.remoteFolder.trim().trim('/').ifBlank {
                 a.remoteFolder.ifBlank { "Photos" }
@@ -398,10 +438,81 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             WallpaperDiskCache.clear(getApplication(), id)
             _ui.update { it.copy(statusMessage = "Cache immagini sul disco svuotata (account attivo).") }
+            refreshWallpaperExif()
         }
     }
 
     fun clearStatus() = _ui.update { it.copy(statusMessage = null) }
+
+    /**
+     * Carica EXIF dell’ultimo sfondo applicato da NCarousel ([LastAppliedWallpaperStore]): cache disco o download WebDAV.
+     */
+    fun refreshWallpaperExif() {
+        val acc = activeOrNull()
+        if (acc == null) {
+            _ui.update {
+                it.copy(
+                    lastWallpaperFileLabel = null,
+                    wallpaperExifLines = emptyList(),
+                    wallpaperExifError = null,
+                    wallpaperExifLoading = false,
+                )
+            }
+            return
+        }
+        viewModelScope.launch {
+            _ui.update { it.copy(wallpaperExifLoading = true, wallpaperExifError = null) }
+            val href = LastAppliedWallpaperStore.getHref(getApplication(), acc.id)
+            if (href == null) {
+                _ui.update {
+                    it.copy(
+                        wallpaperExifLoading = false,
+                        lastWallpaperFileLabel = null,
+                        wallpaperExifLines = emptyList(),
+                        wallpaperExifError = "Nessuno sfondo applicato ancora con NCarousel su questo account.",
+                    )
+                }
+                return@launch
+            }
+            val fileLabel = href.substringAfterLast('/').trim().ifEmpty { href }
+            val app = getApplication<Application>()
+            val bytes = withContext(Dispatchers.IO) {
+                val disk = WallpaperDiskCache(app, acc.id, carousel.maxWallpaperDiskCacheMb)
+                disk.get(href) ?: run {
+                    val client = NextcloudWebDavClient(
+                        http,
+                        acc.serverBaseUrl,
+                        acc.userId,
+                        acc.loginName,
+                        acc.appPassword,
+                    )
+                    client.downloadFile(href).getOrNull()
+                }
+            }
+            if (bytes == null) {
+                _ui.update {
+                    it.copy(
+                        wallpaperExifLoading = false,
+                        lastWallpaperFileLabel = fileLabel,
+                        wallpaperExifLines = emptyList(),
+                        wallpaperExifError = "Immagine non in cache e download non riuscito. Applica di nuovo lo sfondo o controlla la rete.",
+                    )
+                }
+                return@launch
+            }
+            val lines = withContext(Dispatchers.Default) {
+                ImageExifSummary.formatLines(bytes)
+            }
+            _ui.update {
+                it.copy(
+                    wallpaperExifLoading = false,
+                    lastWallpaperFileLabel = fileLabel,
+                    wallpaperExifLines = lines,
+                    wallpaperExifError = null,
+                )
+            }
+        }
+    }
 
     fun testConnection() {
         val s = _ui.value
@@ -508,6 +619,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     },
                 )
             }
+            if (err == null) {
+                refreshWallpaperExif()
+            }
         }
     }
 
@@ -550,6 +664,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteAccount(id: String) {
         carousel.clearThemingForAccount(id)
+        LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
         accounts.delete(id)
         val a = accounts.getActiveAccount()
         _ui.update {

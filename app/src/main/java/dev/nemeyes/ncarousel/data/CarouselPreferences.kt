@@ -72,6 +72,27 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_NOTIFY_PLACE, true)
         set(value) { prefs.edit().putBoolean(KEY_NOTIFY_PLACE, value).apply() }
 
+    /** Nominatim (OpenStreetMap) nel reverse geocoding per le notifiche con luogo. */
+    var geocoderNominatimEnabled: Boolean
+        get() = prefs.getBoolean(KEY_GEO_NOMINATIM, true)
+        set(value) { prefs.edit().putBoolean(KEY_GEO_NOMINATIM, value).apply() }
+
+    /** [android.location.Geocoder] del dispositivo (es. Google con GMS). */
+    var geocoderPlatformEnabled: Boolean
+        get() = prefs.getBoolean(KEY_GEO_PLATFORM, true)
+        set(value) { prefs.edit().putBoolean(KEY_GEO_PLATFORM, value).apply() }
+
+    /** Photon (istanza pubblica Komoot, dati OSM). */
+    var geocoderPhotonEnabled: Boolean
+        get() = prefs.getBoolean(KEY_GEO_PHOTON, true)
+        set(value) { prefs.edit().putBoolean(KEY_GEO_PHOTON, value).apply() }
+
+    var geocoderOrderMode: GeocoderOrderMode
+        get() = prefs.getString(KEY_GEO_ORDER, null)
+            ?.let { runCatching { GeocoderOrderMode.valueOf(it) }.getOrNull() }
+            ?: GeocoderOrderMode.NOMINATIM_FIRST
+        set(value) { prefs.edit().putString(KEY_GEO_ORDER, value.name).apply() }
+
     /**
      * After [completeInitialConsentFlow] runs once, the app stops showing the first-launch consent dialog.
      */
@@ -118,6 +139,10 @@ class CarouselPreferences(context: Context) {
         private const val KEY_NOTIFY_WALLPAPER = "notify_wallpaper_applied"
         private const val KEY_NOTIFY_LIST = "notify_library_refreshed"
         private const val KEY_NOTIFY_PLACE = "notify_wallpaper_include_location"
+        private const val KEY_GEO_NOMINATIM = "geocoder_nominatim_enabled"
+        private const val KEY_GEO_PLATFORM = "geocoder_platform_enabled"
+        private const val KEY_GEO_PHOTON = "geocoder_photon_enabled"
+        private const val KEY_GEO_ORDER = "geocoder_order_mode"
         private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
         private const val KEY_THEMING_COLOR = "theming_color_"
         private const val KEY_THEMING_ON_PRIMARY = "theming_on_primary_"

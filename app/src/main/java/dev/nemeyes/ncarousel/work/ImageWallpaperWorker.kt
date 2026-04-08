@@ -8,6 +8,7 @@ import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
+import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
@@ -81,6 +82,7 @@ class ImageWallpaperWorker(
             return@withContext WallpaperRepository(applicationContext).setWallpaperFromImageBytes(bytes, target).fold(
                 onSuccess = {
                     pick.commitSuccess()
+                    LastAppliedWallpaperStore.setHref(applicationContext, active.id, href)
                     CarouselStatusNotifications.maybeShowWallpaperApplied(
                         applicationContext,
                         carousel,

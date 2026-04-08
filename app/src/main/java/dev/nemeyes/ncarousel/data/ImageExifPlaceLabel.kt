@@ -9,17 +9,14 @@ import java.io.ByteArrayInputStream
 import java.util.Locale
 
 /**
- * Reads GPS from EXIF, then resolves a place label:
- * 1. [NominatimReverseGeocoder] (OpenStreetMap)
- * 2. platform [Geocoder] (often Google on devices with Play services)
- * 3. [PhotonReverseGeocoder] (Komoot public instance, OSM-backed)
- * 4. raw coordinates string
+ * Reads GPS from EXIF, then resolves a place label using enabled geocoders in user order
+ * ([CarouselPreferences]), then raw coordinates.
  *
  * Must be called from a background thread.
  */
 object ImageExifPlaceLabel {
 
-    fun fromImageBytes(context: Context, bytes: ByteArray): String {
+    fun fromImageBytes(context: Context, bytes: ByteArray, prefs: CarouselPreferences): String {
         val latLong = try {
             ExifInterface(ByteArrayInputStream(bytes)).getLatLong()
         } catch (_: Exception) {
@@ -34,15 +31,29 @@ object ImageExifPlaceLabel {
         val http = HttpClientProvider.create(context.applicationContext)
         val lang = Locale.getDefault().toLanguageTag()
 
-        runCatching {
-            NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
-        }.getOrNull()?.let { return it }
-
-        platformGeocoderLabel(context, lat, lon)?.let { return it }
-
-        runCatching {
-            PhotonReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
-        }.getOrNull()?.let { return it }
+        val chain = geocoderBackendsInTryOrder(
+            prefs.geocoderOrderMode,
+            prefs.geocoderNominatimEnabled,
+            prefs.geocoderPlatformEnabled,
+            prefs.geocoderPhotonEnabled,
+        )
+        for (backend in chain) {
+            when (backend) {
+                GeocoderBackend.NOMINATIM -> {
+                    runCatching {
+                        NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
+                    }.getOrNull()?.let { return it }
+                }
+                GeocoderBackend.PLATFORM -> {
+                    platformGeocoderLabel(context, lat, lon)?.let { return it }
+                }
+                GeocoderBackend.PHOTON -> {
+                    runCatching {
+                        PhotonReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
+                    }.getOrNull()?.let { return it }
+                }
+            }
+        }
 
         return coordsOnly(context, lat, lon)
     }
