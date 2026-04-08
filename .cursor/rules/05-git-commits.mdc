@@ -7,3 +7,12 @@ alwaysApply: true
 
 - **Tutti i messaggi di commit** (titolo e corpo opzionale) devono essere scritti in **inglese**, anche se la conversazione o i commenti nel codice sono in un’altra lingua.
 - Preferire un soggetto chiaro, in imperativo dove ha senso (es. prefissi tipo `fix:`, `feat:`, `docs:`).
+
+## Doppio remoto (obbligatorio)
+
+Questo repo ha **due** remote: **`forgejo`** (Forgejo) e **`origin`** (GitHub). Dopo ogni commit che va pubblicato:
+
+1. `git push forgejo main` (o il branch attivo; upstream predefinito: `forgejo/main`)
+2. `git push origin main`
+
+Non considerare il lavoro “pubblicato” finché **entrambi** i push non sono riusciti (salvo indicazione esplicita del contrario).
