@@ -76,6 +76,11 @@ private data class SnakeState(
     val score: Int,
 )
 
+private fun Int.floorMod(mod: Int): Int {
+    val r = this % mod
+    return if (r < 0) r + mod else r
+}
+
 private fun randomFood(w: Int, h: Int, occupied: Set<Cell>): Cell {
     val free = buildList {
         for (x in 0 until w) {
@@ -112,10 +117,11 @@ private fun step(state: SnakeState, input: Dir): SnakeState {
     val dir = if (state.dir.isOpposite(input)) state.dir else input
     val (dx, dy) = dir.toVec()
     val head = state.snake.first()
-    val next = Cell(head.x + dx, head.y + dy)
-    if (next.x !in 0 until GRID_W || next.y !in 0 until GRID_H) {
-        return state.copy(gameOver = true)
-    }
+    val next =
+        Cell(
+            x = (head.x + dx).floorMod(GRID_W),
+            y = (head.y + dy).floorMod(GRID_H),
+        )
     if (next in state.snake) {
         return state.copy(gameOver = true)
     }

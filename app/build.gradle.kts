@@ -14,7 +14,7 @@ val ncarouselBaseVersionName = "0.2.16"
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
  */
-val ncarouselLocalVersionCode = 28
+val ncarouselLocalVersionCode = 29
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
