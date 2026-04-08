@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,11 +67,13 @@ import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
 import dev.nemeyes.ncarousel.ui.settings.SettingsScreen
+import dev.nemeyes.ncarousel.ui.snake.NCSnakeScreen
 import kotlinx.coroutines.launch
 
 object AppDestinations {
     const val MAIN = "main"
     const val SETTINGS = "settings"
+    const val NCSNAKE = "ncsnake"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -330,6 +333,17 @@ private fun AuthenticatedShell(
                     },
                     icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
                 )
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.nc_snake_title)) },
+                    selected = currentRoute == AppDestinations.NCSNAKE,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(AppDestinations.NCSNAKE) {
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Outlined.SportsEsports, contentDescription = null) },
+                )
             }
         },
     ) {
@@ -450,6 +464,39 @@ private fun AuthenticatedShell(
                                 onGeocoderPhotonChange = viewModel::updateGeocoderPhotonEnabled,
                                 onRequestBatteryOptimizationFromBanner = viewModel::openBatteryOptimizationConsentFromSettings,
                             )
+                        }
+                    }
+                    composable(AppDestinations.NCSNAKE) {
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            NCarouselLogoMark(
+                                                size = 32.dp,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(stringResource(R.string.nc_snake_title))
+                                        }
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = { navController.popBackStack() }) {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Indietro",
+                                            )
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                )
+                            },
+                        ) { inner ->
+                            NCSnakeScreen(modifier = Modifier.padding(inner))
                         }
                     }
                 }

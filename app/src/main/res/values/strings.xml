@@ -45,4 +45,13 @@
     <string name="battery_opt_consent_message">Per richiedere al sistema di non limitare NCarousel in background (e permettere il cambio sfondo automatico), verrà aperta una schermata delle impostazioni Android. Puoi annullare lì se preferisci.</string>
     <string name="battery_opt_consent_allow">Consenti e apri</string>
     <string name="battery_opt_consent_deny">Non ora</string>
+    <string name="nc_snake_title">NCSnake</string>
+    <string name="nc_snake_score">Punti: %1$d</string>
+    <string name="nc_snake_bip">Bip</string>
+    <string name="nc_snake_game_over">Game over</string>
+    <string name="nc_snake_restart">Rigioca</string>
+    <string name="nc_snake_cd_up">Su</string>
+    <string name="nc_snake_cd_down">Giù</string>
+    <string name="nc_snake_cd_left">Sinistra</string>
+    <string name="nc_snake_cd_right">Destra</string>
 </resources>
