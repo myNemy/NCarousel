@@ -4,10 +4,11 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -188,14 +189,14 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
     val foodColor = Color(0xFF9AE66E)
 
     Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -215,32 +216,20 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
-        BoxWithConstraints(
+        Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(horizontal = 4.dp),
         ) {
-            val maxW = maxWidth
-            val maxH = maxHeight
-            val cell =
-                minOf(
-                    maxW / GRID_W,
-                    maxH / GRID_H,
-                )
-            val boardW = cell * GRID_W
-            val boardH = cell * GRID_H
-            Canvas(
-                modifier =
-                    Modifier
-                        .width(boardW)
-                        .height(boardH)
-                        .align(Alignment.TopCenter),
-            ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val cw = size.width / GRID_W
+                val ch = size.height / GRID_H
                 drawRect(lcdBg, size = size)
                 for (x in 0..GRID_W) {
-                    val px = x * cell.toPx()
+                    val px = x * cw
                     drawLine(
                         lcdDim,
                         Offset(px, 0f),
@@ -249,7 +238,7 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                     )
                 }
                 for (y in 0..GRID_H) {
-                    val py = y * cell.toPx()
+                    val py = y * ch
                     drawLine(
                         lcdDim,
                         Offset(0f, py),
@@ -257,17 +246,19 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                         strokeWidth = 1f,
                     )
                 }
-                val inset = cell.toPx() * 0.12f
-                val inner = cell.toPx() - inset * 2
+                val insetX = cw * 0.12f
+                val insetY = ch * 0.12f
+                val innerW = (cw - insetX * 2f).coerceAtLeast(1f)
+                val innerH = (ch - insetY * 2f).coerceAtLeast(1f)
                 for (c in s.snake) {
                     drawRect(
                         snakeColor,
                         topLeft =
                             Offset(
-                                c.x * cell.toPx() + inset,
-                                c.y * cell.toPx() + inset,
+                                c.x * cw + insetX,
+                                c.y * ch + insetY,
                             ),
-                        size = Size(inner, inner),
+                        size = Size(innerW, innerH),
                     )
                 }
                 val f = s.food
@@ -275,10 +266,10 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                     foodColor,
                     topLeft =
                         Offset(
-                            f.x * cell.toPx() + inset,
-                            f.y * cell.toPx() + inset,
+                            f.x * cw + insetX,
+                            f.y * ch + insetY,
                         ),
-                    size = Size(inner, inner),
+                    size = Size(innerW, innerH),
                 )
             }
         }
@@ -287,6 +278,7 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(R.string.nc_snake_game_over),
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 12.dp),
             )
             Spacer(Modifier.height(8.dp))
             Button(
@@ -298,14 +290,14 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                 Text(stringResource(R.string.nc_snake_restart))
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         DPad(
             enabled = !s.gameOver,
             onDir = { d ->
                 queuedDir.value = d
             },
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
     }
 }
 
