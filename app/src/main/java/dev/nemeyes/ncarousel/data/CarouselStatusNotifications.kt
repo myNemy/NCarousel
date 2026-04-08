@@ -18,7 +18,8 @@ import dev.nemeyes.ncarousel.R
  */
 object CarouselStatusNotifications {
 
-    private const val CHANNEL_ID = "ncarousel_status"
+    /** Esportato per [android.provider.Settings] canale notifiche. */
+    const val CHANNEL_ID = "ncarousel_status"
     private const val NOTIF_WALLPAPER_ID = 7101
     private const val NOTIF_LIST_ID = 7102
 
@@ -61,16 +62,25 @@ object CarouselStatusNotifications {
         imageBytes: ByteArray,
     ) {
         if (!prefs.showStatusNotifications) return
+        if (!prefs.notifyWallpaperApplied) return
         if (!canNotify(context)) return
         ensureChannel(context)
         val app = context.applicationContext
-        val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes)
-        val text = app.getString(
-            R.string.notify_wallpaper_body,
-            progress.current,
-            progress.total,
-            place,
-        )
+        val text = if (prefs.notifyWallpaperIncludeLocation) {
+            val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes)
+            app.getString(
+                R.string.notify_wallpaper_body,
+                progress.current,
+                progress.total,
+                place,
+            )
+        } else {
+            app.getString(
+                R.string.notify_wallpaper_body_no_place,
+                progress.current,
+                progress.total,
+            )
+        }
         val n = NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_ncarousel)
             .setContentTitle(app.getString(R.string.notify_wallpaper_title))
@@ -85,6 +95,7 @@ object CarouselStatusNotifications {
 
     fun maybeShowListRefreshed(context: Context, prefs: CarouselPreferences, count: Int) {
         if (!prefs.showStatusNotifications) return
+        if (!prefs.notifyLibraryRefreshed) return
         if (!canNotify(context)) return
         ensureChannel(context)
         val app = context.applicationContext

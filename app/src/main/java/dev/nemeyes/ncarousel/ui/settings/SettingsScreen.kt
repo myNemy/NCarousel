@@ -35,14 +35,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperTarget
+import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 import dev.nemeyes.ncarousel.ui.components.SettingsInlineDivider
@@ -71,10 +77,13 @@ fun SettingsScreen(
     onClearWallpaperDiskCache: () -> Unit,
     onAutoChange: (Boolean) -> Unit,
     onIntervalChange: (String) -> Unit,
-    showStatusNotifications: Boolean,
     onShowStatusNotificationsChange: (Boolean) -> Unit,
+    onNotifyWallpaperAppliedChange: (Boolean) -> Unit,
+    onNotifyLibraryRefreshedChange: (Boolean) -> Unit,
+    onNotifyWallpaperIncludeLocationChange: (Boolean) -> Unit,
     onRequestBatteryOptimizationFromBanner: () -> Unit,
 ) {
+    val context = LocalContext.current
     var orderExpanded by remember { mutableStateOf(false) }
     var wallpaperTargetExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
@@ -346,10 +355,64 @@ fun SettingsScreen(
             SettingsInlineDivider()
             SettingsSwitchRow(
                 title = stringResource(R.string.notify_switch_label),
-                checked = showStatusNotifications,
+                checked = state.showStatusNotifications,
                 onCheckedChange = onShowStatusNotificationsChange,
                 enabled = !state.busy,
             )
+            SettingsSwitchRow(
+                title = stringResource(R.string.notify_sub_wallpaper),
+                checked = state.notifyWallpaperApplied,
+                onCheckedChange = onNotifyWallpaperAppliedChange,
+                enabled = !state.busy && state.showStatusNotifications,
+            )
+            SettingsSwitchRow(
+                title = stringResource(R.string.notify_sub_list),
+                checked = state.notifyLibraryRefreshed,
+                onCheckedChange = onNotifyLibraryRefreshedChange,
+                enabled = !state.busy && state.showStatusNotifications,
+            )
+            SettingsSwitchRow(
+                title = stringResource(R.string.notify_sub_place_title),
+                subtitle = stringResource(R.string.notify_sub_place_subtitle),
+                checked = state.notifyWallpaperIncludeLocation,
+                onCheckedChange = onNotifyWallpaperIncludeLocationChange,
+                enabled = !state.busy && state.showStatusNotifications && state.notifyWallpaperApplied,
+            )
+            TextButton(
+                onClick = {
+                    val app = context.applicationContext
+                    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, app.packageName)
+                        }
+                    } else {
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", app.packageName, null)
+                        }
+                    }
+                    runCatching { context.startActivity(intent) }
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.notify_open_system_settings))
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                TextButton(
+                    onClick = {
+                        val app = context.applicationContext
+                        val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, app.packageName)
+                            putExtra(Settings.EXTRA_CHANNEL_ID, CarouselStatusNotifications.CHANNEL_ID)
+                        }
+                        runCatching { context.startActivity(intent) }
+                    },
+                    enabled = !state.busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.notify_open_channel_settings))
+                }
+            }
             Button(
                 onClick = onSaveCarousel,
                 enabled = !state.busy,

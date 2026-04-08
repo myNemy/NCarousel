@@ -49,10 +49,28 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getInt(KEY_INTERVAL_MIN, 30).coerceAtLeast(1)
         set(value) { prefs.edit().putInt(KEY_INTERVAL_MIN, value.coerceAtLeast(1)).apply() }
 
-    /** Show notifications after list refresh / wallpaper change (count + EXIF place name when available). */
+    /** Abilita le notifiche di stato (master); i sotto-tipi sono indipendenti se true. */
     var showStatusNotifications: Boolean
         get() = prefs.getBoolean(KEY_NOTIFY_STATUS, true)
         set(value) { prefs.edit().putBoolean(KEY_NOTIFY_STATUS, value).apply() }
+
+    /** Notifica dopo cambio sfondo (manuale o automatico). */
+    var notifyWallpaperApplied: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_WALLPAPER, true)
+        set(value) { prefs.edit().putBoolean(KEY_NOTIFY_WALLPAPER, value).apply() }
+
+    /** Notifica dopo aggiornamento elenco immagini da app. */
+    var notifyLibraryRefreshed: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_LIST, true)
+        set(value) { prefs.edit().putBoolean(KEY_NOTIFY_LIST, value).apply() }
+
+    /**
+     * Se true, nella notifica sfondo si aggiunge luogo (EXIF + geocoding, richiede rete).
+     * Se false, solo progressivo nell’elenco (nessuna chiamata Nominatim/Photon/Geocoder).
+     */
+    var notifyWallpaperIncludeLocation: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_PLACE, true)
+        set(value) { prefs.edit().putBoolean(KEY_NOTIFY_PLACE, value).apply() }
 
     /**
      * After [completeInitialConsentFlow] runs once, the app stops showing the first-launch consent dialog.
@@ -97,6 +115,9 @@ class CarouselPreferences(context: Context) {
         private const val KEY_AUTO = "auto_wallpaper"
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
         private const val KEY_NOTIFY_STATUS = "show_status_notifications"
+        private const val KEY_NOTIFY_WALLPAPER = "notify_wallpaper_applied"
+        private const val KEY_NOTIFY_LIST = "notify_library_refreshed"
+        private const val KEY_NOTIFY_PLACE = "notify_wallpaper_include_location"
         private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
         private const val KEY_THEMING_COLOR = "theming_color_"
         private const val KEY_THEMING_ON_PRIMARY = "theming_on_primary_"

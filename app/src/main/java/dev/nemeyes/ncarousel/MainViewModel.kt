@@ -48,6 +48,9 @@ data class MainUiState(
     val autoWallpaperEnabled: Boolean = false,
     val autoIntervalMinutes: Int = 30,
     val showStatusNotifications: Boolean = true,
+    val notifyWallpaperApplied: Boolean = true,
+    val notifyLibraryRefreshed: Boolean = true,
+    val notifyWallpaperIncludeLocation: Boolean = true,
     /** First launch: show consent dialog and request notification permission where required. */
     val needsInitialConsent: Boolean = false,
     val busy: Boolean = false,
@@ -109,6 +112,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 autoWallpaperEnabled = carousel.autoWallpaperEnabled,
                 autoIntervalMinutes = carousel.autoIntervalMinutes,
                 showStatusNotifications = carousel.showStatusNotifications,
+                notifyWallpaperApplied = carousel.notifyWallpaperApplied,
+                notifyLibraryRefreshed = carousel.notifyLibraryRefreshed,
+                notifyWallpaperIncludeLocation = carousel.notifyWallpaperIncludeLocation,
                 needsInitialConsent = !carousel.initialConsentFlowCompleted,
                 instanceThemingPrimaryHex = acc0?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = acc0?.let { carousel.getThemingOnPrimaryHex(it.id) },
@@ -239,6 +245,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _ui.update { it.copy(showStatusNotifications = enabled) }
     }
 
+    fun updateNotifyWallpaperApplied(enabled: Boolean) {
+        carousel.notifyWallpaperApplied = enabled
+        _ui.update { it.copy(notifyWallpaperApplied = enabled) }
+    }
+
+    fun updateNotifyLibraryRefreshed(enabled: Boolean) {
+        carousel.notifyLibraryRefreshed = enabled
+        _ui.update { it.copy(notifyLibraryRefreshed = enabled) }
+    }
+
+    fun updateNotifyWallpaperIncludeLocation(enabled: Boolean) {
+        carousel.notifyWallpaperIncludeLocation = enabled
+        _ui.update { it.copy(notifyWallpaperIncludeLocation = enabled) }
+    }
+
     /** Call after first-launch dialog is dismissed or notification permission result is applied. */
     fun completeInitialConsentFlow() {
         carousel.initialConsentFlowCompleted = true
@@ -352,6 +373,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         carousel.maxWallpaperDiskCacheMb = s.maxWallpaperDiskCacheMb
         carousel.autoWallpaperEnabled = s.autoWallpaperEnabled
         carousel.autoIntervalMinutes = s.autoIntervalMinutes.coerceAtLeast(WallpaperWorkScheduler.MIN_INTERVAL_MINUTES)
+        carousel.showStatusNotifications = s.showStatusNotifications
+        carousel.notifyWallpaperApplied = s.notifyWallpaperApplied
+        carousel.notifyLibraryRefreshed = s.notifyLibraryRefreshed
+        carousel.notifyWallpaperIncludeLocation = s.notifyWallpaperIncludeLocation
         activeOrNull()?.let { a ->
             val folder = s.remoteFolder.trim().trim('/').ifBlank {
                 a.remoteFolder.ifBlank { "Photos" }

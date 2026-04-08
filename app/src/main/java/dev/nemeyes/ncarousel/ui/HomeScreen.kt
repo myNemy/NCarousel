@@ -438,8 +438,10 @@ private fun AuthenticatedShell(
                                 onClearWallpaperDiskCache = viewModel::clearWallpaperDiskCache,
                                 onAutoChange = viewModel::updateAutoWallpaperEnabled,
                                 onIntervalChange = viewModel::updateAutoIntervalMinutesText,
-                                showStatusNotifications = state.showStatusNotifications,
                                 onShowStatusNotificationsChange = onNotifyChange,
+                                onNotifyWallpaperAppliedChange = viewModel::updateNotifyWallpaperApplied,
+                                onNotifyLibraryRefreshedChange = viewModel::updateNotifyLibraryRefreshed,
+                                onNotifyWallpaperIncludeLocationChange = viewModel::updateNotifyWallpaperIncludeLocation,
                                 onRequestBatteryOptimizationFromBanner = viewModel::openBatteryOptimizationConsentFromSettings,
                             )
                         }
