@@ -30,8 +30,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +49,21 @@ import kotlin.random.Random
 
 private const val GRID_W = 12
 private const val GRID_H = 20
-private const val TICK_MS = 175L
+private const val TICK_MS = 120L
+
+private fun enqueueTurn(
+    pending: SnapshotStateList<Dir>,
+    currentDir: Dir,
+    d: Dir,
+) {
+    val ref = pending.lastOrNull() ?: currentDir
+    if (ref.isOpposite(d)) return
+    if (pending.isNotEmpty() && pending.last() == d) return
+    if (pending.size >= 2) {
+        pending.removeAt(pending.lastIndex)
+    }
+    pending.add(d)
+}
 
 private data class Cell(val x: Int, val y: Int)
 
@@ -151,7 +167,7 @@ private fun step(state: SnakeState, input: Dir): SnakeState {
 @Composable
 fun NCSnakeScreen(modifier: Modifier = Modifier) {
     val state = remember { mutableStateOf(initialState()) }
-    val queuedDir = remember { mutableStateOf<Dir?>(null) }
+    val pendingTurns = remember { mutableStateListOf<Dir>() }
     var soundOn by remember { mutableStateOf(true) }
 
     val toneGen =
@@ -167,8 +183,12 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
             delay(TICK_MS)
             val s = state.value
             if (s.gameOver) continue
-            val input = queuedDir.value ?: s.dir
-            queuedDir.value = null
+            val input =
+                if (pendingTurns.isNotEmpty()) {
+                    pendingTurns.removeAt(0)
+                } else {
+                    s.dir
+                }
             val next = step(s, input)
             if (soundOn) {
                 when {
@@ -225,40 +245,47 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                     .padding(horizontal = 4.dp),
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val cw = size.width / GRID_W
-                val ch = size.height / GRID_H
-                drawRect(lcdBg, size = size)
+                val marginBg = Color(0xFF061806)
+                drawRect(marginBg, size = size)
+                val cell = minOf(size.width / GRID_W, size.height / GRID_H)
+                val boardW = cell * GRID_W
+                val boardH = cell * GRID_H
+                val ox = (size.width - boardW) / 2f
+                val oy = (size.height - boardH) / 2f
+                drawRect(
+                    lcdBg,
+                    topLeft = Offset(ox, oy),
+                    size = Size(boardW, boardH),
+                )
                 for (x in 0..GRID_W) {
-                    val px = x * cw
+                    val px = ox + x * cell
                     drawLine(
                         lcdDim,
-                        Offset(px, 0f),
-                        Offset(px, size.height),
+                        Offset(px, oy),
+                        Offset(px, oy + boardH),
                         strokeWidth = 1f,
                     )
                 }
                 for (y in 0..GRID_H) {
-                    val py = y * ch
+                    val py = oy + y * cell
                     drawLine(
                         lcdDim,
-                        Offset(0f, py),
-                        Offset(size.width, py),
+                        Offset(ox, py),
+                        Offset(ox + boardW, py),
                         strokeWidth = 1f,
                     )
                 }
-                val insetX = cw * 0.12f
-                val insetY = ch * 0.12f
-                val innerW = (cw - insetX * 2f).coerceAtLeast(1f)
-                val innerH = (ch - insetY * 2f).coerceAtLeast(1f)
+                val inset = cell * 0.12f
+                val inner = (cell - inset * 2f).coerceAtLeast(1f)
                 for (c in s.snake) {
                     drawRect(
                         snakeColor,
                         topLeft =
                             Offset(
-                                c.x * cw + insetX,
-                                c.y * ch + insetY,
+                                ox + c.x * cell + inset,
+                                oy + c.y * cell + inset,
                             ),
-                        size = Size(innerW, innerH),
+                        size = Size(inner, inner),
                     )
                 }
                 val f = s.food
@@ -266,10 +293,10 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                     foodColor,
                     topLeft =
                         Offset(
-                            f.x * cw + insetX,
-                            f.y * ch + insetY,
+                            ox + f.x * cell + inset,
+                            oy + f.y * cell + inset,
                         ),
-                    size = Size(innerW, innerH),
+                    size = Size(inner, inner),
                 )
             }
         }
@@ -284,7 +311,7 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
             Button(
                 onClick = {
                     state.value = initialState()
-                    queuedDir.value = null
+                    pendingTurns.clear()
                 },
             ) {
                 Text(stringResource(R.string.nc_snake_restart))
@@ -294,7 +321,7 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
         DPad(
             enabled = !s.gameOver,
             onDir = { d ->
-                queuedDir.value = d
+                enqueueTurn(pendingTurns, state.value.dir, d)
             },
         )
         Spacer(Modifier.height(8.dp))
