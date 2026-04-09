@@ -1,6 +1,8 @@
 *.iml
 # Note solo locale (non versionata, non su GitHub)
 PRIVATE_README.md
+# Guida pubblicazione F-Droid / maintainer (stesso concetto: opzionale, non nel repo pubblico)
+docs/FDROID.md
 .gradle
 /local.properties
 /.idea
@@ -17,3 +19,16 @@ app/ncarousel-ci.keystore
 *.class
 .cxx
 .externalNativeBuild
+
+# Keystore / firma locale (oltre a app/ncarousel-ci.keystore già elencato sopra)
+*.jks
+*.keystore
+
+# Segreti o config solo locale
+.env
+.env.*
+*.env
+
+# Artefatti di debug / tooling
+*.hprof
+.kotlin/

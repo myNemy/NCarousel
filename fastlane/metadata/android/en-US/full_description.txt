@@ -1,0 +1,13 @@
+NCarousel downloads images from a folder on your Nextcloud server (via WebDAV) and sets them as your Android wallpaper.
+
+Features:
+- Connect to your own Nextcloud instance
+- Pick a remote folder (e.g. Photos)
+- Manual "next wallpaper" action (and Quick Settings tile, if enabled)
+- Automatic wallpaper rotation with a minimum interval of 1 minute (WorkManager one-shot chaining)
+- Optional on-device cache to reduce downloads
+
+Privacy:
+- No trackers
+- Credentials are stored encrypted on-device (AndroidX Security)
+- Network connections only go to the Nextcloud server you configure

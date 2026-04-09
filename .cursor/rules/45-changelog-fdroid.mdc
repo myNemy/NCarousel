@@ -1,0 +1,23 @@
+---
+description: Keep Fastlane changelogs in sync with versionCode for F-Droid
+alwaysApply: true
+---
+
+# Changelog (F-Droid / store metadata)
+
+This project tracks release notes in Fastlane-style metadata under:
+
+- `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
+
+Rules:
+
+- Whenever `ncarouselLocalVersionCode` is bumped in `app/build.gradle.kts`, add a matching changelog file
+  named exactly `<versionCode>.txt`.
+- Changelog entries should be written in **English** (short, user-facing, 2–10 lines).
+- If a release changes permissions, data handling, or scheduling behavior, mention it explicitly in the changelog.
+
+## Release tag (required for publishing)
+
+- When preparing a version meant to be published (F-Droid / releases), create a git tag in the form `v<versionName>`
+  (example: `v0.2.38`) pointing to the release commit.
+- If the release is published, push the tag to **both** remotes (`forgejo` and `origin`), consistent with the repo rules.
