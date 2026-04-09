@@ -28,9 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.network.NetworkHeaders
-import coil3.request.ImageRequest
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
 import okhttp3.Credentials
@@ -157,11 +156,7 @@ fun LibraryScreen(
                         val model = remember(url, state.loginName, state.password) {
                             ImageRequest.Builder(ctx)
                                 .data(url)
-                                .httpHeaders(
-                                    NetworkHeaders.Builder()
-                                        .set("Authorization", Credentials.basic(state.loginName, state.password))
-                                        .build(),
-                                )
+                                .addHeader("Authorization", Credentials.basic(state.loginName, state.password))
                                 .build()
                         }
                         AsyncImage(
