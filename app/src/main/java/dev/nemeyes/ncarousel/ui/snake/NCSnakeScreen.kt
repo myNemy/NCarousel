@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel.ui.snake
 import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,9 +45,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.awaitEachGesture
-import androidx.compose.ui.input.pointer.awaitFirstDown
-import androidx.compose.ui.input.pointer.waitForUpOrCancellation
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.R
@@ -418,16 +416,17 @@ private fun DPadButton(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    // Use a raw press-down handler: IconButton/clickable typically fires on release.
+    // Press-down handler via detectTapGestures for broader Compose compatibility.
     Surface(
         modifier =
             modifier.pointerInput(enabled) {
                 if (!enabled) return@pointerInput
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    onPress()
-                    waitForUpOrCancellation()
-                }
+                detectTapGestures(
+                    onPress = {
+                        onPress()
+                        tryAwaitRelease()
+                    },
+                )
             },
         shape = CircleShape,
         color = Color.Transparent,
