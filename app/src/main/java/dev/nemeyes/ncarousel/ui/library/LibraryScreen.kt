@@ -279,7 +279,7 @@ private fun FastScroller(
                             onDragActiveChange(false)
                         },
                     ) { change, _ ->
-                        val h = size.height.coerceAtLeast(1f)
+                        val h = size.height.coerceAtLeast(1).toFloat()
                         onJumpToProgress(change.position.y / h)
                         change.consume()
                     }
