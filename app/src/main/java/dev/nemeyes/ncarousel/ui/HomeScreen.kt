@@ -270,6 +270,7 @@ private fun AuthenticatedShell(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val obs = LifecycleEventObserver { _, event ->
