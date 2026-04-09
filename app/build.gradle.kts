@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; CI appends +run. Bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.25"
+val ncarouselBaseVersionName = "0.2.26"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -14,7 +14,7 @@ val ncarouselBaseVersionName = "0.2.25"
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
  */
-val ncarouselLocalVersionCode = 38
+val ncarouselLocalVersionCode = 39
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
@@ -121,6 +121,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
 
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 

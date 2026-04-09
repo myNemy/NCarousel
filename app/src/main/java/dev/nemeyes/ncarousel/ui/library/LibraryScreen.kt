@@ -1,5 +1,6 @@
 package dev.nemeyes.ncarousel.ui.library
 
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -22,11 +24,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import coil3.network.NetworkHeaders
+import coil3.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
+import okhttp3.Credentials
 
 private enum class LibrarySortMode { NAME, FOLDERS }
 
@@ -59,6 +66,17 @@ private fun toLibraryRow(href: String, remoteFolder: String): LibraryRow {
     val file = if (slash >= 0) cleanRel.substring(slash + 1) else cleanRel
     return LibraryRow(href = href, folderPath = folder, fileName = file)
 }
+
+private fun previewUrl(serverBaseUrl: String, fileId: Long, sizePx: Int): String =
+    Uri.parse(serverBaseUrl.trimEnd('/'))
+        .buildUpon()
+        .appendEncodedPath("index.php/core/preview")
+        .appendQueryParameter("fileId", fileId.toString())
+        .appendQueryParameter("x", sizePx.toString())
+        .appendQueryParameter("y", sizePx.toString())
+        .appendQueryParameter("a", "1")
+        .build()
+        .toString()
 
 @Composable
 fun LibraryScreen(
@@ -130,7 +148,29 @@ fun LibraryScreen(
             Spacer(Modifier.height(8.dp))
         }
         items(sortedRows, key = { it.href }) { row ->
+            val ctx = LocalContext.current
+            val fileId = state.imageFileIds[row.href]
             ListItem(
+                leadingContent = {
+                    if (fileId != null && state.serverUrl.isNotBlank() && state.loginName.isNotBlank() && state.password.isNotBlank()) {
+                        val url = remember(state.serverUrl, fileId) { previewUrl(state.serverUrl, fileId, 192) }
+                        val model = remember(url, state.loginName, state.password) {
+                            ImageRequest.Builder(ctx)
+                                .data(url)
+                                .httpHeaders(
+                                    NetworkHeaders.Builder()
+                                        .set("Authorization", Credentials.basic(state.loginName, state.password))
+                                        .build(),
+                                )
+                                .build()
+                        }
+                        AsyncImage(
+                            model = model,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                        )
+                    }
+                },
                 headlineContent = {
                     Text(
                         text = row.fileName,

@@ -15,6 +15,8 @@ data class ImageEntryEntity(
     val accountId: String,
     /** Full href path from WebDAV responses (decoded). */
     val href: String,
+    /** Nextcloud internal numeric file id (DAV `oc:fileid`), when present. */
+    val fileId: Long? = null,
     val contentType: String?,
     val contentLengthBytes: Long?,
     val etag: String?,

@@ -3,6 +3,8 @@ package dev.nemeyes.ncarousel.data
 data class DavEntry(
     val hrefDecoded: String,
     val isCollection: Boolean,
+    /** Nextcloud internal numeric file id (DAV `oc:fileid`), when present. */
+    val fileId: Long? = null,
     val contentType: String?,
     /** From WebDAV `getcontentlength`, when present. */
     val contentLengthBytes: Long? = null,

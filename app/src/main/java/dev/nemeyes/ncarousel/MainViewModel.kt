@@ -39,6 +39,8 @@ import kotlinx.coroutines.withContext
 data class MainUiState(
     val serverUrl: String = "",
     val username: String = "",
+    /** Login identifier used for Basic Auth (can differ from UID). */
+    val loginName: String = "",
     val password: String = "",
     val remoteFolder: String = "",
     val hasActiveAccount: Boolean = false,
@@ -63,6 +65,8 @@ data class MainUiState(
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
+    /** href -> Nextcloud fileId (for server-side previews), when available. */
+    val imageFileIds: Map<String, Long> = emptyMap(),
     /** OCS capabilities.theming.color (hex); drives [NCarouselTheme]. */
     val instanceThemingPrimaryHex: String? = null,
     /** OCS capabilities.theming.color-text. */
@@ -112,6 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MainUiState(
                 serverUrl = acc0?.serverBaseUrl.orEmpty(),
                 username = acc0?.userId.orEmpty(),
+                loginName = acc0?.loginName.orEmpty(),
                 password = acc0?.appPassword.orEmpty(),
                 remoteFolder = acc0?.remoteFolder.orEmpty(),
                 hasActiveAccount = acc0 != null,
@@ -190,7 +195,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateServerUrl(value: String) = _ui.update { it.copy(serverUrl = value) }
-    fun updateUsername(value: String) = _ui.update { it.copy(username = value) }
+    fun updateUsername(value: String) = _ui.update { it.copy(username = value, loginName = value) }
     fun updatePassword(value: String) = _ui.update { it.copy(password = value) }
     fun updateRemoteFolder(value: String) = _ui.update { it.copy(remoteFolder = value) }
     fun updateOrderMode(value: OrderMode) = _ui.update { it.copy(orderMode = value) }
@@ -562,6 +567,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val result = syncRepo.syncFromServer(http, accountForSync, maxBytes)
             result.fold(
                 onSuccess = { list ->
+                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
+                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
                     val fp = WallpaperOrderEngine.libraryFingerprint(list)
                     WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
                     ImageListCache(getApplication(), active.id).write(list)
@@ -569,6 +576,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             busy = false,
                             imageHrefs = list,
+                            imageFileIds = fileIds,
                             remoteFolder = folder,
                             statusMessage = "Trovate ${list.size} immagini.",
                         )
@@ -583,6 +591,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             busy = false,
                             imageHrefs = emptyList(),
+                            imageFileIds = emptyMap(),
                             statusMessage = "Errore elenco: ${e.message ?: e.javaClass.simpleName}",
                         )
                     }
@@ -666,12 +675,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val legacy = ImageListCache(getApplication(), active.id).read()
             if (legacy.isNotEmpty()) {
-                _ui.update { it.copy(imageHrefs = legacy) }
+                val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
+                val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                _ui.update { it.copy(imageHrefs = legacy, imageFileIds = fileIds) }
                 return@launch
             }
-            val cached = syncRepo.readCachedHrefs(active.id)
+            val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
+            val cached = hrefsWithId.map { it.first }
+            val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
             if (cached.isNotEmpty()) {
-                _ui.update { it.copy(imageHrefs = cached) }
+                _ui.update { it.copy(imageHrefs = cached, imageFileIds = fileIds) }
             }
         }
     }
@@ -686,9 +699,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 hasActiveAccount = a != null,
                 serverUrl = a?.serverBaseUrl.orEmpty(),
                 username = a?.userId.orEmpty(),
+                loginName = a?.loginName.orEmpty(),
                 password = a?.appPassword.orEmpty(),
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
+                imageFileIds = emptyMap(),
                 statusMessage = "Account attivo aggiornato.",
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
@@ -710,9 +725,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 hasActiveAccount = a != null,
                 serverUrl = a?.serverBaseUrl.orEmpty(),
                 username = a?.userId.orEmpty(),
+                loginName = a?.loginName.orEmpty(),
                 password = a?.appPassword.orEmpty(),
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
+                imageFileIds = emptyMap(),
                 statusMessage = "Account rimosso.",
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },

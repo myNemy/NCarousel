@@ -20,6 +20,11 @@ class ImageSyncRepository(context: Context) {
     suspend fun readCachedHrefs(accountId: String): List<String> =
         withContext(Dispatchers.IO) { dao.listImageHrefs(accountId) }
 
+    suspend fun readCachedHrefsWithFileId(accountId: String): List<Pair<String, Long?>> =
+        withContext(Dispatchers.IO) {
+            dao.listImageHrefsWithFileId(accountId).map { it.href to it.fileId }
+        }
+
     suspend fun syncFromServer(
         http: okhttp3.OkHttpClient,
         account: NextcloudAccount,
@@ -39,6 +44,7 @@ class ImageSyncRepository(context: Context) {
                 ImageEntryEntity(
                     accountId = account.id,
                     href = e.hrefDecoded,
+                    fileId = e.fileId,
                     contentType = e.contentType,
                     contentLengthBytes = e.contentLengthBytes,
                     etag = e.etag,

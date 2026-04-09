@@ -35,6 +35,7 @@ class NextcloudWebDavClient(
             <d:getlastmodified/>
             <d:getcontentlength/>
             <d:getcontenttype/>
+            <oc:fileid/>
             <oc:permissions/>
             <d:resourcetype/>
             <d:getetag/>
@@ -232,6 +233,7 @@ class NextcloudWebDavClient(
         var contentLengthBytes: Long? = null
         var etag: String? = null
         var lastModified: String? = null
+        var fileId: Long? = null
         var depth = 0
 
         fun flushResponse() {
@@ -239,6 +241,7 @@ class NextcloudWebDavClient(
             list += DavEntry(
                 hrefDecoded = Uri.decode(href),
                 isCollection = hasCollection,
+                fileId = fileId,
                 contentType = contentType,
                 contentLengthBytes = contentLengthBytes,
                 etag = etag,
@@ -251,6 +254,7 @@ class NextcloudWebDavClient(
             contentLengthBytes = null
             etag = null
             lastModified = null
+            fileId = null
         }
 
         var event = parser.eventType
@@ -286,6 +290,9 @@ class NextcloudWebDavClient(
                         }
                         name.equals("getlastmodified", ignoreCase = true) -> {
                             lastModified = readTextElementContents(parser).ifBlank { null }
+                        }
+                        name.equals("fileid", ignoreCase = true) -> {
+                            fileId = readTextElementContents(parser).toLongOrNull()
                         }
                     }
                 }
