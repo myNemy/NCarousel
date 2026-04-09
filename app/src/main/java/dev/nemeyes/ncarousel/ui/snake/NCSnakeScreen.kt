@@ -3,6 +3,8 @@ package dev.nemeyes.ncarousel.ui.snake
 import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,14 +42,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlin.math.abs
 import kotlin.random.Random
 
-private const val GRID_W = 12
+private const val GRID_W = 20
 private const val GRID_H = 20
 private const val TICK_MS = 120L
 
@@ -169,6 +173,7 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
     val state = remember { mutableStateOf(initialState()) }
     val pendingTurns = remember { mutableStateListOf<Dir>() }
     var soundOn by remember { mutableStateOf(true) }
+    var lastDragDir by remember { mutableStateOf<Dir?>(null) }
 
     val toneGen =
         remember {
@@ -244,7 +249,38 @@ fun NCSnakeScreen(modifier: Modifier = Modifier) {
                     .fillMaxHeight()
                     .padding(horizontal = 4.dp),
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
+            Canvas(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { lastDragDir = null },
+                                onDragCancel = { lastDragDir = null },
+                                onDragEnd = { lastDragDir = null },
+                            ) { change, dragAmount ->
+                                change.consume()
+                                if (state.value.gameOver) return@detectDragGestures
+                                val dx = dragAmount.x
+                                val dy = dragAmount.y
+                                val absX = abs(dx)
+                                val absY = abs(dy)
+                                val thresholdPx = 10f
+                                if (absX < thresholdPx && absY < thresholdPx) return@detectDragGestures
+
+                                val d =
+                                    if (absX > absY) {
+                                        if (dx > 0) Dir.Right else Dir.Left
+                                    } else {
+                                        if (dy > 0) Dir.Down else Dir.Up
+                                    }
+                                if (lastDragDir != d) {
+                                    enqueueTurn(pendingTurns, state.value.dir, d)
+                                    lastDragDir = d
+                                }
+                            }
+                        },
+            ) {
                 val marginBg = Color(0xFF061806)
                 drawRect(marginBg, size = size)
                 val cell = minOf(size.width / GRID_W, size.height / GRID_H)
@@ -334,9 +370,9 @@ private fun DPad(
     onDir: (Dir) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IconButton(
-            onClick = { onDir(Dir.Up) },
+        DPadButton(
             enabled = enabled,
+            onPress = { onDir(Dir.Up) },
             modifier = Modifier.size(52.dp),
         ) {
             Icon(Icons.Default.ArrowUpward, contentDescription = stringResource(R.string.nc_snake_cd_up))
@@ -345,28 +381,53 @@ private fun DPad(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = { onDir(Dir.Left) },
+            DPadButton(
                 enabled = enabled,
+                onPress = { onDir(Dir.Left) },
                 modifier = Modifier.size(52.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nc_snake_cd_left))
             }
             Spacer(Modifier.width(52.dp))
-            IconButton(
-                onClick = { onDir(Dir.Right) },
+            DPadButton(
                 enabled = enabled,
+                onPress = { onDir(Dir.Right) },
                 modifier = Modifier.size(52.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(R.string.nc_snake_cd_right))
             }
         }
-        IconButton(
-            onClick = { onDir(Dir.Down) },
+        DPadButton(
             enabled = enabled,
+            onPress = { onDir(Dir.Down) },
             modifier = Modifier.size(52.dp),
         ) {
             Icon(Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.nc_snake_cd_down))
         }
     }
+}
+
+@Composable
+private fun DPadButton(
+    enabled: Boolean,
+    onPress: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    // IconButton triggers onClick on release; Snake feels better when turning on press-down.
+    IconButton(
+        onClick = {},
+        enabled = enabled,
+        modifier =
+            modifier.pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                detectTapGestures(
+                    onPress = {
+                        onPress()
+                        tryAwaitRelease()
+                    },
+                )
+            },
+        content = content,
+    )
 }
