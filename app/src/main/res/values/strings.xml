@@ -64,6 +64,12 @@
     <string name="nc_library_sort_name">Nome</string>
     <string name="nc_library_root_folder">(cartella principale)</string>
     <string name="nc_about_title">About</string>
+    <string name="nc_about_version">Versione %1$s (%2$d)</string>
+    <string name="nc_about_summary">Sfondo a rotazione da Nextcloud (WebDAV), con opzioni per rete/batteria e scelta manuale dalla Libreria.</string>
+    <string name="nc_about_links">Link</string>
+    <string name="nc_about_github">GitHub</string>
+    <string name="nc_about_forgejo">Forgejo</string>
+    <string name="nc_about_issues">Segnala un problema</string>
     <string name="nc_about_oss_licenses">Licenze open-source</string>
     <string name="nc_about_view_license">Vedi licenza</string>
 </resources>
