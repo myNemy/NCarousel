@@ -14,14 +14,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,7 +33,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +89,8 @@ private fun previewUrl(serverBaseUrl: String, fileId: Long, sizePx: Int): String
         .build()
         .toString()
 
+private fun clamp01(v: Float): Float = v.coerceIn(0f, 1f)
+
 @Composable
 fun LibraryScreen(
     modifier: Modifier = Modifier,
@@ -131,9 +136,14 @@ fun LibraryScreen(
 
     val itemCount = sortedRows.size
     val showFastScroll = itemCount >= 80
-    var sliderValue by remember(sortedRows) { mutableStateOf(0f) }
+    var dragActive by remember { mutableStateOf(false) }
     var fastScrollVisible by remember { mutableStateOf(false) }
     val isListScrolling by remember { derivedStateOf { listState.isScrollInProgress } }
+    val progress01 by remember(itemCount) {
+        derivedStateOf {
+            if (itemCount <= 1) 0f else listState.firstVisibleItemIndex.toFloat() / (itemCount - 1).toFloat()
+        }
+    }
 
     LaunchedEffect(isListScrolling) {
         if (isListScrolling) {
@@ -141,7 +151,7 @@ fun LibraryScreen(
         } else {
             // Hide shortly after scrolling stops.
             kotlinx.coroutines.delay(900)
-            fastScrollVisible = false
+            if (!dragActive) fastScrollVisible = false
         }
     }
 
@@ -219,36 +229,78 @@ fun LibraryScreen(
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        if (showFastScroll && fastScrollVisible) {
-            // Keep it on the right edge: allocate a thin side gutter and rotate Slider inside it.
-            Box(
+        if (showFastScroll && (fastScrollVisible || dragActive)) {
+            FastScroller(
                 modifier =
                     Modifier
                         .fillMaxHeight()
                         .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
-                        .align(androidx.compose.ui.Alignment.CenterEnd)
-                        .width(28.dp),
+                        .align(androidx.compose.ui.Alignment.CenterEnd),
+                progress01 = progress01,
+                onJumpToProgress = { p ->
+                    val i = (clamp01(p) * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
+                    scope.launch { listState.scrollToItem(i + 1) } // +1 header item
+                },
+                onDragActiveChange = { active ->
+                    dragActive = active
+                    if (active) fastScrollVisible = true
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FastScroller(
+    modifier: Modifier = Modifier,
+    progress01: Float,
+    onJumpToProgress: (Float) -> Unit,
+    onDragActiveChange: (Boolean) -> Unit,
+) {
+    val thumbHeight = 44.dp
+    val thumbWidth = 10.dp
+    val trackWidth = 3.dp
+
+    Box(
+        modifier =
+            modifier
+                .width(18.dp)
+                .pointerInput(Unit) {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val ch = event.changes.firstOrNull() ?: continue
+                        if (ch.pressed) {
+                            onDragActiveChange(true)
+                            val h = size.height.coerceAtLeast(1f)
+                            onJumpToProgress(ch.position.y / h)
+                            ch.consume()
+                        } else {
+                            onDragActiveChange(false)
+                        }
+                    }
+                },
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(trackWidth)
+                .align(androidx.compose.ui.Alignment.Center),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+            content = {},
+        )
+
+        val p = clamp01(progress01)
+        Box(modifier = Modifier.fillMaxHeight()) {
+            Surface(
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .offset(y = ((this@Box.maxHeight - thumbHeight) * p).coerceAtLeast(0.dp)),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                tonalElevation = 2.dp,
             ) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { v ->
-                        fastScrollVisible = true
-                        sliderValue = v
-                        val i = (v * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
-                        scope.launch { listState.scrollToItem(i + 1) } // +1 for header item
-                    },
-                    valueRange = 0f..1f,
-                    modifier =
-                        Modifier
-                            .fillMaxHeight()
-                            .graphicsLayer(
-                                rotationZ = -90f,
-                                // Scale down slightly so it doesn't look like a giant bar.
-                                scaleX = 0.85f,
-                                scaleY = 0.85f,
-                            )
-                            .align(androidx.compose.ui.Alignment.Center),
-                )
+                Box(modifier = Modifier.size(width = thumbWidth, height = thumbHeight))
             }
         }
     }
