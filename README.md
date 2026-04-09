@@ -13,10 +13,6 @@ The app follows the system locale when translations are available (default Engli
 
 Releases and tags are created automatically on `main` after a green build (see `.github/workflows/android-ci.yml`). To mirror release tags to **Forgejo**, maintainers can set the `FORGEJO_PUSH_TOKEN` repository secret on GitHub.
 
-## Development
-
-Clone either remote below, then see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** for JDK/SDK requirements, local builds, and optional CI signing secrets so successive GitHub APKs can upgrade in place.
-
 ## License
 
 Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See `LICENSE`.
