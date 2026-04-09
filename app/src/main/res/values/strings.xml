@@ -60,4 +60,7 @@
     <string name="nc_library_refresh">Aggiorna elenco</string>
     <string name="nc_library_count">%1$d immagini</string>
     <string name="nc_library_tap_to_apply">Tocca per applicare</string>
+    <string name="nc_library_sort_folders">Cartelle</string>
+    <string name="nc_library_sort_name">Nome</string>
+    <string name="nc_library_root_folder">(cartella principale)</string>
 </resources>
