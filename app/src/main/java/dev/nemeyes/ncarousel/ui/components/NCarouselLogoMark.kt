@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -31,7 +32,9 @@ fun NCarouselLogoMark(
         painter = painterResource(R.drawable.ic_launcher_logo),
         contentDescription = null,
         modifier = modifier.size(size),
-        contentScale = ContentScale.Fit,
+        // The PNG has generous transparent padding; Crop makes the mark more present in-app.
+        contentScale = ContentScale.Crop,
+        alignment = Alignment.Center,
         colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn),
     )
 }
