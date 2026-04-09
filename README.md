@@ -2,19 +2,28 @@
 
 ## NCarousel
 
-Android app that downloads images from your **Nextcloud** server (WebDAV) and sets them as the device **wallpaper**, using official Android APIs.
+Android app that downloads images from your **Nextcloud** server (WebDAV) and sets them as the device **wallpaper**, using official Android APIs. The UI is built with **Jetpack Compose**; background work uses **WorkManager** (including short intervals via chained one-shot work). Credentials are stored with **EncryptedSharedPreferences**.
+
+The app follows the system locale when translations are available (default English, plus several European languages under `app/src/main/res/values-*`).
+
+## Download
+
+- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** — for each release tag `v*`, CI attaches a **debug** APK named `NCarousel-<version>-debug.apk`. These builds are meant for testing and sideloading; signing behaviour is described in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+- **[GitHub Actions](https://github.com/myNemy/NCarousel/actions)** — every successful run on `main` also publishes the same APK as a workflow **artifact** (`app-debug-apk`).
+
+Releases and tags are created automatically on `main` after a green build (see `.github/workflows/android-ci.yml`). To mirror release tags to **Forgejo**, maintainers can set the `FORGEJO_PUSH_TOKEN` repository secret on GitHub.
+
+## Development
+
+Clone either remote below, then see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** for JDK/SDK requirements, local builds, and optional CI signing secrets so successive GitHub APKs can upgrade in place.
 
 ## License
 
 Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See `LICENSE`.
 
-## More information
+## Repositories
 
-Project page and source code:
+Source and issue tracking:
 
 - **Forgejo**: [forgejo.it/Nemeyes/NCarousel](https://forgejo.it/Nemeyes/NCarousel)
 - **GitHub** (mirror): [github.com/myNemy/NCarousel](https://github.com/myNemy/NCarousel)
-
----
-
-*If you build or install the app yourself (not via an app store), see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).*
