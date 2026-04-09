@@ -105,7 +105,7 @@ fun SettingsScreen(
         Spacer(Modifier.height(4.dp))
 
         if (state.accounts.isNotEmpty() && state.activeAccountId != null) {
-            SettingsGroup(title = "Account", icon = Icons.Outlined.ManageAccounts) {
+            SettingsGroup(title = stringResource(R.string.settings_group_account), icon = Icons.Outlined.ManageAccounts) {
                 ExposedDropdownMenuBox(
                     expanded = accountExpanded,
                     onExpandedChange = { accountExpanded = it },
@@ -121,7 +121,7 @@ fun SettingsScreen(
                         readOnly = true,
                         value = activeLabel,
                         onValueChange = {},
-                        label = { Text("Account attivo") },
+                        label = { Text(stringResource(R.string.settings_active_account)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountExpanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         enabled = !state.busy,
@@ -148,18 +148,18 @@ fun SettingsScreen(
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Rimuovi account attivo")
+                    Text(stringResource(R.string.remove_active_account))
                 }
             }
         }
 
-        SettingsGroup(title = "Connessione", icon = Icons.Outlined.Cloud) {
+        SettingsGroup(title = stringResource(R.string.settings_group_connection), icon = Icons.Outlined.Cloud) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.serverUrl,
                 onValueChange = onServerChange,
-                label = { Text("Indirizzo server") },
-                placeholder = { Text("https://cloud.example.com") },
+                label = { Text(stringResource(R.string.field_server_url)) },
+                placeholder = { Text(stringResource(R.string.placeholder_server_url)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 enabled = !state.busy,
@@ -168,7 +168,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.username,
                 onValueChange = onUserChange,
-                label = { Text("Nome utente") },
+                label = { Text(stringResource(R.string.field_username)) },
                 singleLine = true,
                 enabled = !state.busy,
             )
@@ -176,7 +176,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.password,
                 onValueChange = onPassChange,
-                label = { Text("Password / app password") },
+                label = { Text(stringResource(R.string.field_password_app)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !state.busy,
@@ -185,8 +185,8 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.remoteFolder,
                 onValueChange = onFolderChange,
-                label = { Text("Cartella remota") },
-                placeholder = { Text("Photos") },
+                label = { Text(stringResource(R.string.field_remote_folder)) },
+                placeholder = { Text(stringResource(R.string.placeholder_remote_folder)) },
                 singleLine = true,
                 enabled = !state.busy,
             )
@@ -195,18 +195,18 @@ fun SettingsScreen(
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Accedi con il browser (consigliato)")
+                Text(stringResource(R.string.login_browser_recommended))
             }
             Button(
                 onClick = onSaveCredentials,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Salva credenziali")
+                Text(stringResource(R.string.save_credentials))
             }
         }
 
-        SettingsGroup(title = "Carosello e sfondo", icon = Icons.Outlined.PhotoLibrary) {
+        SettingsGroup(title = stringResource(R.string.settings_group_carousel), icon = Icons.Outlined.PhotoLibrary) {
             ExposedDropdownMenuBox(
                 expanded = orderExpanded,
                 onExpandedChange = { orderExpanded = it },
@@ -221,7 +221,7 @@ fun SettingsScreen(
                     readOnly = true,
                     value = orderModeLabel(state.orderMode),
                     onValueChange = {},
-                    label = { Text("Modalità ordine") },
+                    label = { Text(stringResource(R.string.field_order_mode)) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = orderExpanded)
                     },
@@ -255,9 +255,9 @@ fun SettingsScreen(
                             enabled = !state.busy,
                         ),
                     readOnly = true,
-                    value = wallpaperTargetLabel(state.wallpaperTarget),
+                    value = wallpaperTargetLabelRes(state.wallpaperTarget),
                     onValueChange = {},
-                    label = { Text("Dove applicare lo sfondo") },
+                    label = { Text(stringResource(R.string.field_wallpaper_target)) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = wallpaperTargetExpanded)
                     },
@@ -270,7 +270,7 @@ fun SettingsScreen(
                 ) {
                     WallpaperTarget.entries.forEach { t ->
                         DropdownMenuItem(
-                            text = { Text(wallpaperTargetLabel(t)) },
+                            text = { Text(wallpaperTargetLabelRes(t)) },
                             onClick = {
                                 onWallpaperTargetChange(t)
                                 wallpaperTargetExpanded = false
@@ -283,8 +283,8 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.maxImageSizeMb.toString(),
                 onValueChange = onMaxMbChange,
-                label = { Text("Dimensione massima immagine (MB)") },
-                supportingText = { Text("0 = nessun limite") },
+                label = { Text(stringResource(R.string.field_max_image_mb)) },
+                supportingText = { Text(stringResource(R.string.hint_max_mb_unlimited)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = !state.busy,
@@ -293,11 +293,14 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.maxWallpaperDiskCacheMb.toString(),
                 onValueChange = onMaxDiskCacheMbChange,
-                label = { Text("Cache immagini su disco (MB)") },
+                label = { Text(stringResource(R.string.field_disk_cache_mb)) },
                 supportingText = {
                     Text(
-                        "Per account, ${WallpaperDiskCache.MIN_MB}–${WallpaperDiskCache.MAX_MB} MB. " +
-                            "Oltre il limite vengono rimosse le meno recenti (LRU). Salva le opzioni per applicare subito.",
+                        stringResource(
+                            R.string.disk_cache_supporting,
+                            WallpaperDiskCache.MIN_MB,
+                            WallpaperDiskCache.MAX_MB,
+                        ),
                     )
                 },
                 singleLine = true,
@@ -309,11 +312,11 @@ fun SettingsScreen(
                 enabled = !state.busy && state.activeAccountId != null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Svuota cache immagini")
+                Text(stringResource(R.string.clear_wallpaper_disk_cache))
             }
             SettingsInlineDivider()
             SettingsSwitchRow(
-                title = "Cambio sfondo automatico",
+                title = stringResource(R.string.auto_wallpaper_switch_title),
                 checked = state.autoWallpaperEnabled,
                 onCheckedChange = onAutoChange,
                 enabled = !state.busy,
@@ -350,9 +353,14 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.autoIntervalMinutes.toString(),
                 onValueChange = onIntervalChange,
-                label = { Text("Intervallo (minuti)") },
+                label = { Text(stringResource(R.string.field_interval_minutes)) },
                 supportingText = {
-                    Text("Minimo ${WallpaperWorkScheduler.MIN_INTERVAL_MINUTES} minuto/i tra un cambio e il successivo.")
+                    Text(
+                        stringResource(
+                            R.string.interval_supporting,
+                            WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
+                        ),
+                    )
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -486,7 +494,7 @@ fun SettingsScreen(
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Salva opzioni e pianifica")
+                Text(stringResource(R.string.save_carousel_options_btn))
             }
         }
 
@@ -501,8 +509,9 @@ private fun geocoderOrderModeLabel(mode: GeocoderOrderMode): String = when (mode
     GeocoderOrderMode.PHOTON_FIRST -> stringResource(R.string.geocoder_order_photon_first)
 }
 
-private fun wallpaperTargetLabel(target: WallpaperTarget): String = when (target) {
-    WallpaperTarget.HOME_AND_LOCK -> "Home e blocco schermo"
-    WallpaperTarget.HOME_ONLY -> "Solo schermata home"
-    WallpaperTarget.LOCK_ONLY -> "Solo blocco schermo"
+@Composable
+private fun wallpaperTargetLabelRes(target: WallpaperTarget): String = when (target) {
+    WallpaperTarget.HOME_AND_LOCK -> stringResource(R.string.wallpaper_target_home_lock)
+    WallpaperTarget.HOME_ONLY -> stringResource(R.string.wallpaper_target_home_only)
+    WallpaperTarget.LOCK_ONLY -> stringResource(R.string.wallpaper_target_lock_only)
 }

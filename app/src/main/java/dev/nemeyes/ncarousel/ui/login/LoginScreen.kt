@@ -22,10 +22,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.MainUiState
+import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 
 @Composable
@@ -56,21 +58,20 @@ fun LoginScreen(
             tonalElevation = 0.dp,
         ) {
             Text(
-                text = "Collega il tuo server Nextcloud per usare le foto come sfondo. " +
-                    "Puoi usare l’accesso dal browser (consigliato) o salvare utente e app password.",
+                text = stringResource(R.string.login_intro),
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        SettingsGroup(title = "Connessione", icon = Icons.Outlined.Cloud) {
+        SettingsGroup(title = stringResource(R.string.settings_group_connection), icon = Icons.Outlined.Cloud) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.serverUrl,
                 onValueChange = onServerChange,
-                label = { Text("Indirizzo server") },
-                placeholder = { Text("https://cloud.example.com") },
+                label = { Text(stringResource(R.string.field_server_url)) },
+                placeholder = { Text(stringResource(R.string.placeholder_server_url)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 enabled = !state.busy,
@@ -79,7 +80,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.username,
                 onValueChange = onUserChange,
-                label = { Text("Nome utente") },
+                label = { Text(stringResource(R.string.field_username)) },
                 singleLine = true,
                 enabled = !state.busy,
             )
@@ -87,7 +88,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.password,
                 onValueChange = onPassChange,
-                label = { Text("Password / app password") },
+                label = { Text(stringResource(R.string.field_password_app)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !state.busy,
@@ -96,8 +97,8 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.remoteFolder,
                 onValueChange = onFolderChange,
-                label = { Text("Cartella remota") },
-                placeholder = { Text("Photos") },
+                label = { Text(stringResource(R.string.field_remote_folder)) },
+                placeholder = { Text(stringResource(R.string.placeholder_remote_folder)) },
                 singleLine = true,
                 enabled = !state.busy,
             )
@@ -106,14 +107,14 @@ fun LoginScreen(
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Accedi con il browser (consigliato)")
+                Text(stringResource(R.string.login_browser_recommended))
             }
             Button(
                 onClick = onSaveCredentials,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Salva credenziali")
+                Text(stringResource(R.string.save_credentials))
             }
         }
         Spacer(Modifier.height(24.dp))

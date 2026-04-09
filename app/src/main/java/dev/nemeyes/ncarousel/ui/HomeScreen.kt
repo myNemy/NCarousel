@@ -220,7 +220,7 @@ fun HomeScreen(viewModel: MainViewModel) {
                                 tint = MaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(Modifier.width(10.dp))
-                            Text("Accedi")
+                            Text(stringResource(R.string.top_sign_in))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -323,7 +323,7 @@ private fun AuthenticatedShell(
                         )
                     }
                     NavigationDrawerItem(
-                        label = { Text("Inizio") },
+                        label = { Text(stringResource(R.string.nav_home)) },
                         selected = currentRoute == AppDestinations.MAIN,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -345,7 +345,7 @@ private fun AuthenticatedShell(
                         icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
                     )
                     NavigationDrawerItem(
-                        label = { Text("Impostazioni") },
+                        label = { Text(stringResource(R.string.nav_settings)) },
                         selected = currentRoute == AppDestinations.SETTINGS,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -417,7 +417,7 @@ private fun AuthenticatedShell(
                                         ) {
                                             Icon(
                                                 Icons.Filled.Menu,
-                                                contentDescription = "Menu",
+                                                contentDescription = stringResource(R.string.cd_menu),
                                             )
                                         }
                                     },
@@ -451,14 +451,14 @@ private fun AuthenticatedShell(
                                                 tint = MaterialTheme.colorScheme.onPrimary,
                                             )
                                             Spacer(Modifier.width(10.dp))
-                                            Text("Impostazioni")
+                                            Text(stringResource(R.string.nav_settings))
                                         }
                                     },
                                     navigationIcon = {
                                         IconButton(onClick = { navController.popBackStack() }) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Indietro",
+                                                contentDescription = stringResource(R.string.cd_back),
                                             )
                                         }
                                     },
@@ -523,7 +523,7 @@ private fun AuthenticatedShell(
                                         IconButton(onClick = { navController.popBackStack() }) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Indietro",
+                                                contentDescription = stringResource(R.string.cd_back),
                                             )
                                         }
                                     },
@@ -557,7 +557,7 @@ private fun AuthenticatedShell(
                                         IconButton(onClick = { navController.popBackStack() }) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Indietro",
+                                                contentDescription = stringResource(R.string.cd_back),
                                             )
                                         }
                                     },
@@ -596,7 +596,7 @@ private fun AuthenticatedShell(
                                         IconButton(onClick = { navController.popBackStack() }) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Indietro",
+                                                contentDescription = stringResource(R.string.cd_back),
                                             )
                                         }
                                     },

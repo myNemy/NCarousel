@@ -2,6 +2,7 @@ package dev.nemeyes.ncarousel
 
 import android.app.Application
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingWorkPolicy
@@ -22,6 +23,7 @@ import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
+import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
@@ -95,6 +97,12 @@ sealed interface UiEvent {
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    private fun appStr(@StringRes id: Int, vararg args: Any): String {
+        val app = getApplication<Application>()
+        @Suppress("SpreadOperator")
+        return if (args.isEmpty()) app.getString(id) else app.getString(id, *args)
+    }
 
     private val accounts = NextcloudAccountStore(application)
     private val carousel = CarouselPreferences(application)
@@ -310,7 +318,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCredentials() {
         val s = _ui.value
         if (s.serverUrl.isBlank() || s.username.isBlank() || s.password.isBlank()) {
-            _ui.update { it.copy(statusMessage = "Compila URL, utente e password.") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_url_user_password)) }
             return
         }
         // Manual account: assume provided username is UID for WebDAV.
@@ -329,7 +337,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 hasActiveAccount = true,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
-                statusMessage = "Account salvato (cifrato sul dispositivo).",
+                statusMessage = appStr(R.string.msg_account_saved_encrypted),
                 instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
                 instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
             )
@@ -340,17 +348,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun startNextcloudLoginV2() {
         val s = _ui.value
         if (s.serverUrl.isBlank()) {
-            _ui.update { it.copy(statusMessage = "Compila URL server.") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_server_url)) }
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = "Avvio login Nextcloud…") }
+            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_login_starting_nextcloud)) }
             val flow = NextcloudLoginFlowV2(http)
             val started = flow.start(s.serverUrl)
             started.fold(
                 onSuccess = { start ->
                     _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
-                    _ui.update { it.copy(statusMessage = "Completa il login nel browser…") }
+                    _ui.update { it.copy(statusMessage = appStr(R.string.status_complete_login_browser)) }
                     val polled = flow.pollUntilDone(start.pollEndpoint, start.pollToken)
                     polled.fold(
                         onSuccess = { ok ->
@@ -376,7 +384,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     username = active?.userId.orEmpty(),
                                     password = active?.appPassword.orEmpty(),
                                     remoteFolder = active?.remoteFolder.orEmpty(),
-                                    statusMessage = "Login completato: credenziali salvate (app password).",
+                                    statusMessage = appStr(R.string.msg_login_complete_saved),
                                     instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
                                     instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },
                                 )
@@ -388,7 +396,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             _ui.update {
                                 it.copy(
                                     busy = false,
-                                    statusMessage = "Login fallito: ${e.message ?: e.javaClass.simpleName}",
+                                    statusMessage = appStr(R.string.msg_login_failed, e.message ?: e.javaClass.simpleName),
                                 )
                             }
                         },
@@ -398,7 +406,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _ui.update {
                         it.copy(
                             busy = false,
-                            statusMessage = "Impossibile avviare login: ${e.message ?: e.javaClass.simpleName}",
+                            statusMessage = appStr(R.string.msg_login_could_not_start, e.message ?: e.javaClass.simpleName),
                         )
                     }
                 },
@@ -431,18 +439,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         refreshBatteryOptimizationStatus()
-        _ui.update { it.copy(statusMessage = "Opzioni carosello salvate.") }
+        _ui.update { it.copy(statusMessage = appStr(R.string.msg_carousel_options_saved)) }
     }
 
     fun clearWallpaperDiskCache() {
         val id = accounts.getActiveAccountId()
         if (id == null) {
-            _ui.update { it.copy(statusMessage = "Nessun account attivo.") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_no_active_account)) }
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
             WallpaperDiskCache.clear(getApplication(), id)
-            _ui.update { it.copy(statusMessage = "Cache immagini sul disco svuotata (account attivo).") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_disk_cache_cleared)) }
             refreshWallpaperExif()
         }
     }
@@ -474,7 +482,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = null,
                         wallpaperExifLines = emptyList(),
-                        wallpaperExifError = "Nessuno sfondo applicato ancora con NCarousel su questo account.",
+                        wallpaperExifError = appStr(R.string.msg_exif_no_wallpaper_yet),
                     )
                 }
                 return@launch
@@ -500,13 +508,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = fileLabel,
                         wallpaperExifLines = emptyList(),
-                        wallpaperExifError = "Immagine non in cache e download non riuscito. Applica di nuovo lo sfondo o controlla la rete.",
+                        wallpaperExifError = appStr(R.string.msg_exif_download_failed),
                     )
                 }
                 return@launch
             }
             val lines = withContext(Dispatchers.Default) {
-                ImageExifSummary.formatLines(bytes)
+                ImageExifSummary.formatLines(app.resources, bytes)
             }
             _ui.update {
                 it.copy(
@@ -523,7 +531,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = _ui.value
         val active = activeOrNull()
         if (active == null) {
-            _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
             return
         }
         viewModelScope.launch {
@@ -540,8 +548,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     busy = false,
                     statusMessage = result.fold(
-                        onSuccess = { "Connessione WebDAV OK." },
-                        onFailure = { e -> "Errore: ${e.message ?: e.javaClass.simpleName}" },
+                        onSuccess = { appStr(R.string.msg_webdav_ok) },
+                        onFailure = { e -> appStr(R.string.msg_error_colon, e.message ?: e.javaClass.simpleName) },
                     ),
                 )
             }
@@ -552,11 +560,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = _ui.value
         val active = activeOrNull()
         if (active == null) {
-            _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = "Scansione cartelle in corso…") }
+            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_scanning_folders)) }
             // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
             val folder = s.remoteFolder.trim().trim('/').ifBlank {
                 active.remoteFolder.ifBlank { "Photos" }
@@ -578,7 +586,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             imageHrefs = list,
                             imageFileIds = fileIds,
                             remoteFolder = folder,
-                            statusMessage = "Trovate ${list.size} immagini.",
+                            statusMessage = appStr(R.string.msg_images_found, list.size),
                         )
                     }
                     val app = getApplication<Application>()
@@ -592,7 +600,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             busy = false,
                             imageHrefs = emptyList(),
                             imageFileIds = emptyMap(),
-                            statusMessage = "Errore elenco: ${e.message ?: e.javaClass.simpleName}",
+                            statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
                         )
                     }
                 },
@@ -603,15 +611,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun applyNextWallpaper() {
         val s = _ui.value
         if (s.imageHrefs.isEmpty()) {
-            _ui.update { it.copy(statusMessage = "Aggiorna prima l’elenco immagini.") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_refresh_list_first)) }
             return
         }
         if (activeOrNull() == null) {
-            _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
+            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_downloading)) }
             val err = withContext(Dispatchers.IO) {
                 NextWallpaperApplicator.applyNext(
                     getApplication(),
@@ -623,7 +631,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     busy = false,
                     statusMessage = when {
-                        err == null -> "Sfondo aggiornato."
+                        err == null -> appStr(R.string.msg_wallpaper_updated)
                         else -> err
                     },
                 )
@@ -638,15 +646,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = _ui.value
         if (href.isBlank()) return
         if (s.imageHrefs.isEmpty()) {
-            _ui.update { it.copy(statusMessage = "Aggiorna prima l’elenco immagini.") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_refresh_list_first)) }
             return
         }
         if (activeOrNull() == null) {
-            _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
+            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_downloading)) }
             val err = withContext(Dispatchers.IO) {
                 NextWallpaperApplicator.applyHref(
                     getApplication(),
@@ -659,7 +667,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     busy = false,
                     statusMessage = when {
-                        err == null -> "Sfondo aggiornato."
+                        err == null -> appStr(R.string.msg_wallpaper_updated)
                         else -> err
                     },
                 )
@@ -704,7 +712,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
-                statusMessage = "Account attivo aggiornato.",
+                statusMessage = appStr(R.string.msg_active_account_changed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
             )
@@ -730,7 +738,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
-                statusMessage = "Account rimosso.",
+                statusMessage = appStr(R.string.msg_account_removed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
             )

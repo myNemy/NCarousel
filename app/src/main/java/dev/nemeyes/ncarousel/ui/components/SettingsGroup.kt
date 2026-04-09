@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.OrderMode
 
 /**
@@ -135,10 +137,11 @@ fun SettingsSwitchRow(
     }
 }
 
+@Composable
 fun orderModeLabel(mode: OrderMode): String = when (mode) {
-    OrderMode.SEQUENTIAL -> "Sequenziale"
-    OrderMode.RANDOM -> "Casuale"
-    OrderMode.SHUFFLE_ONCE -> "Mescola una volta"
-    OrderMode.SMART_RANDOM -> "Casuale intelligente"
-    OrderMode.NO_REPEAT_SHUFFLE -> "Senza ripetere (tutto il set)"
+    OrderMode.SEQUENTIAL -> stringResource(R.string.order_mode_sequential)
+    OrderMode.RANDOM -> stringResource(R.string.order_mode_random)
+    OrderMode.SHUFFLE_ONCE -> stringResource(R.string.order_mode_shuffle_once)
+    OrderMode.SMART_RANDOM -> stringResource(R.string.order_mode_smart_random)
+    OrderMode.NO_REPEAT_SHUFFLE -> stringResource(R.string.order_mode_no_repeat_shuffle)
 }

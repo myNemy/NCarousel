@@ -169,14 +169,14 @@ class NextcloudWebDavClient(
             .build()
         http.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                val where = folder.ifBlank { "(radice account)" }
+                val where = folder.ifBlank { "(account root)" }
                 val hint404 =
                     if (response.code == 404) {
-                        " Controlla il campo «Cartella remota» nell’app (deve essere come in Nextcloud Files, senza slash iniziale)."
+                        " Check the Remote folder value (same as in Nextcloud Files, no leading slash)."
                     } else {
                         ""
                     }
-                error("PROPFIND su «$where»: HTTP ${response.code}.$hint404")
+                error("PROPFIND at \"$where\": HTTP ${response.code}.$hint404")
             }
             val xml = response.body?.string() ?: error("Empty PROPFIND body")
             return parsePropfind(xml)

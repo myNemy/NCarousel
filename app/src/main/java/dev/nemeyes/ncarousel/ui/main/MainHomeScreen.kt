@@ -24,8 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.MainUiState
+import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 
 @Composable
@@ -52,8 +54,7 @@ fun MainHomeScreen(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
             Text(
-                text = "Sfondi da Nextcloud. Cambio automatico con WorkManager " +
-                    "(minimo ${WallpaperWorkScheduler.MIN_INTERVAL_MINUTES} min; in Doze i ritardi possono allungarsi).",
+                text = stringResource(R.string.main_intro_body, WallpaperWorkScheduler.MIN_INTERVAL_MINUTES),
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -61,7 +62,7 @@ fun MainHomeScreen(
         }
 
         Text(
-            text = "Immagini in elenco: ${state.imageHrefs.size}",
+            text = stringResource(R.string.main_images_in_list, state.imageHrefs.size),
             style = MaterialTheme.typography.titleMedium,
         )
 
@@ -75,7 +76,7 @@ fun MainHomeScreen(
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(Icons.Default.WifiTethering, contentDescription = null)
-                Text("Prova connessione", modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(R.string.main_test_connection), modifier = Modifier.padding(start = 8.dp))
             }
         }
         Button(
@@ -88,7 +89,7 @@ fun MainHomeScreen(
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
-                Text("Aggiorna elenco immagini", modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(R.string.main_refresh_image_list), modifier = Modifier.padding(start = 8.dp))
             }
         }
         Button(
@@ -96,7 +97,7 @@ fun MainHomeScreen(
             enabled = !state.busy && state.imageHrefs.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Applica prossima immagine")
+            Text(stringResource(R.string.main_apply_next_wallpaper))
         }
 
         OutlinedCard(
@@ -108,12 +109,12 @@ fun MainHomeScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "EXIF ultimo sfondo",
+                    text = stringResource(R.string.main_exif_card_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "Riferito all’ultima immagine applicata come sfondo da NCarousel (anche dal tile o dal cambio automatico).",
+                    text = stringResource(R.string.main_exif_card_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -141,7 +142,7 @@ fun MainHomeScreen(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
-                                text = "Lettura metadati…",
+                                text = stringResource(R.string.main_exif_loading),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -177,7 +178,7 @@ fun MainHomeScreen(
                         .fillMaxWidth()
                         .padding(top = 12.dp),
                 ) {
-                    Text("Aggiorna EXIF")
+                    Text(stringResource(R.string.main_refresh_exif))
                 }
             }
         }

@@ -63,30 +63,31 @@ fun AboutScreen(
     val forgejoUrl = "https://forgejo.it/Nemeyes/NCarousel"
     val issuesUrl = "https://github.com/myNemy/NCarousel/issues"
 
+    val apache = stringResource(R.string.about_license_apache)
     val licenses = listOf(
         LicenseLink(
-            title = "Coil",
-            subtitle = "Apache-2.0",
+            title = stringResource(R.string.about_dep_coil),
+            subtitle = apache,
             url = "https://github.com/coil-kt/coil/blob/main/LICENSE.txt",
         ),
         LicenseLink(
-            title = "OkHttp",
-            subtitle = "Apache-2.0",
+            title = stringResource(R.string.about_dep_okhttp),
+            subtitle = apache,
             url = "https://square.github.io/okhttp/#license",
         ),
         LicenseLink(
-            title = "AndroidX / Jetpack Compose",
-            subtitle = "Apache-2.0",
+            title = stringResource(R.string.about_dep_androidx_compose),
+            subtitle = apache,
             url = "https://source.android.com/docs/setup/about/licenses",
         ),
         LicenseLink(
-            title = "Room",
-            subtitle = "Apache-2.0",
+            title = stringResource(R.string.about_dep_room),
+            subtitle = apache,
             url = "https://developer.android.com/jetpack/androidx/releases/room#license",
         ),
         LicenseLink(
-            title = "WorkManager",
-            subtitle = "Apache-2.0",
+            title = stringResource(R.string.about_dep_workmanager),
+            subtitle = apache,
             url = "https://developer.android.com/jetpack/androidx/releases/work#license",
         ),
     )
