@@ -4,7 +4,6 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +44,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.awaitEachGesture
+import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.ui.input.pointer.waitForUpOrCancellation
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.R
@@ -414,20 +418,23 @@ private fun DPadButton(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    // IconButton triggers onClick on release; Snake feels better when turning on press-down.
-    IconButton(
-        onClick = {},
-        enabled = enabled,
+    // Use a raw press-down handler: IconButton/clickable typically fires on release.
+    Surface(
         modifier =
             modifier.pointerInput(enabled) {
                 if (!enabled) return@pointerInput
-                detectTapGestures(
-                    onPress = {
-                        onPress()
-                        tryAwaitRelease()
-                    },
-                )
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    onPress()
+                    waitForUpOrCancellation()
+                }
             },
-        content = content,
-    )
+        shape = CircleShape,
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            content()
+        }
+    }
 }
