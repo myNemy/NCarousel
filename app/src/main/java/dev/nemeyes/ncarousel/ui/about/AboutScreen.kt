@@ -32,7 +32,7 @@ fun AboutScreen(
         LicenseLink(
             title = "Coil",
             subtitle = "Apache-2.0",
-            url = "https://github.com/coil-kt/coil/blob/main/LICENSE",
+            url = "https://github.com/coil-kt/coil/blob/main/LICENSE.txt",
         ),
         LicenseLink(
             title = "OkHttp",

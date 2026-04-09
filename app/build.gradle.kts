@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; CI appends +run. Bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.29"
+val ncarouselBaseVersionName = "0.2.30"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -14,7 +14,7 @@ val ncarouselBaseVersionName = "0.2.29"
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
  */
-val ncarouselLocalVersionCode = 42
+val ncarouselLocalVersionCode = 43
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()

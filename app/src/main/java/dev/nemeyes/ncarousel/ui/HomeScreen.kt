@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -304,77 +305,82 @@ private fun AuthenticatedShell(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    NCarouselLogoMark(
-                        size = 56.dp,
-                        tint = MaterialTheme.colorScheme.primary,
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        NCarouselLogoMark(
+                            size = 56.dp,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    NavigationDrawerItem(
+                        label = { Text("Inizio") },
+                        selected = currentRoute == AppDestinations.MAIN,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            if (currentRoute != AppDestinations.MAIN) {
+                                navController.popBackStack(AppDestinations.MAIN, inclusive = false)
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.Home, contentDescription = null) },
                     )
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleMedium,
+                    NavigationDrawerItem(
+                        label = { Text(stringResource(R.string.nc_library_title)) },
+                        selected = currentRoute == AppDestinations.LIBRARY,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(AppDestinations.LIBRARY) {
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Impostazioni") },
+                        selected = currentRoute == AppDestinations.SETTINGS,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(AppDestinations.SETTINGS) {
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
+                    )
+                    NavigationDrawerItem(
+                        label = { Text(stringResource(R.string.nc_snake_title)) },
+                        selected = currentRoute == AppDestinations.NCSNAKE,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(AppDestinations.NCSNAKE) {
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.SportsEsports, contentDescription = null) },
+                    )
+
+                    Spacer(Modifier.weight(1f))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    NavigationDrawerItem(
+                        label = { Text(stringResource(R.string.nc_about_title)) },
+                        selected = currentRoute == AppDestinations.ABOUT,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(AppDestinations.ABOUT) {
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
                     )
                 }
-                NavigationDrawerItem(
-                    label = { Text("Inizio") },
-                    selected = currentRoute == AppDestinations.MAIN,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        if (currentRoute != AppDestinations.MAIN) {
-                            navController.popBackStack(AppDestinations.MAIN, inclusive = false)
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Home, contentDescription = null) },
-                )
-                NavigationDrawerItem(
-                    label = { Text("Impostazioni") },
-                    selected = currentRoute == AppDestinations.SETTINGS,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(AppDestinations.SETTINGS) {
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
-                )
-                NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.nc_snake_title)) },
-                    selected = currentRoute == AppDestinations.NCSNAKE,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(AppDestinations.NCSNAKE) {
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.SportsEsports, contentDescription = null) },
-                )
-                NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.nc_library_title)) },
-                    selected = currentRoute == AppDestinations.LIBRARY,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(AppDestinations.LIBRARY) {
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
-                )
-                NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.nc_about_title)) },
-                    selected = currentRoute == AppDestinations.ABOUT,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(AppDestinations.ABOUT) {
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
-                )
             }
         },
     ) {
