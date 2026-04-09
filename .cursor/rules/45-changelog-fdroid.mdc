@@ -18,6 +18,11 @@ Rules:
 
 ## Release tag (required for publishing)
 
-- When preparing a version meant to be published (F-Droid / releases), create a git tag in the form `v<versionName>`
-  (example: `v0.2.38`) pointing to the release commit.
-- If the release is published, push the tag to **both** remotes (`forgejo` and `origin`), consistent with the repo rules.
+- **Automatic (GitHub Actions):** On every **push to `main`**, after the **Android CI** debug build succeeds, a job
+  reads `ncarouselBaseVersionName` from `app/build.gradle.kts` and, if git tag `v<versionName>` is **not** already on
+  `origin`, creates an annotated tag on that commit and pushes it to **GitHub**.
+- **Forgejo mirror:** Set repository secret `FORGEJO_PUSH_TOKEN` (Forgejo personal access token with repository
+  write) so the same job also pushes the tag to `https://forgejo.it/Nemeyes/NCarousel.git`. If the secret is missing,
+  only GitHub gets the tag; push the tag to Forgejo manually or add the secret.
+- **Manual:** You may still create `v<versionName>` locally when needed; the CI job will skip if the tag already
+  exists on `origin`.
