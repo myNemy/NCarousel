@@ -2,8 +2,10 @@ package dev.nemeyes.ncarousel.ui.library
 
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -261,22 +263,25 @@ private fun FastScroller(
     val thumbWidth = 10.dp
     val trackWidth = 3.dp
 
-    Box(
+    BoxWithConstraints(
         modifier =
             modifier
                 .width(18.dp)
                 .pointerInput(Unit) {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val ch = event.changes.firstOrNull() ?: continue
-                        if (ch.pressed) {
+                    detectDragGestures(
+                        onDragStart = {
                             onDragActiveChange(true)
-                            val h = size.height.coerceAtLeast(1f)
-                            onJumpToProgress(ch.position.y / h)
-                            ch.consume()
-                        } else {
+                        },
+                        onDragEnd = {
                             onDragActiveChange(false)
-                        }
+                        },
+                        onDragCancel = {
+                            onDragActiveChange(false)
+                        },
+                    ) { change, _ ->
+                        val h = size.height.coerceAtLeast(1f)
+                        onJumpToProgress(change.position.y / h)
+                        change.consume()
                     }
                 },
     ) {
@@ -291,17 +296,16 @@ private fun FastScroller(
         )
 
         val p = clamp01(progress01)
-        Box(modifier = Modifier.fillMaxHeight()) {
-            Surface(
-                modifier = Modifier
-                    .align(androidx.compose.ui.Alignment.TopCenter)
-                    .offset(y = ((this@Box.maxHeight - thumbHeight) * p).coerceAtLeast(0.dp)),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                tonalElevation = 2.dp,
-            ) {
-                Box(modifier = Modifier.size(width = thumbWidth, height = thumbHeight))
-            }
+        val maxY = (maxHeight - thumbHeight).coerceAtLeast(0.dp)
+        Surface(
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.TopCenter)
+                .offset(y = maxY * p),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+            tonalElevation = 2.dp,
+        ) {
+            Box(modifier = Modifier.size(width = thumbWidth, height = thumbHeight))
         }
     }
 }
