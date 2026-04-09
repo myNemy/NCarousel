@@ -49,7 +49,8 @@ jobs:
         run: |
           set -e
           if [ -z "$KEYSTORE_B64" ]; then
-            echo "::warning::Secrets NCAROUSEL_* not set: debug APK signature changes each CI run; uninstall before sideloading a new build. See README (GitHub Actions APK)."
+            echo "HAS_CI_KEYSTORE=false" >> "$GITHUB_ENV"
+            echo "::warning::Secrets NCAROUSEL_* not set: debug APK signature changes each CI run; uninstall before sideloading a new build. No release APK will be produced (release requires the same keystore). See docs/DEVELOPMENT.md."
             exit 0
           fi
           if [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
@@ -62,10 +63,16 @@ jobs:
             echo "NCAROUSEL_SIGNING_STORE_PASSWORD=$KEYSTORE_PASSWORD"
             echo "NCAROUSEL_SIGNING_KEY_ALIAS=$KEY_ALIAS"
             echo "NCAROUSEL_SIGNING_KEY_PASSWORD=$KEY_PASSWORD"
+            echo "HAS_CI_KEYSTORE=true"
           } >> "$GITHUB_ENV"
 
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
+
+      # Release build (minified config off; signed with CI keystore when secrets are set — same as debug).
+      - name: Build release APK
+        if: env.HAS_CI_KEYSTORE == 'true'
+        run: ./gradlew :app:assembleRelease --no-daemon
 
       # v6 runs on Node 24 by default (not v5 / Node 20).
       - name: Upload debug APK
@@ -75,8 +82,16 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      - name: Upload release APK
+        if: env.HAS_CI_KEYSTORE == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
   # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
-  # configured, then create or update a GitHub Release with the debug APK as a downloadable asset.
+  # configured, then create or update a GitHub Release with APK assets (release + debug when built).
   release-tag:
     name: Release tag and GitHub Release
     needs: build-debug
@@ -97,6 +112,14 @@ jobs:
           name: app-debug-apk
           path: release-apk
 
+      - name: Download release APK from build job
+        id: download_release
+        continue-on-error: true
+        uses: actions/download-artifact@v6
+        with:
+          name: app-release-apk
+          path: release-apk-rel
+
       - name: Tag, push remotes, publish GitHub Release with APK
         env:
           FORGEJO_PUSH_TOKEN: ${{ secrets.FORGEJO_PUSH_TOKEN }}
@@ -105,9 +128,9 @@ jobs:
           set -euo pipefail
           REPO="${{ github.repository }}"
 
-          APK=$(find release-apk -name '*.apk' -print -quit)
-          if [ -z "${APK}" ] || [ ! -f "${APK}" ]; then
-            echo "::error::No APK found under release-apk/"
+          APK_DEBUG=$(find release-apk -name '*.apk' -print -quit)
+          if [ -z "${APK_DEBUG}" ] || [ ! -f "${APK_DEBUG}" ]; then
+            echo "::error::No debug APK found under release-apk/"
             exit 1
           fi
           VERSION=$(grep -E '^\s*val ncarouselBaseVersionName\s*=' app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
@@ -115,8 +138,17 @@ jobs:
             echo "::error::Could not parse ncarouselBaseVersionName from app/build.gradle.kts"
             exit 1
           fi
-          DEST="release-apk/NCarousel-${VERSION}-debug.apk"
-          cp -f "${APK}" "${DEST}"
+          DEST_DEBUG="release-apk/NCarousel-${VERSION}-debug.apk"
+          cp -f "${APK_DEBUG}" "${DEST_DEBUG}"
+          DEST_RELEASE=""
+          if [ "${{ steps.download_release.outcome }}" = "success" ]; then
+            APK_REL=$(find release-apk-rel -name '*.apk' -print -quit)
+            if [ -n "${APK_REL}" ] && [ -f "${APK_REL}" ]; then
+              DEST_RELEASE="release-apk/NCarousel-${VERSION}.apk"
+              cp -f "${APK_REL}" "${DEST_RELEASE}"
+              echo "Release APK will be attached as NCarousel-${VERSION}.apk"
+            fi
+          fi
           TAG="v${VERSION}"
 
           git fetch --tags origin
@@ -139,12 +171,18 @@ jobs:
             fi
           fi
 
+          ASSETS=( "${DEST_DEBUG}" )
+          if [ -n "${DEST_RELEASE}" ] && [ -f "${DEST_RELEASE}" ]; then
+            ASSETS+=( "${DEST_RELEASE}" )
+          fi
           if gh release view "${TAG}" --repo "${REPO}" >/dev/null 2>&1; then
             echo "Updating assets on existing release ${TAG}."
-            gh release upload "${TAG}" "${DEST}" --clobber --repo "${REPO}"
+            for f in "${ASSETS[@]}"; do
+              gh release upload "${TAG}" "${f}" --clobber --repo "${REPO}"
+            done
           else
-            echo "Creating GitHub Release ${TAG} with APK asset."
-            gh release create "${TAG}" "${DEST}" \
+            echo "Creating GitHub Release ${TAG} with APK asset(s)."
+            gh release create "${TAG}" "${ASSETS[@]}" \
               --repo "${REPO}" \
               --title "NCarousel ${VERSION}" \
               --generate-notes

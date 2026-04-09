@@ -8,8 +8,8 @@ The app follows the system locale when translations are available (default Engli
 
 ## Download
 
-- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** — for each release tag `v*`, CI attaches a **debug** APK named `NCarousel-<version>-debug.apk`. These builds are meant for testing and sideloading; signing behaviour is described in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
-- **[GitHub Actions](https://github.com/myNemy/NCarousel/actions)** — every successful run on `main` also publishes the same APK as a workflow **artifact** (`app-debug-apk`).
+- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** — for each release tag `v*`, CI attaches `NCarousel-<version>-debug.apk` and, when [signing secrets](docs/DEVELOPMENT.md) are set on the repo, a **release** APK `NCarousel-<version>.apk` (same keystore as CI). Builds are for testing and sideloading.
+- **[GitHub Actions](https://github.com/myNemy/NCarousel/actions)** — artifacts **`app-debug-apk`** (always) and **`app-release-apk`** (when secrets are configured).
 
 Releases and tags are created automatically on `main` after a green build (see `.github/workflows/android-ci.yml`). To mirror release tags to **Forgejo**, maintainers can set the `FORGEJO_PUSH_TOKEN` repository secret on GitHub.
 

@@ -2,15 +2,22 @@
 
 Notes for people who **clone**, **build**, **download CI artifacts**, or **maintain** signing for NCarousel.
 
-## Pre-built debug APK (GitHub Actions)
+## Pre-built APKs (GitHub Actions)
 
-On each push to `main`, the workflow **Android CI** builds a debug APK. To download it:
+On each push to `main`, the workflow **Android CI** builds a **debug** APK. If repository signing secrets are configured (see **GitHub Actions: stable APK signature** below), it also builds a **release** APK (`assembleRelease`), signed with the same keystore as CI debug.
+
+**GitHub Releases** (on `main` after a green build) attach:
+
+- `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set).
+- `NCarousel-<version>-debug.apk` — **debug** build (always).
+
+To download from a workflow run without using Releases:
 
 1. Open **[Actions](https://github.com/myNemy/NCarousel/actions)** for this repository.
 2. Select the latest successful **Android CI** run.
-3. Under **Artifacts**, download **`app-debug-apk`**, unzip if needed, install the `.apk` on a device (you may need to allow installs from unknown sources).
+3. Under **Artifacts**, download **`app-debug-apk`** and, if present, **`app-release-apk`**.
 
-These are **debug** builds, intended for testing. For a stable signature between runs (so Android can upgrade without uninstall), configure repository secrets as described in **GitHub Actions: stable APK signature** below.
+These CI builds are intended for testing and sideloading. For a stable signature between runs (so Android can upgrade without uninstall), configure repository secrets as described below.
 
 ## Build requirements
 
