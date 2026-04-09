@@ -625,6 +625,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun applyWallpaperByHref(href: String) {
+        val s = _ui.value
+        if (href.isBlank()) return
+        if (s.imageHrefs.isEmpty()) {
+            _ui.update { it.copy(statusMessage = "Aggiorna prima l’elenco immagini.") }
+            return
+        }
+        if (activeOrNull() == null) {
+            _ui.update { it.copy(statusMessage = "Aggiungi un account (login o credenziali).") }
+            return
+        }
+        viewModelScope.launch {
+            _ui.update { it.copy(busy = true, statusMessage = "Download in corso…") }
+            val err = withContext(Dispatchers.IO) {
+                NextWallpaperApplicator.applyHref(
+                    getApplication(),
+                    href = href,
+                    hrefsForProgress = s.imageHrefs,
+                    wallpaperTargetOverride = s.wallpaperTarget,
+                )
+            }
+            _ui.update {
+                it.copy(
+                    busy = false,
+                    statusMessage = when {
+                        err == null -> "Sfondo aggiornato."
+                        else -> err
+                    },
+                )
+            }
+            if (err == null) {
+                refreshWallpaperExif()
+            }
+        }
+    }
+
     fun loadCachedListIfAny() {
         val active = activeOrNull() ?: return
         viewModelScope.launch {

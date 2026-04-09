@@ -54,4 +54,10 @@
     <string name="nc_snake_cd_down">Giù</string>
     <string name="nc_snake_cd_left">Sinistra</string>
     <string name="nc_snake_cd_right">Destra</string>
+    <string name="nc_library_title">Libreria</string>
+    <string name="nc_library_empty_title">Nessuna immagine in libreria</string>
+    <string name="nc_library_empty_body">Aggiorna l’elenco immagini dalla tua cartella Nextcloud per poter scegliere e applicare un’immagine.</string>
+    <string name="nc_library_refresh">Aggiorna elenco</string>
+    <string name="nc_library_count">%1$d immagini</string>
+    <string name="nc_library_tap_to_apply">Tocca per applicare</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DrawerValue
@@ -66,6 +67,7 @@ import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.UiEvent
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
+import dev.nemeyes.ncarousel.ui.library.LibraryScreen
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
 import dev.nemeyes.ncarousel.ui.settings.SettingsScreen
@@ -76,6 +78,7 @@ object AppDestinations {
     const val MAIN = "main"
     const val SETTINGS = "settings"
     const val NCSNAKE = "ncsnake"
+    const val LIBRARY = "library"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -346,6 +349,17 @@ private fun AuthenticatedShell(
                     },
                     icon = { Icon(Icons.Outlined.SportsEsports, contentDescription = null) },
                 )
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.nc_library_title)) },
+                    selected = currentRoute == AppDestinations.LIBRARY,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(AppDestinations.LIBRARY) {
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                )
             }
         },
     ) {
@@ -502,6 +516,45 @@ private fun AuthenticatedShell(
                             },
                         ) { inner ->
                             NCSnakeScreen(modifier = Modifier.padding(inner))
+                        }
+                    }
+                    composable(AppDestinations.LIBRARY) {
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            NCarouselLogoMark(
+                                                size = 32.dp,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(stringResource(R.string.nc_library_title))
+                                        }
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = { navController.popBackStack() }) {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Indietro",
+                                            )
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                    windowInsets = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal),
+                                )
+                            },
+                        ) { inner ->
+                            LibraryScreen(
+                                modifier = Modifier.padding(inner),
+                                state = state,
+                                onRefreshList = viewModel::refreshImageList,
+                                onApplyHref = viewModel::applyWallpaperByHref,
+                            )
                         }
                     }
                 }

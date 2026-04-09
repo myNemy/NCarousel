@@ -27,6 +27,21 @@ object NextWallpaperApplicator {
             applyNextImpl(context.applicationContext, orderModeOverride, wallpaperTargetOverride)
         }
 
+    /**
+     * Applies a specific wallpaper [href] without advancing the carousel order state.
+     *
+     * This is intended for “pick from library” UI: it downloads (or reuses cache) and sets the wallpaper,
+     * updates the "last applied" label and optional notification, but does not call [WallpaperPick.commitSuccess].
+     *
+     * @return `null` on success, or a short user-facing error message.
+     */
+    suspend fun applyHref(
+        context: Context,
+        href: String,
+        hrefsForProgress: List<String>,
+        wallpaperTargetOverride: WallpaperTarget? = null,
+    ): String? = applyHrefImpl(context.applicationContext, href, hrefsForProgress, wallpaperTargetOverride)
+
     private suspend fun applyNextImpl(
         app: Context,
         orderModeOverride: OrderMode?,
@@ -70,6 +85,52 @@ object NextWallpaperApplicator {
                 pick.commitSuccess()
                 LastAppliedWallpaperStore.setHref(app, active.id, href)
                 CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, bytes)
+                null
+            },
+            onFailure = { e ->
+                e.message?.takeIf { it.isNotBlank() }
+                    ?: app.getString(R.string.qs_tile_err_wallpaper)
+            },
+        )
+    }
+
+    private suspend fun applyHrefImpl(
+        app: Context,
+        href: String,
+        hrefsForProgress: List<String>,
+        wallpaperTargetOverride: WallpaperTarget?,
+    ): String? {
+        val active = NextcloudAccountStore(app).getActiveAccount()
+            ?: return app.getString(R.string.qs_tile_err_no_account)
+        val carousel = CarouselPreferences(app)
+        val wallpaperTarget = wallpaperTargetOverride ?: carousel.wallpaperTarget
+
+        val http = HttpClientProvider.create(app)
+        val client = NextcloudWebDavClient(
+            http,
+            active.serverBaseUrl,
+            active.userId,
+            active.loginName,
+            active.appPassword,
+        )
+        val disk = WallpaperDiskCache(app, active.id, carousel.maxWallpaperDiskCacheMb)
+        val bytes = disk.get(href) ?: run {
+            val b = client.downloadFile(href).getOrElse { e ->
+                return e.message?.takeIf { it.isNotBlank() }
+                    ?: app.getString(R.string.qs_tile_err_download)
+            }
+            disk.put(href, b)
+            b
+        }
+
+        val sorted = hrefsForProgress.sorted()
+        val idx0 = sorted.indexOf(href).takeIf { it >= 0 } ?: 0
+        val progress = PickProgress(current = (idx0 + 1).coerceAtLeast(1), total = sorted.size.coerceAtLeast(1))
+
+        return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
+            onSuccess = {
+                LastAppliedWallpaperStore.setHref(app, active.id, href)
+                CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, progress, bytes)
                 null
             },
             onFailure = { e ->
