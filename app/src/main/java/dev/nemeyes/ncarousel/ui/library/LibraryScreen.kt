@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -129,6 +132,18 @@ fun LibraryScreen(
     val itemCount = sortedRows.size
     val showFastScroll = itemCount >= 80
     var sliderValue by remember(sortedRows) { mutableStateOf(0f) }
+    var fastScrollVisible by remember { mutableStateOf(false) }
+    val isListScrolling by remember { derivedStateOf { listState.isScrollInProgress } }
+
+    LaunchedEffect(isListScrolling) {
+        if (isListScrolling) {
+            fastScrollVisible = true
+        } else {
+            // Hide shortly after scrolling stops.
+            kotlinx.coroutines.delay(900)
+            fastScrollVisible = false
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -204,23 +219,37 @@ fun LibraryScreen(
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        if (showFastScroll) {
-            // Vertical fast scroller using a rotated Slider.
-            Slider(
-                value = sliderValue,
-                onValueChange = { v ->
-                    sliderValue = v
-                    val i = (v * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
-                    scope.launch { listState.scrollToItem(i + 1) } // +1 for header item
-                },
-                valueRange = 0f..1f,
+        if (showFastScroll && fastScrollVisible) {
+            // Keep it on the right edge: allocate a thin side gutter and rotate Slider inside it.
+            Box(
                 modifier =
                     Modifier
                         .fillMaxHeight()
-                        .padding(end = 2.dp, top = 12.dp, bottom = 12.dp)
-                        .graphicsLayer(rotationZ = -90f)
-                        .align(androidx.compose.ui.Alignment.CenterEnd),
-            )
+                        .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
+                        .align(androidx.compose.ui.Alignment.CenterEnd)
+                        .width(28.dp),
+            ) {
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { v ->
+                        fastScrollVisible = true
+                        sliderValue = v
+                        val i = (v * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
+                        scope.launch { listState.scrollToItem(i + 1) } // +1 for header item
+                    },
+                    valueRange = 0f..1f,
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .graphicsLayer(
+                                rotationZ = -90f,
+                                // Scale down slightly so it doesn't look like a giant bar.
+                                scaleX = 0.85f,
+                                scaleY = 0.85f,
+                            )
+                            .align(androidx.compose.ui.Alignment.Center),
+                )
+            }
         }
     }
 }
