@@ -14,11 +14,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import dev.nemeyes.ncarousel.BuildConfig
 import dev.nemeyes.ncarousel.R
+import android.os.Build
+import android.content.pm.PackageInfo
 
 data class LicenseLink(
     val title: String,
@@ -31,6 +34,31 @@ fun AboutScreen(
     modifier: Modifier = Modifier,
     onOpenUrl: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val pkgName = context.packageName
+    val pkgInfo: PackageInfo? =
+        remember(pkgName) {
+            runCatching {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    context.packageManager.getPackageInfo(
+                        pkgName,
+                        android.content.pm.PackageManager.PackageInfoFlags.of(0),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(pkgName, 0)
+                }
+            }.getOrNull()
+        }
+    val versionName = pkgInfo?.versionName ?: "?"
+    val versionCode =
+        pkgInfo?.let {
+            if (Build.VERSION.SDK_INT >= 28) it.longVersionCode else {
+                @Suppress("DEPRECATION")
+                it.versionCode.toLong()
+            }
+        } ?: -1L
+
     val repoUrl = "https://github.com/myNemy/NCarousel"
     val forgejoUrl = "https://forgejo.it/Nemeyes/NCarousel"
     val issuesUrl = "https://github.com/myNemy/NCarousel/issues"
@@ -88,8 +116,8 @@ fun AboutScreen(
                 Text(
                     text = stringResource(
                         R.string.nc_about_version,
-                        BuildConfig.VERSION_NAME,
-                        BuildConfig.VERSION_CODE,
+                        versionName,
+                        versionCode,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
