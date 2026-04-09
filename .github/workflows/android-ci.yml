@@ -75,14 +75,14 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-  # After a green build on main, ensure git tag v<ncarouselBaseVersionName> exists on GitHub (and
-  # optionally Forgejo). Skips if the tag already exists on origin.
+  # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
+  # configured, then create or update a GitHub Release with the debug APK as a downloadable asset.
   release-tag:
-    name: Release tag
+    name: Release tag and GitHub Release
     needs: build-debug
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
@@ -91,33 +91,61 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create and push release tag if missing
+      - name: Download debug APK from build job
+        uses: actions/download-artifact@v6
+        with:
+          name: app-debug-apk
+          path: release-apk
+
+      - name: Tag, push remotes, publish GitHub Release with APK
         env:
           FORGEJO_PUSH_TOKEN: ${{ secrets.FORGEJO_PUSH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          APK=$(find release-apk -name '*.apk' -print -quit)
+          if [ -z "${APK}" ] || [ ! -f "${APK}" ]; then
+            echo "::error::No APK found under release-apk/"
+            exit 1
+          fi
           VERSION=$(grep -E '^\s*val ncarouselBaseVersionName\s*=' app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           if [ -z "${VERSION}" ]; then
             echo "::error::Could not parse ncarouselBaseVersionName from app/build.gradle.kts"
             exit 1
           fi
+          DEST="release-apk/NCarousel-${VERSION}-debug.apk"
+          cp -f "${APK}" "${DEST}"
           TAG="v${VERSION}"
+
           git fetch --tags origin
           if git rev-parse "${TAG}" >/dev/null 2>&1; then
-            echo "Tag ${TAG} already exists on this clone (fetched from origin); nothing to do."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${TAG}" -m "Release ${VERSION}"
-          git push origin "${TAG}"
-          echo "Pushed ${TAG} to origin."
-          if [ -n "${FORGEJO_PUSH_TOKEN}" ]; then
-            FORGEJO_URL="https://oauth2:${FORGEJO_PUSH_TOKEN}@forgejo.it/Nemeyes/NCarousel.git"
-            git remote remove forgejo 2>/dev/null || true
-            git remote add forgejo "${FORGEJO_URL}"
-            git push forgejo "${TAG}"
-            echo "Pushed ${TAG} to forgejo."
+            echo "Tag ${TAG} already exists on origin; skipping tag creation."
           else
-            echo "::notice::Secret FORGEJO_PUSH_TOKEN not set; skipping tag push to Forgejo. Add a Forgejo PAT with repo scope to mirror release tags."
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Release ${VERSION}"
+            git push origin "${TAG}"
+            echo "Pushed ${TAG} to origin."
+            if [ -n "${FORGEJO_PUSH_TOKEN:-}" ]; then
+              FORGEJO_URL="https://oauth2:${FORGEJO_PUSH_TOKEN}@forgejo.it/Nemeyes/NCarousel.git"
+              git remote remove forgejo 2>/dev/null || true
+              git remote add forgejo "${FORGEJO_URL}"
+              git push forgejo "${TAG}"
+              echo "Pushed ${TAG} to forgejo."
+            else
+              echo "::notice::Secret FORGEJO_PUSH_TOKEN not set; skipping tag push to Forgejo."
+            fi
+          fi
+
+          if gh release view "${TAG}" --repo "${REPO}" >/dev/null 2>&1; then
+            echo "Updating assets on existing release ${TAG}."
+            gh release upload "${TAG}" "${DEST}" --clobber --repo "${REPO}"
+          else
+            echo "Creating GitHub Release ${TAG} with APK asset."
+            gh release create "${TAG}" "${DEST}" \
+              --repo "${REPO}" \
+              --title "NCarousel ${VERSION}" \
+              --generate-notes
           fi

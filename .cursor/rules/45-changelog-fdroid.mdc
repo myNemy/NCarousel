@@ -20,7 +20,8 @@ Rules:
 
 - **Automatic (GitHub Actions):** On every **push to `main`**, after the **Android CI** debug build succeeds, a job
   reads `ncarouselBaseVersionName` from `app/build.gradle.kts` and, if git tag `v<versionName>` is **not** already on
-  `origin`, creates an annotated tag on that commit and pushes it to **GitHub**.
+  `origin`, creates an annotated tag on that commit and pushes it to **GitHub**. It then **creates or updates** a
+  **GitHub Release** for that tag and attaches the **debug APK** as a release asset (`NCarousel-<version>-debug.apk`).
 - **Forgejo mirror:** Set repository secret `FORGEJO_PUSH_TOKEN` (Forgejo personal access token with repository
   write) so the same job also pushes the tag to `https://forgejo.it/Nemeyes/NCarousel.git`. If the secret is missing,
   only GitHub gets the tag; push the tag to Forgejo manually or add the secret.
