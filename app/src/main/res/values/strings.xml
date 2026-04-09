@@ -63,4 +63,7 @@
     <string name="nc_library_sort_folders">Cartelle</string>
     <string name="nc_library_sort_name">Nome</string>
     <string name="nc_library_root_folder">(cartella principale)</string>
+    <string name="nc_about_title">About</string>
+    <string name="nc_about_oss_licenses">Licenze open-source</string>
+    <string name="nc_about_view_license">Vedi licenza</string>
 </resources>

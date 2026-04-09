@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Settings
@@ -66,6 +67,7 @@ import dev.nemeyes.ncarousel.MainViewModel
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.UiEvent
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
+import dev.nemeyes.ncarousel.ui.about.AboutScreen
 import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
 import dev.nemeyes.ncarousel.ui.library.LibraryScreen
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
@@ -79,6 +81,7 @@ object AppDestinations {
     const val SETTINGS = "settings"
     const val NCSNAKE = "ncsnake"
     const val LIBRARY = "library"
+    const val ABOUT = "about"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -360,6 +363,17 @@ private fun AuthenticatedShell(
                     },
                     icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
                 )
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.nc_about_title)) },
+                    selected = currentRoute == AppDestinations.ABOUT,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(AppDestinations.ABOUT) {
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                )
             }
         },
     ) {
@@ -554,6 +568,46 @@ private fun AuthenticatedShell(
                                 state = state,
                                 onRefreshList = viewModel::refreshImageList,
                                 onApplyHref = viewModel::applyWallpaperByHref,
+                            )
+                        }
+                    }
+                    composable(AppDestinations.ABOUT) {
+                        Scaffold(
+                            topBar = {
+                                TopAppBar(
+                                    title = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            NCarouselLogoMark(
+                                                size = 32.dp,
+                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(stringResource(R.string.nc_about_title))
+                                        }
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = { navController.popBackStack() }) {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Indietro",
+                                            )
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                    windowInsets = TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Horizontal),
+                                )
+                            },
+                        ) { inner ->
+                            AboutScreen(
+                                modifier = Modifier.padding(inner),
+                                onOpenUrl = { url ->
+                                    val intent = CustomTabsIntent.Builder().build()
+                                    intent.launchUrl(context, android.net.Uri.parse(url))
+                                },
                             )
                         }
                     }
