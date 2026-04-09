@@ -1,0 +1,1 @@
+Added translations for several European locales (e.g. German, French, Spanish, Dutch, Polish, Portuguese Portugal, Swedish, Czech, Romanian, Greek, Hungarian). The app follows your system language when a matching translation is available.
