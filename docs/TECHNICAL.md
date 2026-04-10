@@ -33,12 +33,5 @@ This document is a short, developer-oriented overview of NCarousel’s architect
 
 ## CI releases (GitHub)
 
-On pushes to `main` (after a green build), CI:
-
-- Ensures a tag `v<ncarouselBaseVersionName>` exists.
-- Creates or updates a GitHub Release for that tag and attaches:
-  - `NCarousel-<version>.apk` (release build, when signing secrets are set)
-  - `NCarousel-<version>-debug.apk` (debug build)
-
-See `.github/workflows/android-ci.yml` and [docs/DEVELOPMENT.md](DEVELOPMENT.md).
+On pushes to `main` (after a green build), CI manages the tag **`v<ncarouselBaseVersionName>`**, the matching GitHub Release, and attached APKs. **New release entries vs updating the same release** depend on whether the version string in Gradle was bumped—see [docs/DEVELOPMENT.md](DEVELOPMENT.md) (“Tags, versions, and when you see a new release”) and `.github/workflows/android-ci.yml`.
 

@@ -11,6 +11,16 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 - `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set).
 - `NCarousel-<version>-debug.apk` — **debug** build (always).
 
+### Tags, versions, and when you see a “new” release
+
+CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.39`).
+
+- **First time** that tag appears on GitHub: CI creates the annotated tag (if missing) and creates the GitHub Release, then uploads the APKs.
+- **Later pushes** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused; CI **replaces** the APK assets (`--clobber`). The Releases page does **not** gain an extra row—only the files on that version’s release change. The release **title** includes the workflow run number so you can see when assets were refreshed.
+- **A new row** on the Releases page requires **bumping** `ncarouselBaseVersionName` (and, for installable builds, following the project’s `versionCode` / Fastlane changelog rules). **Changing app code alone does not create a new tag or a new release entry.**
+
+Optional: set repository secret **`FORGEJO_PUSH_TOKEN`** on GitHub so CI also pushes the same tag to Forgejo (see `.github/workflows/android-ci.yml`).
+
 To download from a workflow run without using Releases:
 
 1. Open **[Actions](https://github.com/myNemy/NCarousel/actions)** for this repository.
