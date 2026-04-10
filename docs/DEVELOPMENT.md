@@ -15,7 +15,7 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 
 Repository **Cursor rules** (`.cursor/rules/50-commit-push-release-automation.mdc`) require bumping **`ncarouselBaseVersionName`** (at least patch), **`ncarouselLocalVersionCode`** (+1), and adding a Fastlane changelog **before** commit/push of **app-impacting** changes, so each such push yields a **new** GitHub Release entry.
 
-CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.39`).
+CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.40`).
 
 - **First time** that tag appears on GitHub: CI creates the annotated tag (if missing) and creates the GitHub Release, then uploads the APKs.
 - **Later pushes** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused; CI **replaces** the APK assets (`--clobber`). The Releases page does **not** gain an extra row—only the files on that version’s release change. The release **title** includes the workflow run number so you can see when assets were refreshed.
@@ -43,6 +43,34 @@ From the repository root:
 ```
 
 APK output: `app/build/outputs/apk/debug/`.
+
+## Release build without a local SDK (Podman)
+
+If you do not have `ANDROID_HOME` / Android Studio on the host, you can build with **Podman** and a small SDK image (same idea as “clean machine” / F-Droid-like).
+
+Pull once:
+
+```bash
+podman pull ghcr.io/cirruslabs/android-sdk:35
+```
+
+From the repository root, **release** without CI signing env (F-Droid signs its own APKs; this produces `app-release-unsigned.apk`):
+
+```bash
+podman run --rm \
+  -v "$PWD:/project:Z" \
+  -w /project \
+  -e ANDROID_HOME=/opt/android-sdk-linux \
+  -e ANDROID_SDK_ROOT=/opt/android-sdk-linux \
+  ghcr.io/cirruslabs/android-sdk:35 \
+  bash -lc 'unset NCAROUSEL_SIGNING_STORE_FILE NCAROUSEL_SIGNING_STORE_PASSWORD NCAROUSEL_SIGNING_KEY_ALIAS NCAROUSEL_SIGNING_KEY_PASSWORD GITHUB_RUN_NUMBER; chmod +x ./gradlew; ./gradlew :app:assembleRelease --no-daemon'
+```
+
+APK output: `app/build/outputs/apk/release/app-release-unsigned.apk`.
+
+On Fedora/RHEL with SELinux, `:Z` on the volume mount relabels the tree for the container; omit it on typical Arch installs if you prefer.
+
+The image ships **JDK 21**; AGP 8.x accepts it. For a **debug** build, use `./gradlew :app:assembleDebug` in the same command.
 
 ## Gradle wrapper license
 
