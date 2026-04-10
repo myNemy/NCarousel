@@ -66,10 +66,13 @@ Without a local SDK, use **Podman** as in [DEVELOPMENT.md — Release build with
 F-Droid app additions happen in the **[fdroiddata](https://gitlab.com/fdroid/fdroiddata)** repository on GitLab.
 
 1. [Sign up / sign in](https://gitlab.com/users/sign_up) on GitLab and **fork** `fdroiddata`.
-2. Add a new **file** under `metadata/`: **`metadata/dev.nemeyes.ncarousel.yml`** (see template below).  
+2. **Create a dedicated branch on your fork** before adding metadata (recommended by [fdroiddata CONTRIBUTING](https://gitlab.com/fdroid/fdroiddata/-/blob/master/CONTRIBUTING.md): easier MR tracking, avoids piling unrelated commits on your fork’s `master`).  
+   Example after cloning your fork: `git checkout -b dev.nemeyes.ncarousel`  
+   **If you already committed on `master`:** you can still open the MR with **source branch = `master`** of your fork — that is acceptable. For future updates, use a new branch per change. Optionally, from current `master`: `git checkout -b dev.nemeyes.ncarousel && git push -u origin dev.nemeyes.ncarousel` and open the MR from that branch instead (same commits, cleaner history).
+3. Add a new **file** under `metadata/`: **`metadata/dev.nemeyes.ncarousel.yml`** (see template below).  
    **Cartelle in `metadata/`:** molte app hanno **due** voci con lo stesso “nome” (es. `An.stop.yml` **e** cartella `An.stop/`). Il **file `.yml`** è la ricetta di build (obbligatoria per una nuova app). La **cartella** omonima serve a testi/screenshot extra per il sito F-Droid ([descrizioni e grafica](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)); non la crei tu all’inizio salvo che tu voglia fornirli lì. Per NCarousel basta il `.yml`; le descrizioni possono restare anche nel tuo repo (Fastlane) e i revisori le useranno se appropriate.
-3. Open a **Merge Request** against `fdroiddata` with a short description: what the app does, license, source repo, and that it builds with standard Gradle (no proprietary blobs).
-4. Watch the MR for **reviewer feedback** and CI (`fdroid build`); adjust the recipe if the build server reports missing SDK, wrong commit, etc.
+4. **Push** your branch to your fork, then open a **Merge Request** against upstream `fdroiddata` with a short description: what the app does, license, source repo, and that it builds with standard Gradle (no proprietary blobs).
+5. Watch the MR for **reviewer feedback** and CI (`fdroid build`); adjust the recipe if the build server reports missing SDK, wrong commit, etc.
 
 ### Choosing the `Repo:` URL
 
