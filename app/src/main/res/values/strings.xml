@@ -61,6 +61,7 @@
     <string name="msg_fill_url_user_password">Enter server URL, username, and password.</string>
     <string name="msg_account_saved_encrypted">Account saved (encrypted on device).</string>
     <string name="msg_fill_server_url">Enter server URL.</string>
+    <string name="msg_https_required">Server URL must start with https://</string>
     <string name="status_login_starting_nextcloud">Starting Nextcloud login…</string>
     <string name="status_complete_login_browser">Complete sign-in in the browser…</string>
     <string name="msg_login_complete_saved">Login complete: credentials saved (app password).</string>

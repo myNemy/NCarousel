@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,6 +31,10 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
     suspend fun start(serverBaseUrl: String): Result<StartResult> = withContext(Dispatchers.IO) {
         runCatching {
             val base = serverBaseUrl.trimEnd('/')
+            val baseUrl = base.toHttpUrlOrNull() ?: error("Invalid server URL")
+            if (baseUrl.scheme.lowercase() != "https") {
+                error("Server URL must start with https://")
+            }
             val url = "$base/index.php/login/v2"
             val req = Request.Builder()
                 .url(url)
@@ -56,24 +61,38 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
     suspend fun pollUntilDone(
         pollEndpoint: String,
         token: String,
+        expectedServerBaseUrl: String,
         timeoutMs: Long = 20L * 60L * 1000L,
         intervalMs: Long = 1500L,
     ): Result<PollSuccess> = withContext(Dispatchers.IO) {
-        runCatching { pollUntilSuccess(pollEndpoint, token, timeoutMs, intervalMs) }
+        runCatching { pollUntilSuccess(pollEndpoint, token, expectedServerBaseUrl, timeoutMs, intervalMs) }
     }
 
     private suspend fun pollUntilSuccess(
         pollEndpoint: String,
         token: String,
+        expectedServerBaseUrl: String,
         timeoutMs: Long,
         intervalMs: Long,
     ): PollSuccess {
+        val expected = expectedServerBaseUrl.trimEnd('/').toHttpUrlOrNull()
+            ?: error("Invalid server URL")
+        if (expected.scheme.lowercase() != "https") error("Server URL must start with https://")
+
+        val pollUrl = pollEndpoint.trim().toHttpUrlOrNull() ?: error("Invalid poll endpoint")
+        if (pollUrl.scheme.lowercase() != "https") error("Poll endpoint must use https://")
+        val sameOrigin =
+            pollUrl.scheme == expected.scheme &&
+                pollUrl.host == expected.host &&
+                pollUrl.port == expected.port
+        if (!sameOrigin) error("Poll endpoint origin mismatch")
+
         val deadline = System.currentTimeMillis() + timeoutMs
         val body = "token=$token".toRequestBody("application/x-www-form-urlencoded".toMediaType())
         while (true) {
             if (System.currentTimeMillis() > deadline) error("Login timeout")
             val req = Request.Builder()
-                .url(pollEndpoint)
+                .url(pollUrl)
                 .post(body)
                 .build()
             val done: PollSuccess? = http.newCall(req).execute().use { res ->

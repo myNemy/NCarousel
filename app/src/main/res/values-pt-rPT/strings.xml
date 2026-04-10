@@ -51,6 +51,7 @@
     <string name="msg_fill_url_user_password">Introduza o URL do servidor, nome de utilizador e palavra-passe.</string>
     <string name="msg_account_saved_encrypted">Conta guardada (encriptada no dispositivo).</string>
     <string name="msg_fill_server_url">Introduza o URL do servidor.</string>
+    <string name="msg_https_required">O URL do servidor deve começar por https://</string>
     <string name="status_login_starting_nextcloud">A iniciar sessão Nextcloud…</string>
     <string name="status_complete_login_browser">Conclua o início de sessão no browser…</string>
     <string name="msg_login_complete_saved">Sessão concluída: credenciais guardadas (palavra-passe da aplicação).</string>

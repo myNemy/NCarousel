@@ -1,0 +1,27 @@
+---
+description: Automatic version bump + changelog on commit & push
+alwaysApply: true
+---
+
+# Commit + push = release-ready changes
+
+When the user asks to **commit and push**, treat it as a **release-ready** publish unless the user explicitly says otherwise (e.g. "do not bump version", "no release", "WIP", "draft", "no changelog").
+
+## Required steps before committing
+
+- Update `app/build.gradle.kts`:
+  - Increment **`ncarouselLocalVersionCode`** by **+1**
+  - Update **`ncarouselBaseVersionName`** when appropriate (patch/minor/major)
+- Add a matching Fastlane changelog file:
+  - `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
+  - Written in **English**, 2–10 short user-facing lines
+
+## Push requirements (two remotes)
+
+- After the commit, push to **both** remotes:
+  - `git push forgejo <branch>`
+  - `git push origin <branch>`
+
+## GitHub Release expectation (automatic via CI)
+
+- On pushes to `main`, after a green Android CI run, the workflow ensures tag `v<ncarouselBaseVersionName>` and creates/updates the matching **GitHub Release** with attached APK assets.

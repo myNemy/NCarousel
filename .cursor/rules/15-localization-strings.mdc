@@ -1,0 +1,20 @@
+---
+description: Keep Android string resources consistent across all locales
+globs: app/src/main/res/**/{strings,plurals,arrays}.xml
+alwaysApply: false
+---
+
+# Localization: Android string resources (`strings.xml`, `plurals.xml`, `arrays.xml`)
+
+- When you **add, rename, or change** a resource in `app/src/main/res/values/` (`strings.xml`, `plurals.xml`, `arrays.xml`), you MUST apply the equivalent change to **all** existing locale files (e.g. `values-it`, `values-ro`, `values-pt-rPT`, etc.) present in the repo.
+- Do not leave missing keys in translated resource files.
+- If an accurate translation is not available, use one of the following (in this order):
+  - Copy the English source string as a temporary fallback (preferred to missing keys).
+  - Add a clearly marked placeholder translation (e.g. `[TODO translate] ...`) ONLY if the project already uses this convention.
+
+## Safety checks
+
+- Keep placeholders (`%1$s`, `%d`), escaping, and punctuation consistent across locales.
+- For `plurals.xml`, keep the same quantity items (`one`, `other`, etc.) across locales unless there is a deliberate, documented reason.
+- For `arrays.xml` (`string-array`), keep the same set/order of items across locales when the array is used as a stable option list (IDs should not be localized unless the code expects it).
+- Avoid embedding URLs or secrets in localized strings.

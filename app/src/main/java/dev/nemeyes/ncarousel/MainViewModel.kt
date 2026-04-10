@@ -321,6 +321,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_url_user_password)) }
             return
         }
+        if (!s.serverUrl.trim().startsWith("https://", ignoreCase = true)) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
+            return
+        }
         // Manual account: assume provided username is UID for WebDAV.
         val acc = dev.nemeyes.ncarousel.data.accounts.NextcloudAccount(
             serverBaseUrl = s.serverUrl,
@@ -351,6 +355,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_server_url)) }
             return
         }
+        if (!s.serverUrl.trim().startsWith("https://", ignoreCase = true)) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
+            return
+        }
         viewModelScope.launch {
             _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_login_starting_nextcloud)) }
             val flow = NextcloudLoginFlowV2(http)
@@ -359,7 +367,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 onSuccess = { start ->
                     _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
                     _ui.update { it.copy(statusMessage = appStr(R.string.status_complete_login_browser)) }
-                    val polled = flow.pollUntilDone(start.pollEndpoint, start.pollToken)
+                    val polled = flow.pollUntilDone(start.pollEndpoint, start.pollToken, expectedServerBaseUrl = s.serverUrl)
                     polled.fold(
                         onSuccess = { ok ->
                             val userId = OcsUserClient(http).fetchUserId(ok.server, ok.loginName, ok.appPassword)

@@ -51,6 +51,7 @@
     <string name="msg_fill_url_user_password">Introduceți URL-ul serverului, numele de utilizator și parola.</string>
     <string name="msg_account_saved_encrypted">Cont salvat (criptat pe dispozitiv).</string>
     <string name="msg_fill_server_url">Introduceți URL-ul serverului.</string>
+    <string name="msg_https_required">URL-ul serverului trebuie să înceapă cu https://</string>
     <string name="status_login_starting_nextcloud">Se pornește autentificarea Nextcloud…</string>
     <string name="status_complete_login_browser">Finalizați autentificarea în browser…</string>
     <string name="msg_login_complete_saved">Autentificare finalizată: date salvate (parolă aplicație).</string>

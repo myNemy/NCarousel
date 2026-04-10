@@ -57,6 +57,7 @@
     <string name="msg_fill_url_user_password">Compila URL, utente e password.</string>
     <string name="msg_account_saved_encrypted">Account salvato (cifrato sul dispositivo).</string>
     <string name="msg_fill_server_url">Compila URL server.</string>
+    <string name="msg_https_required">L’URL del server deve iniziare con https://</string>
     <string name="status_login_starting_nextcloud">Avvio login Nextcloud…</string>
     <string name="status_complete_login_browser">Completa il login nel browser…</string>
     <string name="msg_login_complete_saved">Login completato: credenziali salvate (app password).</string>

@@ -51,6 +51,7 @@
     <string name="msg_fill_url_user_password">Adja meg a kiszolgáló URL-jét, a felhasználónevet és a jelszót.</string>
     <string name="msg_account_saved_encrypted">Fiók mentve (titkosítva az eszközön).</string>
     <string name="msg_fill_server_url">Adja meg a kiszolgáló URL-jét.</string>
+    <string name="msg_https_required">A kiszolgáló URL-jének https://-sel kell kezdődnie</string>
     <string name="status_login_starting_nextcloud">Nextcloud bejelentkezés indítása…</string>
     <string name="status_complete_login_browser">Fejezze be a bejelentkezést a böngészőben…</string>
     <string name="msg_login_complete_saved">Bejelentkezés kész: hitelesítő adatok mentve (alkalmazásjelszó).</string>

@@ -4,6 +4,7 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -27,6 +28,16 @@ class NextcloudWebDavClient(
 ) {
 
     private val authHeader = Credentials.basic(basicAuthUser, password)
+    private val baseUrl = serverBaseUrl.trimEnd('/').toHttpUrlOrNull()
+        ?: error("Invalid server base URL")
+    /**
+     * Authenticated DAV calls should never follow redirects.
+     * A cross-host redirect could otherwise leak the `Authorization` header.
+     */
+    private val davHttp = http.newBuilder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build()
 
     private val propfindBody = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -52,7 +63,7 @@ class NextcloudWebDavClient(
                 .method("PROPFIND", propfindBody)
                 .header("Depth", "0")
                 .build()
-            http.newCall(request).execute().use { response ->
+            davHttp.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     error("PROPFIND failed: HTTP ${response.code}")
                 }
@@ -152,7 +163,7 @@ class NextcloudWebDavClient(
                 .header("Authorization", authHeader)
                 .get()
                 .build()
-            http.newCall(request).execute().use { response ->
+            davHttp.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) error("GET failed: HTTP ${response.code}")
                 response.body?.bytes() ?: error("Empty body")
             }
@@ -167,7 +178,7 @@ class NextcloudWebDavClient(
             .method("PROPFIND", propfindBody)
             .header("Depth", "1")
             .build()
-        http.newCall(request).execute().use { response ->
+        davHttp.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 val where = folder.ifBlank { "(account root)" }
                 val hint404 =
@@ -214,10 +225,23 @@ class NextcloudWebDavClient(
 
     private fun absoluteUrlForHref(hrefPath: String): String {
         val h = hrefPath.trim()
-        if (h.startsWith("http://", ignoreCase = true) || h.startsWith("https://", ignoreCase = true)) {
-            return h
+        // Absolute URL from server: only allow same-origin to avoid leaking Authorization.
+        val abs = h.toHttpUrlOrNull()
+        if (abs != null) {
+            val sameOrigin =
+                abs.scheme == baseUrl.scheme &&
+                    abs.host == baseUrl.host &&
+                    abs.port == baseUrl.port
+            if (!sameOrigin) error("Refusing cross-origin DAV href")
+            return abs.toString()
         }
-        return serverBaseUrl.trimEnd('/') + (if (h.startsWith("/")) h else "/$h")
+
+        // Relative href: resolve against configured base.
+        val rel = if (h.startsWith("/")) h else "/$h"
+        return baseUrl.newBuilder()
+            .encodedPath(rel)
+            .build()
+            .toString()
     }
 
     private fun parsePropfind(xml: String): List<DavEntry> {

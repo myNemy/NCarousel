@@ -51,6 +51,7 @@
     <string name="msg_fill_url_user_password">Podaj adres URL serwera, nazwę użytkownika i hasło.</string>
     <string name="msg_account_saved_encrypted">Konto zapisane (zaszyfrowane na urządzeniu).</string>
     <string name="msg_fill_server_url">Podaj adres URL serwera.</string>
+    <string name="msg_https_required">Adres URL serwera musi zaczynać się od https://</string>
     <string name="status_login_starting_nextcloud">Uruchamianie logowania Nextcloud…</string>
     <string name="status_complete_login_browser">Dokończ logowanie w przeglądarce…</string>
     <string name="msg_login_complete_saved">Logowanie zakończone: dane zapisane (hasło aplikacji).</string>

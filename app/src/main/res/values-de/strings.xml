@@ -51,6 +51,7 @@
     <string name="msg_fill_url_user_password">Server-URL, Benutzername und Passwort eingeben.</string>
     <string name="msg_account_saved_encrypted">Konto gespeichert (verschlüsselt auf dem Gerät).</string>
     <string name="msg_fill_server_url">Server-URL eingeben.</string>
+    <string name="msg_https_required">Die Server-URL muss mit https:// beginnen</string>
     <string name="status_login_starting_nextcloud">Nextcloud-Anmeldung wird gestartet…</string>
     <string name="status_complete_login_browser">Anmeldung im Browser abschließen…</string>
     <string name="msg_login_complete_saved">Anmeldung abgeschlossen: Zugangsdaten gespeichert (App-Passwort).</string>
