@@ -1,0 +1,3 @@
+GitHub Releases: the release title now includes the CI run number when APKs are published or refreshed, so you can see when assets were updated.
+
+The Releases page shows one entry per app version tag; bump the version in the app build file for a new release row—otherwise the same release is updated with new APKs.

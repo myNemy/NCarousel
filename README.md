@@ -8,7 +8,10 @@ The app follows the system locale when translations are available (default Engli
 
 ## Download
 
-- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** —  Builds are for testing and sideloading.
+- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** — CI publishes one GitHub Release per **`v<versionName>`** tag, where `versionName` is `ncarouselBaseVersionName` in `app/build.gradle.kts`. **Pushes that do not bump that value update the APK files on the existing release** (same tag); you will not see a brand‑new release row until the version string is increased. Release titles include the CI run number so you can tell when assets were refreshed.
+- **[GitHub Actions](https://github.com/myNemy/NCarousel/actions)** — every successful run on `main` also uploads workflow artifacts (`app-debug-apk`, and `app-release-apk` when signing secrets are set).
+
+Builds are for testing and sideloading. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for signing and upgrade behaviour.
 
 ## License
 

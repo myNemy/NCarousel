@@ -175,15 +175,18 @@ jobs:
           if [ -n "${DEST_RELEASE}" ] && [ -f "${DEST_RELEASE}" ]; then
             ASSETS+=( "${DEST_RELEASE}" )
           fi
+          RELEASE_TITLE="NCarousel ${VERSION} (CI #${{ github.run_number }})"
           if gh release view "${TAG}" --repo "${REPO}" >/dev/null 2>&1; then
-            echo "Updating assets on existing release ${TAG}."
+            echo "Updating assets on existing release ${TAG} (same tag as ncarouselBaseVersionName in build.gradle.kts)."
+            echo "::notice::No new Releases list entry is created until you bump ncarouselBaseVersionName; APKs on this tag are replaced."
             for f in "${ASSETS[@]}"; do
               gh release upload "${TAG}" "${f}" --clobber --repo "${REPO}"
             done
+            gh release edit "${TAG}" --repo "${REPO}" --title "${RELEASE_TITLE}"
           else
             echo "Creating GitHub Release ${TAG} with APK asset(s)."
             gh release create "${TAG}" "${ASSETS[@]}" \
               --repo "${REPO}" \
-              --title "NCarousel ${VERSION}" \
+              --title "${RELEASE_TITLE}" \
               --generate-notes
           fi
