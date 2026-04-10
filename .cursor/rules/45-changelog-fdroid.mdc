@@ -13,7 +13,13 @@ Rules:
 
 - Whenever `ncarouselLocalVersionCode` is bumped in `app/build.gradle.kts`, add a matching changelog file
   named exactly `<versionCode>.txt`.
-- Changelog entries should be written in **English** (short, user-facing, 2–10 lines).
+- Changelog entries should be written in **English**, short and user-facing (**2–10 lines**).
+- The changelog MUST **describe the actual app changes** included in that build (not generic text).
+- Prefer a clear, structured syntax (one change per line), e.g. lines starting with `- `:
+  - `- Fix: …`
+  - `- Add: …`
+  - `- Change: …`
+  - `- Security: …`
 - If a release changes permissions, data handling, or scheduling behavior, mention it explicitly in the changelog.
 
 ## Release tag (required for publishing)

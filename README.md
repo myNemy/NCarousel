@@ -8,7 +8,7 @@ The app follows the system locale when translations are available (default Engli
 
 ## Download
 
-Pre-built APKs for testing are published on **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)**.
+- **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)** —  Builds are for testing and sideloading.
 
 ## License
 

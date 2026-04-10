@@ -16,7 +16,10 @@ Before **`git commit`** (and before any **`git push`** to `forgejo` / `origin`) 
 1. Edit **`app/build.gradle.kts`**:
    - **`ncarouselLocalVersionCode`**: **+1** (strictly increasing for local/F-Droid-style installs).
    - **`ncarouselBaseVersionName`**: **bump at least the patch** segment (e.g. `0.2.39` → `0.2.40`) so the next CI run creates tag **`v0.2.40`** and a **new** GitHub Release row. Use minor/major when the change warrants it.
-2. Add **`fastlane/metadata/android/en-US/changelogs/<newVersionCode>.txt`** (English, 2–10 short user-facing lines) matching the new **`ncarouselLocalVersionCode`**.
+2. Add **`fastlane/metadata/android/en-US/changelogs/<newVersionCode>.txt`** matching the new **`ncarouselLocalVersionCode`**:
+   - **English**, **2–10** short user-facing lines
+   - MUST **explicitly describe the app changes shipped** in that build (not generic filler)
+   - Prefer structured, one-change-per-line syntax (e.g. `- Fix: …`, `- Add: …`, `- Change: …`, `- Security: …`)
 
 Do this **automatically**; do not wait for the user to say “bump version”. If the user explicitly says **no version bump**, **no release**, **WIP**, or **draft**, then skip the bump for that commit.
 
