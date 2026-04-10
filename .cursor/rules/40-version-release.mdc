@@ -1,13 +1,20 @@
 ---
-description: Increment app version on commit/push for upgradable APKs
+description: versionCode / versionName — align with one new GitHub Release per app publish
 globs: "**/app/build.gradle.kts"
 alwaysApply: true
 ---
 
-# Versione app (versionCode / versionName)
+# App version (`versionCode` / `versionName`)
 
-- Ogni volta che si fa **commit e push** di modifiche che gli utenti installeranno (APK da CI o locale), aggiornare in `app/build.gradle.kts`:
-  - **`ncarouselLocalVersionCode`**: +1 (intero strettamente crescente per chi installa build senza `GITHUB_RUN_NUMBER`).
-  - **`ncarouselBaseVersionName`**: allineare al bisogno (es. patch `0.2.1` → `0.2.2` per release piccole).
-- Su **GitHub Actions**, `versionCode` usa già `1000 + GITHUB_RUN_NUMBER` (monotono a ogni run); `versionName` diventa `ncarouselBaseVersionName+$run`.
-- Non lasciare il fallback locale fermo tra un push e l’altro se si distribuiscono anche build locali.
+## Goal
+
+Each time **installable app** changes are **committed and pushed** to `main`, **`ncarouselBaseVersionName`** must increase (at least **patch**) so CI can publish tag **`v<versionName>`** and a **new** GitHub Release. **`ncarouselLocalVersionCode`** must **+1** every time as well, with a matching Fastlane changelog file (see `.cursor/rules/45-changelog-fdroid.mdc` and `.cursor/rules/50-commit-push-release-automation.mdc`).
+
+## Gradle fields
+
+- **`ncarouselLocalVersionCode`**: +1 on every release-ready push that ships app changes (monotonic for installs without `GITHUB_RUN_NUMBER`).
+- **`ncarouselBaseVersionName`**: bump patch (or minor/major) so the **public version string** and **git tag** advance — required for a **new** Releases page entry.
+
+## CI note
+
+On **GitHub Actions**, `versionCode` can use `1000 + GITHUB_RUN_NUMBER` when that env is set; `versionName` becomes `ncarouselBaseVersionName+$run`. **Still** keep **`ncarouselLocalVersionCode`** and **`ncarouselBaseVersionName`** moving on each app publish so local builds and F-Droid-style metadata stay consistent and each release is identifiable.

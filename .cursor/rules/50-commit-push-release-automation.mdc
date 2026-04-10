@@ -1,27 +1,48 @@
 ---
-description: Automatic version bump + changelog on commit & push
+description: Agent MUST bump version + changelog before commit/push of app changes; one new GitHub Release per bumped versionName
 alwaysApply: true
 ---
 
-# Commit + push = release-ready changes
+# Commit, push, and a new GitHub Release for every app change
 
-When the user asks to **commit and push**, treat it as a **release-ready** publish unless the user explicitly says otherwise (e.g. "do not bump version", "no release", "WIP", "draft", "no changelog").
+## Product goal
 
-## Required steps before committing
+When a change to the **installable Android app** is pushed to `main`, the maintainer expects **a new GitHub Release** (new tag `v<ncarouselBaseVersionName>` and a distinct Releases page entry), not only refreshed APKs on an old tag. That requires **bumping** `ncarouselBaseVersionName` (at least **patch**) on every such publish, because CI keys tags and releases off that string.
 
-- Update `app/build.gradle.kts`:
-  - Increment **`ncarouselLocalVersionCode`** by **+1**
-  - Update **`ncarouselBaseVersionName`** when appropriate (patch/minor/major)
-- Add a matching Fastlane changelog file:
-  - `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
-  - Written in **English**, 2–10 short user-facing lines
+## Agent obligation (non-negotiable unless user opts out)
+
+Before **`git commit`** (and before any **`git push`** to `forgejo` / `origin`) that includes **app-impacting** changes, the agent **MUST**:
+
+1. Edit **`app/build.gradle.kts`**:
+   - **`ncarouselLocalVersionCode`**: **+1** (strictly increasing for local/F-Droid-style installs).
+   - **`ncarouselBaseVersionName`**: **bump at least the patch** segment (e.g. `0.2.39` → `0.2.40`) so the next CI run creates tag **`v0.2.40`** and a **new** GitHub Release row. Use minor/major when the change warrants it.
+2. Add **`fastlane/metadata/android/en-US/changelogs/<newVersionCode>.txt`** (English, 2–10 short user-facing lines) matching the new **`ncarouselLocalVersionCode`**.
+
+Do this **automatically**; do not wait for the user to say “bump version”. If the user explicitly says **no version bump**, **no release**, **WIP**, or **draft**, then skip the bump for that commit.
+
+## What counts as “app-impacting”
+
+Version bump **required** when the diff touches e.g.:
+
+- `app/src/**` (Kotlin, resources, manifest, assets)
+- `app/build.gradle.kts`, `app/proguard-rules.pro`, or other app module build inputs
+- Anything that changes the built APK’s behaviour, metadata, or version consumers see
+
+Version bump **not** required when the diff is **only** e.g.:
+
+- `README.md`, `docs/**`, pure `.cursor/**` rule text
+- Repository metadata with **no** APK impact (as judged case-by-case)
+- **Exception:** changes to **`.github/workflows/**`** that affect CI/releases but not the app binary may skip a version bump unless the user wants a tagged release for traceability.
+
+When in doubt for mixed commits, **bump**.
 
 ## Push requirements (two remotes)
 
-- After the commit, push to **both** remotes:
-  - `git push forgejo <branch>`
-  - `git push origin <branch>`
+After the commit, push to **both** remotes:
 
-## GitHub Release expectation (automatic via CI)
+- `git push forgejo <branch>`
+- `git push origin <branch>`
 
-- On pushes to `main`, after a green Android CI run, the workflow ensures tag `v<ncarouselBaseVersionName>` and creates/updates the matching **GitHub Release** with attached APK assets.
+## GitHub Release (CI)
+
+On `main`, after a green build, CI creates the tag **`v<ncarouselBaseVersionName>`** if missing and creates/updates the GitHub Release. **A new `ncarouselBaseVersionName` ⇒ a new tag ⇒ a new Releases list entry** (see also `.cursor/rules/45-changelog-fdroid.mdc`).

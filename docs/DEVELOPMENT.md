@@ -13,6 +13,8 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 
 ### Tags, versions, and when you see a “new” release
 
+Repository **Cursor rules** (`.cursor/rules/50-commit-push-release-automation.mdc`) require bumping **`ncarouselBaseVersionName`** (at least patch), **`ncarouselLocalVersionCode`** (+1), and adding a Fastlane changelog **before** commit/push of **app-impacting** changes, so each such push yields a **new** GitHub Release entry.
+
 CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.39`).
 
 - **First time** that tag appears on GitHub: CI creates the annotated tag (if missing) and creates the GitHub Release, then uploads the APKs.

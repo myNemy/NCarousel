@@ -23,6 +23,8 @@ Rules:
   `origin`, creates an annotated tag on that commit and pushes it to **GitHub**. It then **creates or updates** a
   **GitHub Release** for that tag and attaches APK assets: **`NCarousel-<version>.apk`** (release build, when CI signing
   secrets are set) and **`NCarousel-<version>-debug.apk`** (debug build).
+- **New row on the Releases page** requires a **new** `ncarouselBaseVersionName` (and thus a new `v…` tag). Maintainers
+  and agents bump patch+`versionCode`+changelog on every app-impacting publish (see `.cursor/rules/50-commit-push-release-automation.mdc`).
 - **Forgejo mirror:** Set repository secret `FORGEJO_PUSH_TOKEN` (Forgejo personal access token with repository
   write) so the same job also pushes the tag to `https://forgejo.it/Nemeyes/NCarousel.git`. If the secret is missing,
   only GitHub gets the tag; push the tag to Forgejo manually or add the secret.
