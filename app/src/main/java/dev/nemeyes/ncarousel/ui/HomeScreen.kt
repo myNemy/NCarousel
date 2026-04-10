@@ -75,6 +75,7 @@ import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
 import dev.nemeyes.ncarousel.ui.settings.SettingsScreen
 import dev.nemeyes.ncarousel.ui.snake.NCSnakeScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 object AppDestinations {
@@ -91,6 +92,7 @@ fun HomeScreen(viewModel: MainViewModel) {
     val state by viewModel.ui.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val exifAutoRetryDoneForKey = remember { HashSet<String>() }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -110,6 +112,31 @@ fun HomeScreen(viewModel: MainViewModel) {
             viewModel.loadCachedListIfAny()
             viewModel.refreshWallpaperExif()
         }
+    }
+
+    // EXIF fetch may fail transiently on app start (network not ready / captive portal / etc.).
+    // Do a single delayed retry per (account, lastWallpaperFileLabel, error text) to reduce
+    // the need for manual "Refresh EXIF" taps without creating loops.
+    LaunchedEffect(
+        state.activeAccountId,
+        state.lastWallpaperFileLabel,
+        state.wallpaperExifError,
+        state.wallpaperExifLoading,
+        state.hasActiveAccount,
+    ) {
+        if (!state.hasActiveAccount) return@LaunchedEffect
+        if (state.wallpaperExifLoading) return@LaunchedEffect
+        if (state.wallpaperExifLines.isNotEmpty()) return@LaunchedEffect
+        val accId = state.activeAccountId ?: return@LaunchedEffect
+        val label = state.lastWallpaperFileLabel ?: return@LaunchedEffect
+        val err = state.wallpaperExifError ?: return@LaunchedEffect
+
+        val key = "$accId|$label|$err"
+        if (exifAutoRetryDoneForKey.contains(key)) return@LaunchedEffect
+        exifAutoRetryDoneForKey.add(key)
+
+        delay(2500)
+        viewModel.refreshWallpaperExif()
     }
 
     LaunchedEffect(state.statusMessage) {

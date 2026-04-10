@@ -2,7 +2,7 @@
 
 ## NCarousel
 
-Android app that downloads images from your **Nextcloud** server (WebDAV) and sets them as the device **wallpaper**, using official Android APIs. The UI is built with **Jetpack Compose**; background work uses **WorkManager** (including short intervals via chained one-shot work). Credentials are stored with **EncryptedSharedPreferences**.
+Android app that downloads images from your **Nextcloud** server (WebDAV) and sets them as the device **wallpaper**, using official Android APIs.
 
 The app follows the system locale when translations are available (default English, plus several European languages under `app/src/main/res/values-*`).
 
@@ -12,6 +12,12 @@ The app follows the system locale when translations are available (default Engli
 - **[GitHub Actions](https://github.com/myNemy/NCarousel/actions)** — artifacts **`app-debug-apk`** (always) and **`app-release-apk`** (when secrets are configured).
 
 Releases and tags are created automatically on `main` after a green build (see `.github/workflows/android-ci.yml`). To mirror release tags to **Forgejo**, maintainers can set the `FORGEJO_PUSH_TOKEN` repository secret on GitHub.
+
+## Docs
+
+- [Technical overview](docs/TECHNICAL.md)
+- [Development](docs/DEVELOPMENT.md)
+- [F-Droid publishing (maintainers)](docs/FDROID.md)
 
 ## License
 
