@@ -22,7 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
@@ -369,7 +369,7 @@ private fun AuthenticatedShell(
                                 launchSingleTop = true
                             }
                         },
-                        icon = { Icon(Icons.Outlined.ListAlt, contentDescription = null) },
+                        icon = { Icon(Icons.AutoMirrored.Outlined.ListAlt, contentDescription = null) },
                     )
                     NavigationDrawerItem(
                         label = { Text(stringResource(R.string.nav_settings)) },

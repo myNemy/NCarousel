@@ -1,0 +1,1 @@
+- Fix: Use AutoMirrored ListAlt icon in navigation drawer (RTL-safe, removes deprecation warning).
