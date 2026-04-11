@@ -1,0 +1,1 @@
+Build metadata fix for F-Droid version detection. Release 0.2.42 (versionCode 56).
