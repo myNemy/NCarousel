@@ -63,6 +63,8 @@ Without a local SDK, use **Podman** as in [DEVELOPMENT.md — Release build with
 
 ## Step 4 — Request inclusion in F-Droid
 
+Before opening an MR, skim the official **[F-Droid Inclusion Policy](https://f-droid.org/wiki/page/Inclusion_Policy)**. In short, the main repo only ships **FLOSS** apps built **from published source** with a **transparent** dependency story; **proprietary** tracking, ads, and typical Play-services analytics stacks are **not** allowed. NCarousel is intended to align with that (AGPL-3.0-or-later, `dev.nemeyes.ncarousel`, Gradle deps from standard Maven repos, no opt-in bypass for silent binary downloads). **Donation** / funding URLs in metadata must be **verifiable** upstream (same policy). When you add optional metadata keys later, fill them with real values—**do not** uncomment optional lines until you have content; empty active keys are worse than omitting the field.
+
 F-Droid app additions happen in the **[fdroiddata](https://gitlab.com/fdroid/fdroiddata)** repository on GitLab.
 
 1. [Sign up / sign in](https://gitlab.com/users/sign_up) on GitLab and **fork** `fdroiddata`.
@@ -85,38 +87,98 @@ Pick one as canonical for `Repo:` and keep tags pushed there. This repo pushes t
 
 ### Metadata template (`metadata/dev.nemeyes.ncarousel.yml`)
 
-Copy into your **fdroiddata** fork and adjust **`commit`**, **`versionName`**, and **`versionCode`** to match the tag and `app/build.gradle.kts` for the release you are submitting. Remove this comment block before committing in fdroiddata.
+Copy into your **fdroiddata** fork as **`metadata/dev.nemeyes.ncarousel.yml`**. Adjust **`commit`**, **`versionName`**, and **`versionCode`** to match the tag and `app/build.gradle.kts` for each release.
+
+**Comments in the skeleton below:** optional fields stay **`# ...` until you populate them with the maintainer**—**do not uncomment** optional keys with empty or placeholder values. Before submitting to fdroiddata, remove **instructional** comment blocks (template header, “PLEASE REMOVE…”) per upstream convention; for keys you still do not use, **delete** the commented line rather than leaving a bare `# Key:` stub, unless a reviewer asks otherwise. **`MaintainerNotes`** may stay if filled and useful.
+
+Below is the **full Build Metadata Reference skeleton** (no omitted fields): required / known values active; optional lines remain commented for later.
 
 ```yaml
+# F-Droid metadata template
+#
+# See https://f-droid.org/docs/ for more details
+# and the Metadata reference
+# https://f-droid.org/docs/Build_Metadata_Reference/
+#
+# Fields that are commented out are optional
+#
+# Single-line fields start right after the colon (with a whitespace).
+
+# These items are the metadata for the app. Please fill as many as possible.
+# Categories: pick those that apply (do not list every category below in the real file).
 Categories:
-  - Theming
   - Connectivity
+  - Multimedia
+  - Theming
+#   - Development
+#   - Games
+#   - Graphics
+#   - Internet
+#   - Money
+#   - Navigation
+#   - Phone & SMS
+#   - Reading
+#   - Science & Education
+#   - Security
+#   - Sports & Health
+#   - System
+#   - Time
+#   - Writing
 License: AGPL-3.0-or-later
 AuthorName: Nemeyes
+# AuthorEmail: (text)
+# AuthorWebSite: (web link)
 WebSite: https://github.com/myNemy/NCarousel
 SourceCode: https://github.com/myNemy/NCarousel
 IssueTracker: https://github.com/myNemy/NCarousel/issues
 Changelog: https://github.com/myNemy/NCarousel/releases
-Repo: https://github.com/myNemy/NCarousel.git
+# Donate: (web link)
+# Liberapay: (user name)
+# Bitcoin: (bitcoin address)
+
 AutoName: NCarousel
 
+RepoType: git
+Repo: https://github.com/myNemy/NCarousel.git
+# Binaries: (Upstream binary link for reproducible build — usually omitted when F-Droid builds entirely from source)
+
+# At least one for new apps
 Builds:
-  - versionName: 0.2.40
+  - versionName: '0.2.40'
     versionCode: 54
     commit: v0.2.40
+    # The `subdir` is the parent dir of `src/main` which is generally `app`.
+    subdir: app
+    # submodules: true
+    # output: some.apk
+    # prebuild: sed -i -e
+    # build: make
     gradle:
+      # If flavor is used, the flavor name needs to be specified.
+      # If no flavor is used, set `yes` here and `assembleRelease` is used.
       - yes
 
+# For a complete list of possible flags, see the docs
+
+# MaintainerNotes: |-
+#     Here go the notes to take into account for future updates, builds, etc.
+#     Will be published in the wiki if present.
+
+# The following options are described at this location:
+# https://f-droid.org/docs/Build_Metadata_Reference/#UpdateCheckMode
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.2.40
+CurrentVersion: '0.2.40'
 CurrentVersionCode: 54
+
+# PLEASE REMOVE ALL COMMENTS BEFORE SUBMITTING TO F-DROID DATA!
 ```
 
 **Notes on the recipe**
 
-- **`gradle: yes`** runs the Gradle build from the **repository root** (wrapper at top level, module `:app`). No `subdir:` is required for this layout.
-- **`versionName` / `versionCode`** must match the **source** at `commit` (F-Droid reads `versionCode` from the built APK and checks consistency).
+- **`subdir: app`** points F-Droid at the Android module (parent of `src/main`). If the build server expects the root `settings.gradle.kts` instead, follow reviewer guidance (some recipes drop `subdir` and build from repo root).
+- **`gradle: yes`** uses `assembleRelease` for the default variant (no product flavor in this project).
+- **`versionName` / `versionCode`** must match the **source** at `commit` (F-Droid reads `versionCode` from the built APK and checks consistency). Keep in sync with `ncarouselBaseVersionName` / `ncarouselLocalVersionCode` in `app/build.gradle.kts` for that tag (F-Droid does not use `GITHUB_RUN_NUMBER`).
 - After the first inclusion, the F-Droid team often tunes **`CurrentVersion*`** and update metadata; follow their MR comments.
 
 Fastlane metadata in this repo (`fastlane/metadata/android/en-US/`) can be referenced in MR discussion for **description and screenshots**; final store text may still be edited during review.
