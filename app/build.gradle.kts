@@ -12,7 +12,7 @@ val ncarouselBaseVersionName = "0.2.40"
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
  * - Local builds: [ncarouselLocalVersionCode] — **increment on every commit/push** that ships an APK.
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
- * - Override: `-Pncarousel.versionCode=123` or env `NCAROUSEL_VERSION_CODE`.
+ * - Override: Gradle property `ncarousel.versionCode` or env `NCAROUSEL_VERSION_CODE` (integer only).
  */
 val ncarouselLocalVersionCode = 54
 
