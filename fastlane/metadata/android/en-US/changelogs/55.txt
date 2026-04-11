@@ -1,0 +1,2 @@
+No user-visible feature changes.
+Fix Gradle KDoc so store tooling (e.g. F-Droid) parses versionCode correctly (no stray digits in comments).
