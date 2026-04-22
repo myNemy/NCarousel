@@ -1,0 +1,2 @@
+- Change: use password keyboard options for the app password field to reduce suggestion bar noise.
+- Change: apply the same password keyboard behavior on the login screen for consistency.

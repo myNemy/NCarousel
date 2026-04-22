@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -90,6 +92,12 @@ fun LoginScreen(
                 onValueChange = onPassChange,
                 label = { Text(stringResource(R.string.field_password_app)) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    autoCorrectEnabled = false,
+                    capitalization = KeyboardCapitalization.None,
+                    imeAction = ImeAction.Done,
+                ),
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !state.busy,
             )
