@@ -84,7 +84,11 @@ object NextWallpaperApplicator {
             onSuccess = {
                 pick.commitSuccess()
                 LastAppliedWallpaperStore.setHref(app, active.id, href)
-                CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, bytes)
+                val place = runCatching { ImageExifPlaceLabel.fromImageBytes(app, bytes, carousel).trim() }
+                    .getOrNull()
+                    ?.takeIf { it.isNotEmpty() }
+                LastAppliedWallpaperStore.setPlaceLabel(app, active.id, place)
+                CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, placeLabel = place)
                 null
             },
             onFailure = { e ->
@@ -130,7 +134,11 @@ object NextWallpaperApplicator {
         return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
             onSuccess = {
                 LastAppliedWallpaperStore.setHref(app, active.id, href)
-                CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, progress, bytes)
+                val place = runCatching { ImageExifPlaceLabel.fromImageBytes(app, bytes, carousel).trim() }
+                    .getOrNull()
+                    ?.takeIf { it.isNotEmpty() }
+                LastAppliedWallpaperStore.setPlaceLabel(app, active.id, place)
+                CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, progress, placeLabel = place)
                 null
             },
             onFailure = { e ->

@@ -10,6 +10,7 @@ object LastAppliedWallpaperStore {
     private const val PREFS = "ncarousel_last_wallpaper"
 
     private fun keyHref(accountId: String) = "href_$accountId"
+    private fun keyPlace(accountId: String) = "place_$accountId"
 
     fun getHref(context: Context, accountId: String): String? =
         context.applicationContext
@@ -25,11 +26,28 @@ object LastAppliedWallpaperStore {
             .apply()
     }
 
+    fun getPlaceLabel(context: Context, accountId: String): String? =
+        context.applicationContext
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(keyPlace(accountId), null)
+            ?.takeIf { it.isNotBlank() }
+
+    fun setPlaceLabel(context: Context, accountId: String, label: String?) {
+        context.applicationContext
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .apply {
+                if (label.isNullOrBlank()) remove(keyPlace(accountId)) else putString(keyPlace(accountId), label)
+            }
+            .apply()
+    }
+
     fun clearForAccount(context: Context, accountId: String) {
         context.applicationContext
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .remove(keyHref(accountId))
+            .remove(keyPlace(accountId))
             .apply()
     }
 }

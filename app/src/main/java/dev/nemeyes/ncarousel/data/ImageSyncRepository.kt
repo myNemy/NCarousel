@@ -15,7 +15,8 @@ import kotlinx.coroutines.withContext
  */
 class ImageSyncRepository(context: Context) {
     private val app = context.applicationContext
-    private val dao = NCarouselDb.get(app).imageEntryDao()
+    private val db = NCarouselDb.get(app)
+    private val dao = db.imageEntryDao()
 
     suspend fun readCachedHrefs(accountId: String): List<String> =
         withContext(Dispatchers.IO) { dao.listImageHrefs(accountId) }
@@ -53,8 +54,11 @@ class ImageSyncRepository(context: Context) {
                     scannedAtEpochMs = now,
                 )
             }
-            dao.deleteAllForAccount(account.id)
-            dao.upsertAll(entries)
+            // Atomic replace: avoid leaving the cache empty if the process dies mid-sync.
+            db.runInTransaction {
+                dao.deleteAllForAccount(account.id)
+                dao.upsertAll(entries)
+            }
             entries.map { it.href }
         }
     }

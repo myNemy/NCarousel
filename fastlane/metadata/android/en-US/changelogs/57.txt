@@ -1,0 +1,5 @@
+- Fix: make image list sync atomic to avoid empty cache on interruption.
+- Fix: prevent overlapping taps on the Quick Settings “Next wallpaper” tile.
+- Change: add strict per-provider time budgets for reverse geocoding (place label).
+- Change: show last wallpaper folder and place label on Home (independent from notifications).
+- Change: Library numbering now matches carousel notifications, with search support.

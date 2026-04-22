@@ -83,11 +83,15 @@ class ImageWallpaperWorker(
                 onSuccess = {
                     pick.commitSuccess()
                     LastAppliedWallpaperStore.setHref(applicationContext, active.id, href)
+                    val place = runCatching {
+                        ImageExifPlaceLabel.fromImageBytes(applicationContext, bytes, carousel).trim()
+                    }.getOrNull()?.takeIf { it.isNotEmpty() }
+                    LastAppliedWallpaperStore.setPlaceLabel(applicationContext, active.id, place)
                     CarouselStatusNotifications.maybeShowWallpaperApplied(
                         applicationContext,
                         carousel,
                         pick.progress,
-                        bytes,
+                        placeLabel = place,
                     )
                     Result.success()
                 },

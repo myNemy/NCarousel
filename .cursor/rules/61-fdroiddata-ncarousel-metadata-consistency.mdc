@@ -1,0 +1,27 @@
+---
+description: Enforce commit hash + version coherence in NCarousel fdroiddata metadata
+globs: ../fdroiddata/metadata/dev.nemeyes.ncarousel.yml
+alwaysApply: true
+---
+
+# NCarousel `fdroiddata` metadata consistency
+
+This rule applies **only** when editing `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml`.
+
+## Hard requirements
+
+- `Builds[*].commit` **must be a full git commit hash** (40 hex chars). Do **not** use tags like `v0.2.40` here.
+- The chosen commit hash must exist in the git repository referenced by `Repo:` (don’t assume tags are present on all mirrors).
+- For the build entry you are adding/updating:
+  - `versionName` and `versionCode` must match the values produced by building that exact commit.
+  - `CurrentVersion` / `CurrentVersionCode` must not move backwards (only advance unless reviewers explicitly request otherwise).
+
+## Practical checklist (before pushing the MR)
+
+- Resolve the tag to a hash (if you start from a tag):
+  - `git rev-parse vX.Y.Z` → paste the output into `commit:`
+- Sanity check it’s a commit object:
+  - `git cat-file -t <hash>` should be `commit`
+- Ensure the hash is present on the remote you set in `Repo:`:
+  - `git ls-remote <Repo URL> <hash>`
+

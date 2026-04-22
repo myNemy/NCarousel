@@ -15,6 +15,7 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
     private val prefs = app.getSharedPreferences("$PREFS_ORDER.$accountId", Context.MODE_PRIVATE)
     private val orderDir: File = app.filesDir.resolve("ncarousel_order/$accountId").also { it.mkdirs() }
     private val noRepeatFile = orderDir.resolve("no_repeat_queue.txt")
+    private val noRepeatConsumedFile = orderDir.resolve("no_repeat_consumed.txt")
     private val smartRecentFile = orderDir.resolve("smart_recent.txt")
 
     /** Call when the remote list was refreshed successfully so fingerprints can reset modes. */
@@ -28,7 +29,48 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
             .putInt(KEY_SHUFFLE_WALK, 0)
             .apply()
         noRepeatFile.delete()
+        noRepeatConsumedFile.delete()
         smartRecentFile.delete()
+    }
+
+    /**
+     * Returns the 1-based "carousel index" used by notifications ("Image X of Y") for each href,
+     * so the Library UI can show the same numbering regardless of sorting/filtering.
+     *
+     * Must be called off the main thread for [OrderMode.NO_REPEAT_SHUFFLE] (disk reads).
+     */
+    fun carouselIndexByHref(hrefs: List<String>, mode: OrderMode): Map<String, Int> {
+        if (hrefs.isEmpty()) return emptyMap()
+        val sorted = hrefs.sorted()
+        return when (mode) {
+            OrderMode.SEQUENTIAL,
+            OrderMode.RANDOM,
+            OrderMode.SMART_RANDOM,
+            -> sorted.withIndex().associate { (i, h) -> h to (i + 1) }
+
+            OrderMode.SHUFFLE_ONCE -> {
+                val seed = prefs.getLong(KEY_SHUFFLE_SEED, Random.Default.nextLong()).also {
+                    if (!prefs.contains(KEY_SHUFFLE_SEED)) {
+                        prefs.edit().putLong(KEY_SHUFFLE_SEED, it).apply()
+                    }
+                }
+                val order = sorted.shuffled(Random(seed))
+                order.withIndex().associate { (i, h) -> h to (i + 1) }
+            }
+
+            OrderMode.NO_REPEAT_SHUFFLE -> {
+                val sortedSet = sorted.toHashSet()
+                val consumed = readLines(noRepeatConsumedFile).filter { it in sortedSet }
+                var remaining = readLines(noRepeatFile).filter { it in sortedSet }
+                if (remaining.isEmpty()) {
+                    // Queue not initialized yet: fall back to deterministic numbering.
+                    return sorted.withIndex().associate { (i, h) -> h to (i + 1) }
+                }
+                // Combine consumed + remaining to reconstruct the full order.
+                val full = (consumed + remaining).distinct().filter { it in sortedSet }
+                full.withIndex().associate { (i, h) -> h to (i + 1) }
+            }
+        }
     }
 
     fun pickWallpaper(hrefs: List<String>, mode: OrderMode): WallpaperPick? {
@@ -102,10 +144,12 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
     }
 
     private fun noRepeatPick(sorted: List<String>): WallpaperPick? {
-        var lines = readLines(noRepeatFile).filter { it in sorted.toSet() }
+        val sortedSet = sorted.toHashSet()
+        var lines = readLines(noRepeatFile).filter { it in sortedSet }
         if (lines.isEmpty()) {
             lines = sorted.shuffled(Random.Default)
             writeLines(noRepeatFile, lines)
+            noRepeatConsumedFile.delete()
         }
         val href = lines.firstOrNull() ?: return null
         val pos = sorted.size - lines.size + 1
@@ -113,9 +157,14 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
             href,
             PickProgress(current = pos.coerceIn(1, sorted.size), total = sorted.size),
             onCommit = {
-                val rest = readLines(noRepeatFile).filter { it in sorted.toSet() }.drop(1)
+                // Persist consumed items so we can reconstruct stable indices for the Library UI.
+                runCatching {
+                    noRepeatConsumedFile.appendText("$href\n", Charsets.UTF_8)
+                }
+                val rest = readLines(noRepeatFile).filter { it in sortedSet }.drop(1)
                 if (rest.isEmpty()) {
                     noRepeatFile.delete()
+                    // Keep consumed file as the last-known full order for UI; it will be reset on reshuffle.
                 } else {
                     writeLines(noRepeatFile, rest)
                 }

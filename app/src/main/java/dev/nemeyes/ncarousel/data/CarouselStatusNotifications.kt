@@ -55,32 +55,40 @@ object CarouselStatusNotifications {
         return PendingIntent.getActivity(context, 0, intent, flags)
     }
 
+    /**
+     * Shows a "wallpaper applied" notification when enabled.
+     *
+     * Note: place label can be computed independently (e.g. for Home screen) and passed in here to avoid
+     * re-running geocoding.
+     */
     fun maybeShowWallpaperApplied(
         context: Context,
         prefs: CarouselPreferences,
         progress: PickProgress,
-        imageBytes: ByteArray,
+        placeLabel: String?,
     ) {
         if (!prefs.showStatusNotifications) return
         if (!prefs.notifyWallpaperApplied) return
         if (!canNotify(context)) return
         ensureChannel(context)
         val app = context.applicationContext
-        val text = if (prefs.notifyWallpaperIncludeLocation) {
-            val place = ImageExifPlaceLabel.fromImageBytes(app, imageBytes, prefs)
-            app.getString(
-                R.string.notify_wallpaper_body,
-                progress.current,
-                progress.total,
-                place,
-            )
-        } else {
-            app.getString(
-                R.string.notify_wallpaper_body_no_place,
-                progress.current,
-                progress.total,
-            )
-        }
+        val placeLabel: String? =
+            if (prefs.notifyWallpaperIncludeLocation) placeLabel else null
+        val text =
+            if (placeLabel != null) {
+                app.getString(
+                    R.string.notify_wallpaper_body,
+                    progress.current,
+                    progress.total,
+                    placeLabel,
+                )
+            } else {
+                app.getString(
+                    R.string.notify_wallpaper_body_no_place,
+                    progress.current,
+                    progress.total,
+                )
+            }
         val n = NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_ncarousel)
             .setContentTitle(app.getString(R.string.notify_wallpaper_title))

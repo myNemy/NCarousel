@@ -48,6 +48,8 @@
     <string name="main_exif_card_subtitle">A última imagem aplicada como fundo pelo NCarousel (incluindo mosaico de definições rápidas ou alteração automática).</string>
     <string name="main_exif_loading">A ler metadados…</string>
     <string name="main_refresh_exif">Atualizar EXIF</string>
+    <string name="main_exif_folder_line">Folder: %1$s</string>
+    <string name="main_exif_place_line">Place: %1$s</string>
     <string name="msg_fill_url_user_password">Introduza o URL do servidor, nome de utilizador e palavra-passe.</string>
     <string name="msg_account_saved_encrypted">Conta guardada (encriptada no dispositivo).</string>
     <string name="msg_fill_server_url">Introduza o URL do servidor.</string>
@@ -168,6 +170,9 @@
     <string name="nc_library_sort_folders">Pastas</string>
     <string name="nc_library_sort_name">Nome</string>
     <string name="nc_library_root_folder">(pasta raiz)</string>
+    <string name="nc_library_search_label">Search</string>
+    <string name="nc_library_search_placeholder">Folder or filename</string>
+    <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_about_title">Acerca</string>
     <string name="nc_about_version">Versão %1$s (%2$d)</string>
     <string name="nc_about_summary">Fundos rotativos do Nextcloud (WebDAV), com opções de rede/bateria e escolha manual na Biblioteca.</string>

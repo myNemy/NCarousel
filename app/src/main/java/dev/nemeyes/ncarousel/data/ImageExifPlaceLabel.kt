@@ -7,6 +7,8 @@ import androidx.exifinterface.media.ExifInterface
 import dev.nemeyes.ncarousel.R
 import java.io.ByteArrayInputStream
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * Reads GPS from EXIF, then resolves a place label using enabled geocoders in user order
@@ -15,6 +17,13 @@ import java.util.Locale
  * Must be called from a background thread.
  */
 object ImageExifPlaceLabel {
+
+    /** Max time per backend attempt (cap), even if total budget has more remaining. */
+    private const val PER_BACKEND_MAX_MS = 5_000L
+
+    private val platformGeocoderExecutor = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "ncarousel-platform-geocoder").apply { isDaemon = true }
+    }
 
     fun fromImageBytes(context: Context, bytes: ByteArray, prefs: CarouselPreferences): String {
         val latLong = try {
@@ -28,7 +37,8 @@ object ImageExifPlaceLabel {
         val lat = latLong[0]
         val lon = latLong[1]
 
-        val http = HttpClientProvider.create(context.applicationContext)
+        val app = context.applicationContext
+        val httpBase = HttpClientProvider.create(app)
         val lang = Locale.getDefault().toLanguageTag()
 
         val chain = geocoderBackendsInTryOrder(
@@ -37,18 +47,38 @@ object ImageExifPlaceLabel {
             prefs.geocoderPlatformEnabled,
             prefs.geocoderPhotonEnabled,
         )
+        // Dynamic total budget: each enabled backend gets up to [PER_BACKEND_MAX_MS] in sequence.
+        // If all backends are disabled, the chain is empty and we fall back immediately.
+        val totalBudgetMs = PER_BACKEND_MAX_MS * chain.size.toLong()
+        val startMs = System.currentTimeMillis()
         for (backend in chain) {
+            val elapsed = System.currentTimeMillis() - startMs
+            val remaining = totalBudgetMs - elapsed
+            if (remaining <= 0L) break
+            val attemptBudget = minOf(remaining, PER_BACKEND_MAX_MS)
             when (backend) {
                 GeocoderBackend.NOMINATIM -> {
                     runCatching {
+                        val http = httpBase.newBuilder()
+                            // callTimeout covers the whole call (connect + TLS + body).
+                            .callTimeout(attemptBudget, TimeUnit.MILLISECONDS)
+                            // Be conservative on connect; if we can't connect quickly, fall back.
+                            .connectTimeout(minOf(attemptBudget, 6_000L), TimeUnit.MILLISECONDS)
+                            .readTimeout(minOf(attemptBudget, 8_000L), TimeUnit.MILLISECONDS)
+                            .build()
                         NominatimReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
                     }.getOrNull()?.let { return it }
                 }
                 GeocoderBackend.PLATFORM -> {
-                    platformGeocoderLabel(context, lat, lon)?.let { return it }
+                    platformGeocoderLabelWithTimeout(context, lat, lon, attemptBudget)?.let { return it }
                 }
                 GeocoderBackend.PHOTON -> {
                     runCatching {
+                        val http = httpBase.newBuilder()
+                            .callTimeout(attemptBudget, TimeUnit.MILLISECONDS)
+                            .connectTimeout(minOf(attemptBudget, 6_000L), TimeUnit.MILLISECONDS)
+                            .readTimeout(minOf(attemptBudget, 8_000L), TimeUnit.MILLISECONDS)
+                            .build()
                         PhotonReverseGeocoder.reverse(http, lat, lon, lang)?.trim()?.takeIf { it.isNotEmpty() }
                     }.getOrNull()?.let { return it }
                 }
@@ -59,16 +89,25 @@ object ImageExifPlaceLabel {
     }
 
     /** [Geocoder] backend is device-dependent; on GMS builds it is typically Google. */
-    private fun platformGeocoderLabel(context: Context, lat: Double, lon: Double): String? {
+    private fun platformGeocoderLabelWithTimeout(context: Context, lat: Double, lon: Double, timeoutMs: Long): String? {
         if (!Geocoder.isPresent()) return null
+        val budget = timeoutMs.coerceAtLeast(250L)
+        val future = platformGeocoderExecutor.submit<String?> {
+            try {
+                @Suppress("DEPRECATION")
+                val geocoder = Geocoder(context, Locale.getDefault())
+                @Suppress("DEPRECATION")
+                val list = geocoder.getFromLocation(lat, lon, 1)
+                val addr = list?.firstOrNull() ?: return@submit null
+                addressToLabelOrNull(addr)
+            } catch (_: Exception) {
+                null
+            }
+        }
         return try {
-            @Suppress("DEPRECATION")
-            val geocoder = Geocoder(context, Locale.getDefault())
-            @Suppress("DEPRECATION")
-            val list = geocoder.getFromLocation(lat, lon, 1)
-            val addr = list?.firstOrNull() ?: return null
-            addressToLabelOrNull(addr)
+            future.get(budget, TimeUnit.MILLISECONDS)
         } catch (_: Exception) {
+            future.cancel(true)
             null
         }
     }

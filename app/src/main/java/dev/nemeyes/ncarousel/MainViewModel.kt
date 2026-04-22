@@ -69,6 +69,8 @@ data class MainUiState(
     val imageHrefs: List<String> = emptyList(),
     /** href -> Nextcloud fileId (for server-side previews), when available. */
     val imageFileIds: Map<String, Long> = emptyMap(),
+    /** href -> 1-based carousel index ("Image X of Y") matching notifications. */
+    val imageCarouselIndexByHref: Map<String, Int> = emptyMap(),
     /** OCS capabilities.theming.color (hex); drives [NCarouselTheme]. */
     val instanceThemingPrimaryHex: String? = null,
     /** OCS capabilities.theming.color-text. */
@@ -81,6 +83,13 @@ data class MainUiState(
     val batteryOptimizationConsentVisible: Boolean = false,
     /** Nome file (path remoto) dell’ultimo sfondo applicato da NCarousel per l’account attivo. */
     val lastWallpaperFileLabel: String? = null,
+    /**
+     * Folder path (Nextcloud "Files" relative) of the last wallpaper applied by NCarousel.
+     * Example: `Photos/mie/italia/altro/`
+     */
+    val lastWallpaperFolderPath: String? = null,
+    /** Place label as computed when the wallpaper was applied (notifications geocoder). */
+    val lastWallpaperPlaceLabel: String? = null,
     val wallpaperExifLines: List<String> = emptyList(),
     val wallpaperExifLoading: Boolean = false,
     val wallpaperExifError: String? = null,
@@ -108,6 +117,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val carousel = CarouselPreferences(application)
     private val syncRepo = ImageSyncRepository(application)
     private val http = HttpClientProvider.create(application)
+
+    private suspend fun computeCarouselIndicesForActiveAccount(
+        hrefs: List<String>,
+        mode: OrderMode,
+    ): Map<String, Int> = withContext(Dispatchers.IO) {
+        val accId = accounts.getActiveAccountId() ?: return@withContext emptyMap()
+        WallpaperOrderEngine(getApplication(), accId).carouselIndexByHref(hrefs, mode)
+    }
 
     private fun activeOrNull() = accounts.getActiveAccount()
     private fun accountsUi(): List<AccountUi> =
@@ -474,6 +491,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update {
                 it.copy(
                     lastWallpaperFileLabel = null,
+                    lastWallpaperFolderPath = null,
+                    lastWallpaperPlaceLabel = null,
                     wallpaperExifLines = emptyList(),
                     wallpaperExifError = null,
                     wallpaperExifLoading = false,
@@ -489,13 +508,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = null,
+                        lastWallpaperFolderPath = null,
+                        lastWallpaperPlaceLabel = null,
                         wallpaperExifLines = emptyList(),
                         wallpaperExifError = appStr(R.string.msg_exif_no_wallpaper_yet),
                     )
                 }
                 return@launch
             }
+            val place = LastAppliedWallpaperStore.getPlaceLabel(getApplication(), acc.id)
             val fileLabel = href.substringAfterLast('/').trim().ifEmpty { href }
+            val folderPath = run {
+                val prefix = "/remote.php/dav/files/${acc.userId}/"
+                val rel = href.substringAfter(prefix, href).trim().trimStart('/')
+                val folderOnly = rel.substringBeforeLast('/', missingDelimiterValue = "").trim().trim('/')
+                when {
+                    folderOnly.isEmpty() -> null
+                    else -> "$folderOnly/"
+                }
+            }
             val app = getApplication<Application>()
             val bytes = withContext(Dispatchers.IO) {
                 val disk = WallpaperDiskCache(app, acc.id, carousel.maxWallpaperDiskCacheMb)
@@ -515,6 +546,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = fileLabel,
+                        lastWallpaperFolderPath = folderPath,
+                        lastWallpaperPlaceLabel = place,
                         wallpaperExifLines = emptyList(),
                         wallpaperExifError = appStr(R.string.msg_exif_download_failed),
                     )
@@ -528,6 +561,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     wallpaperExifLoading = false,
                     lastWallpaperFileLabel = fileLabel,
+                    lastWallpaperFolderPath = folderPath,
+                    lastWallpaperPlaceLabel = place,
                     wallpaperExifLines = lines,
                     wallpaperExifError = null,
                 )
@@ -588,11 +623,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val fp = WallpaperOrderEngine.libraryFingerprint(list)
                     WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
                     ImageListCache(getApplication(), active.id).write(list)
+                    val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode)
                     _ui.update {
                         it.copy(
                             busy = false,
                             imageHrefs = list,
                             imageFileIds = fileIds,
+                            imageCarouselIndexByHref = carouselIndices,
                             remoteFolder = folder,
                             statusMessage = appStr(R.string.msg_images_found, list.size),
                         )
@@ -608,6 +645,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             busy = false,
                             imageHrefs = emptyList(),
                             imageFileIds = emptyMap(),
+                            imageCarouselIndexByHref = emptyMap(),
                             statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
                         )
                     }
@@ -693,14 +731,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (legacy.isNotEmpty()) {
                 val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
                 val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
-                _ui.update { it.copy(imageHrefs = legacy, imageFileIds = fileIds) }
+                val s = _ui.value
+                val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, s.orderMode)
+                _ui.update { it.copy(imageHrefs = legacy, imageFileIds = fileIds, imageCarouselIndexByHref = carouselIndices) }
                 return@launch
             }
             val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
             val cached = hrefsWithId.map { it.first }
             val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
             if (cached.isNotEmpty()) {
-                _ui.update { it.copy(imageHrefs = cached, imageFileIds = fileIds) }
+                val s = _ui.value
+                val carouselIndices = computeCarouselIndicesForActiveAccount(cached, s.orderMode)
+                _ui.update { it.copy(imageHrefs = cached, imageFileIds = fileIds, imageCarouselIndexByHref = carouselIndices) }
             }
         }
     }
@@ -720,6 +762,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
+                imageCarouselIndexByHref = emptyMap(),
                 statusMessage = appStr(R.string.msg_active_account_changed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },

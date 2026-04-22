@@ -17,6 +17,7 @@ import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 class NextWallpaperTileService : TileService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    @Volatile private var running = false
 
     override fun onStartListening() {
         super.onStartListening()
@@ -25,7 +26,7 @@ class NextWallpaperTileService : TileService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 subtitle = getString(R.string.qs_tile_subtitle)
             }
-            state = Tile.STATE_INACTIVE
+            state = if (running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
             icon = Icon.createWithResource(this@NextWallpaperTileService, R.drawable.ic_qs_next_wallpaper)
             updateTile()
         }
@@ -33,17 +34,33 @@ class NextWallpaperTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        if (running) return
+        running = true
+        qsTile?.apply {
+            state = Tile.STATE_ACTIVE
+            updateTile()
+        }
         Thread {
-            val err = NextWallpaperApplicator.applyNext(applicationContext)
-            mainHandler.post {
-                if (err != null) {
-                    Toast.makeText(applicationContext, err, Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(
-                        applicationContext,
-                        R.string.qs_tile_wallpaper_ok,
-                        Toast.LENGTH_SHORT,
-                    ).show()
+            try {
+                val err = NextWallpaperApplicator.applyNext(applicationContext)
+                mainHandler.post {
+                    if (err != null) {
+                        Toast.makeText(applicationContext, err, Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(
+                            applicationContext,
+                            R.string.qs_tile_wallpaper_ok,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                }
+            } finally {
+                running = false
+                mainHandler.post {
+                    qsTile?.apply {
+                        state = Tile.STATE_INACTIVE
+                        updateTile()
+                    }
                 }
             }
         }.start()

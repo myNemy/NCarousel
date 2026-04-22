@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -101,6 +103,7 @@ fun LibraryScreen(
     onApplyHref: (String) -> Unit,
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
+    var query by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
@@ -135,8 +138,19 @@ fun LibraryScreen(
                 rows.sortedWith(compareBy<LibraryRow> { it.folderPath.lowercase() }.thenBy { it.fileName.lowercase() })
         }
     }
+    val filteredRows = remember(sortedRows, query) {
+        val q = query.trim().lowercase()
+        if (q.isEmpty()) {
+            sortedRows
+        } else {
+            sortedRows.filter { r ->
+                r.fileName.lowercase().contains(q) ||
+                    r.folderPath.lowercase().contains(q)
+            }
+        }
+    }
 
-    val itemCount = sortedRows.size
+    val itemCount = filteredRows.size
     val showFastScroll = itemCount >= 80
     var dragActive by remember { mutableStateOf(false) }
     var fastScrollVisible by remember { mutableStateOf(false) }
@@ -165,9 +179,19 @@ fun LibraryScreen(
             item {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.nc_library_count, state.imageHrefs.size),
+                    text = stringResource(R.string.nc_library_count, itemCount),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    enabled = !state.busy,
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.nc_library_search_label)) },
+                    placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(
@@ -187,9 +211,10 @@ fun LibraryScreen(
                 }
                 Spacer(Modifier.height(8.dp))
             }
-            items(sortedRows, key = { it.href }) { row ->
+            itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
                 val ctx = LocalContext.current
                 val fileId = state.imageFileIds[row.href]
+                val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
                 ListItem(
                     leadingContent = {
                         if (fileId != null && state.serverUrl.isNotBlank() && state.loginName.isNotBlank() && state.password.isNotBlank()) {
@@ -209,7 +234,7 @@ fun LibraryScreen(
                     },
                     headlineContent = {
                         Text(
-                            text = row.fileName,
+                            text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )

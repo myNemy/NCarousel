@@ -1,7 +1,7 @@
 ---
 description: Keep Android string resources consistent across all locales
 globs: app/src/main/res/**/{strings,plurals,arrays}.xml
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Localization: Android string resources (`strings.xml`, `plurals.xml`, `arrays.xml`)

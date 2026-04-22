@@ -1,0 +1,24 @@
+---
+description: After user-requested commit+push, follow GitHub Actions until APK is produced
+alwaysApply: true
+---
+
+# Commit + push: follow CI until APK
+
+When the user explicitly asks for **a commit and push**, treat it as a release/CI-follow-up workflow, not just a git action.
+
+## Required workflow
+
+- After pushing, **monitor GitHub Actions checks** for the pushed commit/branch.
+- If CI fails, **read the failing job logs**, identify the real root cause, and propose/apply a fix.
+- Iterate **fix → new commit → push → re-check Actions** until:
+  - the workflow is green **and**
+  - an **APK artifact** is produced/available (artifact upload or release asset), or
+  - progress is blocked by something requiring user action (secrets, permissions, manual approvals, required review, etc.).
+
+## Communication expectations
+
+- Report the failing step succinctly (job name + error excerpt + next fix).
+- Do **not** add non-essential commit trailers like `Made-with: Cursor`.
+- Avoid speculative changes; keep fixes minimal and directly related to the CI failure.
+

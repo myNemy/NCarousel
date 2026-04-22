@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; CI appends +run. Bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.42"
+val ncarouselBaseVersionName = "0.2.43"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -14,7 +14,7 @@ val ncarouselBaseVersionName = "0.2.42"
  * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: Gradle property `ncarousel.versionCode` or env `NCAROUSEL_VERSION_CODE` (integer only).
  */
-val ncarouselLocalVersionCode = 56
+val ncarouselLocalVersionCode = 57
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
@@ -48,7 +48,7 @@ android {
         // F-Droid scans this file line-by-line with a regex that only matches `versionCode = <digits>`.
         // It skips `//` comments but not KDoc; keep this literal equal to ncarouselLocalVersionCode.
         // The next line wins at Gradle configuration time (CI may use GITHUB_RUN_NUMBER, etc.).
-        versionCode = 56
+        versionCode = 57
         versionCode = ncarouselVersionCode
         versionName = ncarouselVersionName
     }

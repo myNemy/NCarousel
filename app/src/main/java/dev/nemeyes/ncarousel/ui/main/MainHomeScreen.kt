@@ -161,6 +161,20 @@ fun MainHomeScreen(
                             modifier = Modifier.padding(top = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
+                            state.lastWallpaperFolderPath?.let { folder ->
+                                Text(
+                                    text = stringResource(R.string.main_exif_folder_line, folder),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            state.lastWallpaperPlaceLabel?.let { place ->
+                                Text(
+                                    text = stringResource(R.string.main_exif_place_line, place),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             state.wallpaperExifLines.forEach { line ->
                                 Text(
                                     text = line,

@@ -1,7 +1,7 @@
 ---
 description: Convenzioni Android/Kotlin/Compose per questo progetto
 globs: "**/*.{kt,kts,xml}"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Android / Kotlin / Compose
