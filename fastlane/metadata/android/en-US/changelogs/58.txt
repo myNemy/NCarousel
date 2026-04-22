@@ -1,0 +1,2 @@
+- Fix: make Room sync transaction compatible with suspend DAO calls (CI build fix).
+- Fix: restore missing import in wallpaper worker (CI build fix).

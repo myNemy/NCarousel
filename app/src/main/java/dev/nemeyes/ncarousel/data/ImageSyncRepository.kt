@@ -4,6 +4,7 @@ import android.content.Context
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccount
 import dev.nemeyes.ncarousel.data.db.ImageEntryEntity
 import dev.nemeyes.ncarousel.data.db.NCarouselDb
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -55,7 +56,7 @@ class ImageSyncRepository(context: Context) {
                 )
             }
             // Atomic replace: avoid leaving the cache empty if the process dies mid-sync.
-            db.runInTransaction {
+            db.withTransaction {
                 dao.deleteAllForAccount(account.id)
                 dao.upsertAll(entries)
             }

@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.HttpClientProvider
+import dev.nemeyes.ncarousel.data.ImageExifPlaceLabel
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
