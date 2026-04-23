@@ -329,6 +329,12 @@ fun SettingsScreen(
                 onCheckedChange = onAutoChange,
                 enabled = !state.busy,
             )
+            Text(
+                text = stringResource(R.string.main_intro_body, WallpaperWorkScheduler.MIN_INTERVAL_MINUTES),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             if (state.autoWallpaperEnabled && state.batteryOptimizationMayDelayWork) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),

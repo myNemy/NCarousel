@@ -1,0 +1,2 @@
+- Change: reserve the Home top banner for dynamic status messages only.
+- Change: move the WorkManager/minimum interval info next to the auto-wallpaper setting.
