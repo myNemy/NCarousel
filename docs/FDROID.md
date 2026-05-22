@@ -183,6 +183,25 @@ CurrentVersionCode: 54
 
 Fastlane metadata in this repo (`fastlane/metadata/android/en-US/`) can be referenced in MR discussion for **description and screenshots**; final store text may still be edited during review.
 
+## Reproducible upstream-signed APK (this app’s fdroiddata recipe)
+
+The MR uses **`Binaries`** (GitHub Release `NCarousel-<version>.apk`) and **`AllowedAPKSigningKeys`** (SHA-256 of the CI release signing certificate). F-Droid builds from source, then verifies its APK against the upstream-signed reference.
+
+**Keep these aligned for each version:**
+
+| Item | How |
+|------|-----|
+| `versionName` / `versionCode` | Same as `ncarouselBaseVersionName` / `ncarouselLocalVersionCode` in `app/build.gradle.kts` at `Builds.commit` |
+| `Builds.commit` | Full **40-char commit** hash: `git rev-parse "v<version>^{commit}"` in NCarousel — **not** `git rev-parse v<version>` (annotated tag object hash breaks verification) |
+| `Binaries` APK | First CI publish of `NCarousel-<version>.apk` on tag `v<version>`; later pushes without a version bump must **not** replace this file (see [DEVELOPMENT.md](DEVELOPMENT.md)) |
+| Signing key | `AllowedAPKSigningKeys` must match the cert used when `NCAROUSEL_*` secrets build `assembleRelease` |
+
+**`META-INF/version-control-info.textproto`:** Android Gradle Plugin 8.3+ embeds the git revision used at build time. If reference and F-Droid builds use different commits, verification fails even when app bytecode is identical. Prefer bumping version + new tag over re-uploading the same release APK from a newer commit.
+
+**Fork metadata path:** `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` on branch `NCarousel`, remote `myNemy` → push after each app release (see `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`).
+
+**Example (0.2.49 / 1103):** `commit: 62095add3891f541dff1e069c20e034711ac3ad8` matches the `NCarousel-0.2.49.apk` asset currently on GitHub Releases (tag `v0.2.49` points at `a3fca98…`; do not change the reference APK without updating `Builds.commit`).
+
 ## Notes / common pitfalls
 
 - F-Droid does not use `GITHUB_RUN_NUMBER`, so make sure your **local fallback**
@@ -190,4 +209,5 @@ Fastlane metadata in this repo (`fastlane/metadata/android/en-US/`) can be refer
 - Avoid proprietary SDKs and binary downloads in Gradle.
 - If the build needs secrets or CI-only files, F-Droid builds will fail.
 - Do not rely on **`NCAROUSEL_SIGNING_*`** for F-Droid: release builds without those env vars must succeed (unsigned APK).
+- Do not use a **tag object hash** in `commit:`; always resolve to the commit with `^{commit}`.
 

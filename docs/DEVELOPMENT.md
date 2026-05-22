@@ -23,7 +23,8 @@ Repository **Cursor rules** (`.cursor/rules/50-commit-push-release-automation.md
 CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.40`).
 
 - **First time** that tag appears on GitHub: CI creates the annotated tag (if missing) and creates the GitHub Release, then uploads the APKs.
-- **Later pushes** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused; CI **replaces** the APK assets (`--clobber`). The Releases page does **not** gain an extra row—only the files on that version’s release change. The release **title** includes the workflow run number so you can see when assets were refreshed.
+- **Later pushes** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused. CI **refreshes** `NCarousel-<version>-debug.apk` but **does not replace** `NCarousel-<version>.apk` once it is already on the release (so F-Droid `Binaries` reproducible verification stays aligned with `Builds.commit`). The Releases page does **not** gain an extra row. The release **title** includes the workflow run number so you can see when assets were refreshed.
+- **F-Droid:** after bumping version, sync `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` (`commit` = `git rev-parse "v<version>^{commit}"`, or the commit of the published release APK if you must recover manually). See [FDROID.md](FDROID.md) and `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`.
 - **A new row** on the Releases page requires **bumping** `ncarouselBaseVersionName` (and, for installable builds, following the project’s `versionCode` / Fastlane changelog rules). **Changing app code alone does not create a new tag or a new release entry.**
 
 Optional: set repository secret **`FORGEJO_PUSH_TOKEN`** on GitHub so CI also pushes the same tag to Forgejo (see `.github/workflows/android-ci.yml`).

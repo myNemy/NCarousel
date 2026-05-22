@@ -28,7 +28,7 @@ Do **not** only update this rule’s example or NCarousel without touching fdroi
 | `Builds.versionCode` | `ncarouselLocalVersionCode` |
 | `CurrentVersion` | same as `versionName` |
 | `CurrentVersionCode` | same as `versionCode` |
-| `Builds.commit` | `git rev-parse v<ncarouselBaseVersionName>` in NCarousel (40 hex; **not** the tag string) |
+| `Builds.commit` | `git rev-parse "v<ncarouselBaseVersionName>^{commit}"` in NCarousel (40 hex **commit**; never the annotated **tag** object hash from plain `rev-parse v…`) |
 
 Verify `git cat-file -t <hash>` is `commit` and `git ls-remote https://github.com/myNemy/NCarousel.git <hash>` succeeds.
 
@@ -41,7 +41,8 @@ Verify `git cat-file -t <hash>` is `commit` and `git ls-remote https://github.co
 
 ## Hard requirements
 
-- `Builds[*].commit`: full **40-character** hex hash only.
+- `Builds[*].commit`: full **40-character** hex hash of a **commit** only (`git cat-file -t` must be `commit`). For annotated tags, use `git rev-parse "vX.Y.Z^{commit}"` — plain `git rev-parse vX.Y.Z` returns the **tag** object and breaks reproducible verification.
+- **`Binaries` APK commit:** must match the tree CI actually built for that release asset (a docs-only push to `main` without a version bump can re-upload `NCarousel-%v.apk` with a newer `META-INF/version-control-info.textproto` revision).
 - `CurrentVersion` / `CurrentVersionCode` must not move backwards unless reviewers request it.
 - `UpdateCheckMode: Tags ^v[0-9.]+$` matches git tags `v<ncarouselBaseVersionName>`.
 
@@ -84,7 +85,7 @@ Binaries: https://github.com/myNemy/NCarousel/releases/download/v%v/NCarousel-%v
 Builds:
   - versionName: <ncarouselBaseVersionName>
     versionCode: <ncarouselLocalVersionCode>
-    commit: <40-char hex from git rev-parse v<version>>
+    commit: <40-char hex from git rev-parse "v<version>^{commit}">
     subdir: app
     gradle:
       - yes
@@ -97,6 +98,6 @@ CurrentVersion: <ncarouselBaseVersionName>
 CurrentVersionCode: <ncarouselLocalVersionCode>
 ```
 
-**Current example:** `0.2.49` / `1103` / `aa3d14c091280217b5a685770a50d287b874c653`.
+**Current example:** `0.2.49` / `1103` / `62095add3891f541dff1e069c20e034711ac3ad8` (must match the commit that produced `NCarousel-0.2.49.apk` on GitHub Releases, not only the tag tip if CI re-uploaded the APK).
 
 More detail: `docs/FDROID.md`, `docs/DEVELOPMENT.md`.

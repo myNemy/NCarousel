@@ -155,9 +155,11 @@ jobs:
             fi
           fi
           TAG="v${VERSION}"
+          TAG_EXISTS=false
 
           git fetch --tags origin
           if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            TAG_EXISTS=true
             echo "Tag ${TAG} already exists on origin; skipping tag creation."
           else
             git config user.name "github-actions[bot]"
@@ -176,14 +178,28 @@ jobs:
             fi
           fi
 
-          ASSETS=( "${DEST_DEBUG}" )
+          INCLUDE_RELEASE_APK=false
           if [ -n "${DEST_RELEASE}" ] && [ -f "${DEST_RELEASE}" ]; then
+            if [ "${TAG_EXISTS}" != "true" ]; then
+              INCLUDE_RELEASE_APK=true
+            elif ! gh release view "${TAG}" --repo "${REPO}" >/dev/null 2>&1; then
+              INCLUDE_RELEASE_APK=true
+            elif ! gh release view "${TAG}" --repo "${REPO}" --json assets --jq '.assets[].name' 2>/dev/null | grep -qxF "NCarousel-${VERSION}.apk"; then
+              echo "::notice::Release ${TAG} exists but NCarousel-${VERSION}.apk is missing; uploading release APK."
+              INCLUDE_RELEASE_APK=true
+            else
+              echo "::notice::Keeping existing NCarousel-${VERSION}.apk on ${TAG} (F-Droid Binaries / reproducible verification)."
+            fi
+          fi
+
+          ASSETS=( "${DEST_DEBUG}" )
+          if [ "${INCLUDE_RELEASE_APK}" = "true" ]; then
             ASSETS+=( "${DEST_RELEASE}" )
           fi
           RELEASE_TITLE="NCarousel ${VERSION} (CI #${{ github.run_number }})"
           if gh release view "${TAG}" --repo "${REPO}" >/dev/null 2>&1; then
             echo "Updating assets on existing release ${TAG} (same tag as ncarouselBaseVersionName in build.gradle.kts)."
-            echo "::notice::No new Releases list entry is created until you bump ncarouselBaseVersionName; APKs on this tag are replaced."
+            echo "::notice::No new Releases list entry until you bump ncarouselBaseVersionName; debug APK is refreshed; release APK is kept when already published."
             for f in "${ASSETS[@]}"; do
               gh release upload "${TAG}" "${f}" --clobber --repo "${REPO}"
             done
