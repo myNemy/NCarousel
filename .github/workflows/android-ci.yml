@@ -79,6 +79,46 @@ jobs:
           NCAROUSEL_PUBLISH_RELEASE_APK: "true"
         run: ./gradlew :app:assembleRelease --no-daemon
 
+      # AGP often signs v2/v3 only; re-sign with apksigner + v1 for OEM sideload installers.
+      - name: Re-sign APKs with apksigner (v1+v2+v3)
+        if: env.HAS_CI_KEYSTORE == 'true'
+        run: |
+          set -eo pipefail
+          APKSIGNER=""
+          for bt in 34.0.0 35.0.0; do
+            if [ -x "${ANDROID_HOME}/build-tools/${bt}/apksigner" ]; then
+              APKSIGNER="${ANDROID_HOME}/build-tools/${bt}/apksigner"
+              break
+            fi
+          done
+          if [ -z "${APKSIGNER}" ]; then
+            SDKM="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+            if [ -x "${SDKM}" ]; then
+              (yes || true) | "${SDKM}" "build-tools;34.0.0" >/dev/null 2>&1 || true
+            fi
+            APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
+          fi
+          test -x "${APKSIGNER}"
+          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
+            echo "Re-signing $(basename "$apk") with ${APKSIGNER}"
+            signed="${apk%.apk}-resigned.apk"
+            "${APKSIGNER}" sign \
+              --ks "${NCAROUSEL_SIGNING_STORE_FILE}" \
+              --ks-key-alias "${NCAROUSEL_SIGNING_KEY_ALIAS}" \
+              --ks-pass "pass:${NCAROUSEL_SIGNING_STORE_PASSWORD}" \
+              --key-pass "pass:${NCAROUSEL_SIGNING_KEY_PASSWORD}" \
+              --v1-signing-enabled true \
+              --v2-signing-enabled true \
+              --v3-signing-enabled true \
+              --out "${signed}" \
+              "${apk}"
+            mv -f "${signed}" "${apk}"
+            "${APKSIGNER}" verify --verbose "${apk}" | tee /tmp/apksig.txt
+            grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksig.txt
+            grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksig.txt
+            jarsigner -verify -verbose "${apk}" | grep -q "jar verified"
+          done
+
       # v6 runs on Node 24 by default (not v5 / Node 20).
       - name: Upload debug APK
         uses: actions/upload-artifact@v6
@@ -94,48 +134,6 @@ jobs:
           name: app-release-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-
-      # AGP often signs v2/v3 only; re-sign with apksigner + v1 for OEM sideload installers.
-      - name: Re-sign APKs with apksigner (v1+v2+v3)
-        if: env.HAS_CI_KEYSTORE == 'true'
-        run: |
-          set -euo pipefail
-          SDKM="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          if [ -x "${SDKM}" ]; then
-            yes | "${SDKM}" "build-tools;34.0.0" >/dev/null
-          fi
-          APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
-          if [ ! -x "${APKSIGNER}" ]; then
-            APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
-          fi
-          test -x "${APKSIGNER}"
-          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
-            echo "Re-signing $(basename "$apk")"
-            signed="${apk%.apk}-resigned.apk"
-            "$APKSIGNER" sign \
-              --ks "${NCAROUSEL_SIGNING_STORE_FILE}" \
-              --ks-key-alias "${NCAROUSEL_SIGNING_KEY_ALIAS}" \
-              --ks-pass "pass:${NCAROUSEL_SIGNING_STORE_PASSWORD}" \
-              --key-pass "pass:${NCAROUSEL_SIGNING_KEY_PASSWORD}" \
-              --v1-signing-enabled true \
-              --v2-signing-enabled true \
-              --v3-signing-enabled true \
-              --out "${signed}" \
-              "${apk}"
-            mv -f "${signed}" "${apk}"
-          done
-
-      - name: Verify APK signatures (v1+v2 required for sideload)
-        if: env.HAS_CI_KEYSTORE == 'true'
-        run: |
-          set -euo pipefail
-          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
-            echo "Checking $(basename "$apk")"
-            "$APKSIGNER" verify --verbose "$apk" | tee /tmp/apksig.txt
-            grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksig.txt
-            grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksig.txt
-            jarsigner -verify -verbose "$apk" | grep -q "jar verified"
-          done
 
   # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
   # configured, then create or update a GitHub Release with APK assets (release + debug when built).
