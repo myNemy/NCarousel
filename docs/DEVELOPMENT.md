@@ -9,7 +9,11 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 **GitHub Releases** (on `main` after a green build) attach:
 
 - `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set). Uses `ncarouselBaseVersionName` and `ncarouselLocalVersionCode` (CI sets `NCAROUSEL_PUBLISH_RELEASE_APK=true` for `assembleRelease`) so F-Droid `Binaries` verification matches the built APK.
-- `NCarousel-<version>-debug.apk` — **debug** build (always). May use `versionName` like `0.2.47+<run>` and `versionCode` `1000+<run>` when `GITHUB_RUN_NUMBER` is set.
+- `NCarousel-<version>-debug.apk` — **debug** build (always). With signing secrets, uses the same `versionName` / `versionCode` as the release APK so you can install release over debug. Without secrets, debug may use `0.2.47+<run>` and `versionCode` `1000+<run>`.
+
+### Release APK says “invalid package” after installing debug
+
+If you sideloaded an older **debug** APK with `versionCode` **1000+** (e.g. `1101` for `0.2.47+101`), Android blocks installing the **release** APK (`versionCode` **61**) as a **downgrade**. Fix: uninstall NCarousel, then install `NCarousel-<version>.apk`, or use a release where debug and release share the same `versionCode` (current CI with `NCAROUSEL_*` secrets).
 
 ### Tags, versions, and when you see a “new” release
 

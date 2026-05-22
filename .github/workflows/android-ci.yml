@@ -66,10 +66,13 @@ jobs:
             echo "HAS_CI_KEYSTORE=true"
           } >> "$GITHUB_ENV"
 
+      # Same stable versionName/versionCode on debug + release when keystore is set, so release
+      # can replace a sideloaded debug install (otherwise debug uses 1000+run and blocks release).
       - name: Build debug APK
+        env:
+          NCAROUSEL_PUBLISH_RELEASE_APK: ${{ env.HAS_CI_KEYSTORE == 'true' && 'true' || '' }}
         run: ./gradlew :app:assembleDebug --no-daemon
 
-      # Release APK uses fixed versionName/versionCode (NCAROUSEL_PUBLISH_RELEASE_APK) for F-Droid reproducible builds.
       - name: Build release APK
         if: env.HAS_CI_KEYSTORE == 'true'
         env:

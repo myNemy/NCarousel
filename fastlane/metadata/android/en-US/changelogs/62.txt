@@ -1,0 +1,2 @@
+- Fix: CI debug and release APKs now share the same versionCode so release installs over debug.
+- Change: Avoid sideload downgrade when switching from debug to release on GitHub Releases.
