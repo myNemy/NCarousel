@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.48"
+val ncarouselBaseVersionName = "0.2.49"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -14,7 +14,8 @@ val ncarouselBaseVersionName = "0.2.48"
  * - CI debug APK: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: Gradle property `ncarousel.versionCode` or env `NCAROUSEL_VERSION_CODE` (integer only).
  */
-val ncarouselLocalVersionCode = 62
+/** Above historical CI debug codes (1000+GITHUB_RUN_NUMBER) so upgrades do not look like downgrades. */
+val ncarouselLocalVersionCode = 1103
 
 /** Set in CI for assembleRelease so the published APK matches F-Droid reproducible builds. */
 val ncarouselPublishReleaseApk = System.getenv("NCAROUSEL_PUBLISH_RELEASE_APK") == "true"
@@ -60,7 +61,7 @@ android {
         // F-Droid scans this file line-by-line with a regex that only matches `versionCode = <digits>`.
         // It skips `//` comments but not KDoc; keep this literal equal to ncarouselLocalVersionCode.
         // The next line wins at Gradle configuration time (CI may use GITHUB_RUN_NUMBER, etc.).
-        versionCode = 62
+        versionCode = 1103
         versionCode = ncarouselVersionCode
         versionName = ncarouselVersionName
     }
@@ -73,6 +74,10 @@ android {
                 storePassword = System.getenv("NCAROUSEL_SIGNING_STORE_PASSWORD") ?: ""
                 keyAlias = System.getenv("NCAROUSEL_SIGNING_KEY_ALIAS") ?: ""
                 keyPassword = System.getenv("NCAROUSEL_SIGNING_KEY_PASSWORD") ?: ""
+                // v1 (JAR) + v2/v3: some OEM installers reject v2-only APKs as "invalid package".
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }

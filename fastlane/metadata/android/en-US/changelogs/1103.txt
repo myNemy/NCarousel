@@ -1,0 +1,2 @@
+- Fix: APK signing enables v1+v2+v3 for broader install compatibility on device installers.
+- Fix: versionCode 1103 so GitHub APKs upgrade over older CI debug builds (1000+run), not downgrade.

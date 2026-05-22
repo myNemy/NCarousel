@@ -95,6 +95,19 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
+      - name: Verify APK signatures (v1+v2 required for sideload)
+        if: env.HAS_CI_KEYSTORE == 'true'
+        run: |
+          set -euo pipefail
+          APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
+          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
+            echo "Checking $(basename "$apk")"
+            "$APKSIGNER" verify --verbose "$apk" | tee /tmp/apksig.txt
+            grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksig.txt
+            grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksig.txt
+            jarsigner -verify -verbose "$apk" | grep -q "jar verified"
+          done
+
   # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
   # configured, then create or update a GitHub Release with APK assets (release + debug when built).
   release-tag:
