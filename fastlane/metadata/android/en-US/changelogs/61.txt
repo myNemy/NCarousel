@@ -1,0 +1,2 @@
+- Fix: GitHub Release APKs now use stable versionName/versionCode for F-Droid reproducible builds.
+- Change: CI release builds set NCAROUSEL_PUBLISH_RELEASE_APK; debug builds still use run-based versionCode.

@@ -69,9 +69,11 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
 
-      # Release build (minified config off; signed with CI keystore when secrets are set — same as debug).
+      # Release APK uses fixed versionName/versionCode (NCAROUSEL_PUBLISH_RELEASE_APK) for F-Droid reproducible builds.
       - name: Build release APK
         if: env.HAS_CI_KEYSTORE == 'true'
+        env:
+          NCAROUSEL_PUBLISH_RELEASE_APK: "true"
         run: ./gradlew :app:assembleRelease --no-daemon
 
       # v6 runs on Node 24 by default (not v5 / Node 20).

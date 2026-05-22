@@ -8,8 +8,8 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 
 **GitHub Releases** (on `main` after a green build) attach:
 
-- `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set).
-- `NCarousel-<version>-debug.apk` — **debug** build (always).
+- `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set). Uses `ncarouselBaseVersionName` and `ncarouselLocalVersionCode` (CI sets `NCAROUSEL_PUBLISH_RELEASE_APK=true` for `assembleRelease`) so F-Droid `Binaries` verification matches the built APK.
+- `NCarousel-<version>-debug.apk` — **debug** build (always). May use `versionName` like `0.2.47+<run>` and `versionCode` `1000+<run>` when `GITHUB_RUN_NUMBER` is set.
 
 ### Tags, versions, and when you see a “new” release
 

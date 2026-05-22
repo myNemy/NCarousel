@@ -5,25 +5,37 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-/** Semantic base; CI appends +run. Bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.46"
+/** Semantic base; bump patch/minor when releasing meaningful changes. */
+val ncarouselBaseVersionName = "0.2.47"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
- * - Local builds: [ncarouselLocalVersionCode] — **increment on every commit/push** that ships an APK.
- * - GitHub Actions: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
+ * - Release APK (F-Droid / GitHub Release): [ncarouselLocalVersionCode] and [ncarouselBaseVersionName].
+ * - CI debug APK: [GITHUB_RUN_NUMBER] → 1000 + run (each workflow run increases).
  * - Override: Gradle property `ncarousel.versionCode` or env `NCAROUSEL_VERSION_CODE` (integer only).
  */
-val ncarouselLocalVersionCode = 60
+val ncarouselLocalVersionCode = 61
+
+/** Set in CI for assembleRelease so the published APK matches F-Droid reproducible builds. */
+val ncarouselPublishReleaseApk = System.getenv("NCAROUSEL_PUBLISH_RELEASE_APK") == "true"
 
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
         ?: System.getenv("NCAROUSEL_VERSION_CODE")?.toIntOrNull()
-        ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.let { 1_000 + it }
-        ?: ncarouselLocalVersionCode
+        ?: if (ncarouselPublishReleaseApk) {
+            ncarouselLocalVersionCode
+        } else {
+            System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.let { 1_000 + it }
+                ?: ncarouselLocalVersionCode
+        }
 
 val ncarouselVersionName: String =
-    System.getenv("GITHUB_RUN_NUMBER")?.let { "$ncarouselBaseVersionName+$it" } ?: ncarouselBaseVersionName
+    if (ncarouselPublishReleaseApk) {
+        ncarouselBaseVersionName
+    } else {
+        System.getenv("GITHUB_RUN_NUMBER")?.let { "$ncarouselBaseVersionName+$it" }
+            ?: ncarouselBaseVersionName
+    }
 
 /**
  * Optional: same keystore on every CI run so debug APKs from GitHub Actions upgrade each other
@@ -48,7 +60,7 @@ android {
         // F-Droid scans this file line-by-line with a regex that only matches `versionCode = <digits>`.
         // It skips `//` comments but not KDoc; keep this literal equal to ncarouselLocalVersionCode.
         // The next line wins at Gradle configuration time (CI may use GITHUB_RUN_NUMBER, etc.).
-        versionCode = 60
+        versionCode = 61
         versionCode = ncarouselVersionCode
         versionName = ncarouselVersionName
     }
