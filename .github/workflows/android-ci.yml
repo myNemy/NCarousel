@@ -71,12 +71,14 @@ jobs:
       - name: Build debug APK
         env:
           NCAROUSEL_PUBLISH_RELEASE_APK: ${{ env.HAS_CI_KEYSTORE == 'true' && 'true' || '' }}
+          NCAROUSEL_SIGN_WITH_APKSIGNER: ${{ env.HAS_CI_KEYSTORE == 'true' && 'true' || '' }}
         run: ./gradlew :app:assembleDebug --no-daemon
 
       - name: Build release APK
         if: env.HAS_CI_KEYSTORE == 'true'
         env:
           NCAROUSEL_PUBLISH_RELEASE_APK: "true"
+          NCAROUSEL_SIGN_WITH_APKSIGNER: "true"
         run: ./gradlew :app:assembleRelease --no-daemon
 
       # AGP often signs v2/v3 only; re-sign with apksigner + v1 for OEM sideload installers.
@@ -99,9 +101,10 @@ jobs:
             APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
           fi
           test -x "${APKSIGNER}"
-          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
-            echo "Re-signing $(basename "$apk") with ${APKSIGNER}"
-            signed="${apk%.apk}-resigned.apk"
+          for apk in app/build/outputs/apk/debug/*-unsigned.apk app/build/outputs/apk/release/*-unsigned.apk; do
+            [ -f "${apk}" ] || continue
+            out="${apk/-unsigned/}"
+            echo "Signing $(basename "$apk") -> $(basename "$out") with ${APKSIGNER}"
             "${APKSIGNER}" sign \
               --ks "${NCAROUSEL_SIGNING_STORE_FILE}" \
               --ks-key-alias "${NCAROUSEL_SIGNING_KEY_ALIAS}" \
@@ -110,9 +113,9 @@ jobs:
               --v1-signing-enabled true \
               --v2-signing-enabled true \
               --v3-signing-enabled true \
-              --out "${signed}" \
+              --out "${out}" \
               "${apk}"
-            mv -f "${signed}" "${apk}"
+            apk="${out}"
             "${APKSIGNER}" verify --verbose "${apk}" | tee /tmp/apksig.txt
             grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksig.txt
             grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksig.txt
@@ -124,7 +127,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload release APK
@@ -132,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: app-release-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
   # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
