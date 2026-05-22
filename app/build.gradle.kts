@@ -20,9 +20,6 @@ val ncarouselLocalVersionCode = 1103
 /** Set in CI for assembleRelease so the published APK matches F-Droid reproducible builds. */
 val ncarouselPublishReleaseApk = System.getenv("NCAROUSEL_PUBLISH_RELEASE_APK") == "true"
 
-/** CI signs with apksigner (v1+v2+v3) after Gradle; do not sign in AGP when set. */
-val ncarouselSignWithApksigner = System.getenv("NCAROUSEL_SIGN_WITH_APKSIGNER") == "true"
-
 val ncarouselVersionCode: Int =
     (project.findProperty("ncarousel.versionCode") as String?)?.toIntOrNull()
         ?: System.getenv("NCAROUSEL_VERSION_CODE")?.toIntOrNull()
@@ -87,7 +84,7 @@ android {
 
     buildTypes {
         debug {
-            if (ncarouselCiKeystoreFile != null && !ncarouselSignWithApksigner) {
+            if (ncarouselCiKeystoreFile != null) {
                 signingConfig = signingConfigs.getByName("ci")
             }
         }
@@ -97,7 +94,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (ncarouselCiKeystoreFile != null && !ncarouselSignWithApksigner) {
+            if (ncarouselCiKeystoreFile != null) {
                 signingConfig = signingConfigs.getByName("ci")
             }
         }
