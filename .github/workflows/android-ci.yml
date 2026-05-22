@@ -95,13 +95,20 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-      # AGP often signs v2/v3 only; re-sign with apksigner 34 + v1 for OEM sideload installers.
-      - name: Re-sign APKs with apksigner 34 (v1+v2+v3)
+      # AGP often signs v2/v3 only; re-sign with apksigner + v1 for OEM sideload installers.
+      - name: Re-sign APKs with apksigner (v1+v2+v3)
         if: env.HAS_CI_KEYSTORE == 'true'
         run: |
           set -euo pipefail
-          echo y | sdkmanager "build-tools;34.0.0" >/dev/null
+          SDKM="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "${SDKM}" ]; then
+            yes | "${SDKM}" "build-tools;34.0.0" >/dev/null
+          fi
           APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
+          if [ ! -x "${APKSIGNER}" ]; then
+            APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
+          fi
+          test -x "${APKSIGNER}"
           for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
             echo "Re-signing $(basename "$apk")"
             signed="${apk%.apk}-resigned.apk"
@@ -122,7 +129,6 @@ jobs:
         if: env.HAS_CI_KEYSTORE == 'true'
         run: |
           set -euo pipefail
-          APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
           for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk; do
             echo "Checking $(basename "$apk")"
             "$APKSIGNER" verify --verbose "$apk" | tee /tmp/apksig.txt
