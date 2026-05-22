@@ -7,7 +7,7 @@ alwaysApply: true
 
 When working on the upstream F-Droid repository **fdroiddata** (often checked out as `../fdroiddata/` relative to this repo), keep changes tightly scoped.
 
-- **Only edit**: `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml`
+- **Only edit**: `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` (template, version sync, and **required `git push myNemy NCarousel`**: `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`)
 - **Do not edit** any other files in `../fdroiddata/` unless the user explicitly requests it.
 - **Do not do drive-by formatting** or mass changes in `fdroiddata` templates, CI, or other apps’ metadata.
 - If CI/review feedback requires additional `fdroiddata` files, ask for explicit permission or instruction before changing them.
