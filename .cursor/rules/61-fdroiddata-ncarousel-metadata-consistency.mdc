@@ -41,6 +41,9 @@ Verify `git cat-file -t <hash>` is `commit` and `git ls-remote https://github.co
 
 ## Hard requirements
 
+See also **`.cursor/rules/62-fdroid-binaries-requirements-ncarousel.mdc`** (mandatory app/CI scanner and Binaries constraints).
+
+- **`dependenciesInfo` in `app/build.gradle.kts`**: `includeInApk = false`, `includeInBundle = false` — required; F-Droid scanner rejects “Dependency metadata” on `Binaries` APKs.
 - `Builds[*].commit`: full **40-character** hex hash of a **commit** only (`git cat-file -t` must be `commit`). For annotated tags, use `git rev-parse "vX.Y.Z^{commit}"` — plain `git rev-parse vX.Y.Z` returns the **tag** object and breaks reproducible verification.
 - **`Binaries` APK commit:** must match the tree CI actually built for that release asset (a docs-only push to `main` without a version bump can re-upload `NCarousel-%v.apk` with a newer `META-INF/version-control-info.textproto` revision).
 - `CurrentVersion` / `CurrentVersionCode` must not move backwards unless reviewers request it.

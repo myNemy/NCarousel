@@ -9,6 +9,8 @@ alwaysApply: true
 
 When a change to the **installable Android app** is pushed to `main`, the maintainer expects **a new GitHub Release** (new tag `v<ncarouselBaseVersionName>` and a distinct Releases page entry), not only refreshed APKs on an old tag. That requires **bumping** `ncarouselBaseVersionName` (at least **patch**) on every such publish, because CI keys tags and releases off that string.
 
+**F-Droid (`Binaries` recipe):** also follow **`.cursor/rules/62-fdroid-binaries-requirements-ncarousel.mdc`** — keep `dependenciesInfo` disabled, sync `fdroiddata` after each F-Droid-targeted release, and never use a tag object hash in `Builds.commit`.
+
 ## Agent obligation (non-negotiable unless user opts out)
 
 Before **`git commit`** (and before any **`git push`** to `forgejo` / `origin`) that includes **app-impacting** changes, the agent **MUST**:

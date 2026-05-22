@@ -4,6 +4,8 @@
 
 This doc guides maintainers through publishing **NCarousel** on **F-Droid**.
 
+**Agent/maintainer obligations (mandatory):** `.cursor/rules/62-fdroid-binaries-requirements-ncarousel.mdc` (always applied), plus rules `60` and `61` for `fdroiddata` scope and metadata sync.
+
 ## What F-Droid will do vs what you do
 
 - F-Droid will **build** the app from source and **sign** it with their key.
