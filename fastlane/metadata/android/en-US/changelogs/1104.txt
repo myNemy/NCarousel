@@ -1,0 +1,2 @@
+- Fix: Release APKs omit Play dependency-metadata signing block (F-Droid scanner).
+- Change: F-Droid reproducible-build alignment and CI no longer replaces published release APKs without a version bump.

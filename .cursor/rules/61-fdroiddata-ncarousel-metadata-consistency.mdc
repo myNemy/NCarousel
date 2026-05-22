@@ -98,6 +98,6 @@ CurrentVersion: <ncarouselBaseVersionName>
 CurrentVersionCode: <ncarouselLocalVersionCode>
 ```
 
-**Current example:** `0.2.49` / `1103` / `62095add3891f541dff1e069c20e034711ac3ad8` (must match the commit that produced `NCarousel-0.2.49.apk` on GitHub Releases, not only the tag tip if CI re-uploaded the APK).
+**Current example:** `0.2.50` / `1104` / `<commit from git rev-parse "v0.2.50^{commit}" after CI publishes NCarousel-0.2.50.apk>`.
 
 More detail: `docs/FDROID.md`, `docs/DEVELOPMENT.md`.

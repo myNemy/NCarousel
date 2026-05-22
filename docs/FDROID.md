@@ -196,6 +196,8 @@ The MR uses **`Binaries`** (GitHub Release `NCarousel-<version>.apk`) and **`All
 | `Binaries` APK | First CI publish of `NCarousel-<version>.apk` on tag `v<version>`; later pushes without a version bump must **not** replace this file (see [DEVELOPMENT.md](DEVELOPMENT.md)) |
 | Signing key | `AllowedAPKSigningKeys` must match the cert used when `NCAROUSEL_*` secrets build `assembleRelease` |
 
+**`dependenciesInfo`:** AGP adds a Play-oriented **Dependency metadata** block in the APK Signing Block by default. F-Droid’s scanner rejects it on `Binaries` APKs; this project sets `includeInApk = false` and `includeInBundle = false` in `app/build.gradle.kts`.
+
 **`META-INF/version-control-info.textproto`:** Android Gradle Plugin 8.3+ embeds the git revision used at build time. If reference and F-Droid builds use different commits, verification fails even when app bytecode is identical. Prefer bumping version + new tag over re-uploading the same release APK from a newer commit.
 
 **Fork metadata path:** `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` on branch `NCarousel`, remote `myNemy` → push after each app release (see `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`).
