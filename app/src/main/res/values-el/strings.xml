@@ -5,6 +5,7 @@
     <string name="cd_back">Πίσω</string>
     <string name="nav_home">Αρχική</string>
     <string name="nav_settings">Ρυθμίσεις</string>
+    <string name="nav_support_kofi">Υποστήριξέ με στο Ko-fi</string>
     <string name="top_sign_in">Σύνδεση</string>
     <string name="login_intro">Συνδέστε τον διακομιστή Nextcloud για να χρησιμοποιείτε φωτογραφίες ως ταπετσαρία. Μπορείτε να συνδεθείτε από το πρόγραμμα περιήγησης (προτείνεται) ή να αποθηκεύσετε όνομα χρήστη και κωδικό εφαρμογής.</string>
     <string name="settings_group_account">Λογαριασμός</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Αναφορά προβλήματος</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Άδειες ανοικτού κώδικα</string>
     <string name="nc_about_view_license">Προβολή άδειας</string>
 </resources>

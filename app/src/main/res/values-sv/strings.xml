@@ -5,6 +5,7 @@
     <string name="cd_back">Tillbaka</string>
     <string name="nav_home">Hem</string>
     <string name="nav_settings">Inställningar</string>
+    <string name="nav_support_kofi">Stöd mig på Ko-fi</string>
     <string name="top_sign_in">Logga in</string>
     <string name="login_intro">Anslut din Nextcloud-server för att använda foton som bakgrund. Du kan logga in i webbläsaren (rekommenderas) eller spara användarnamn och applösenord.</string>
     <string name="settings_group_account">Konto</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Rapportera problem</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Open source-licenser</string>
     <string name="nc_about_view_license">Visa licens</string>
 </resources>

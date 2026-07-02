@@ -1,0 +1,2 @@
+- Add: Branded Ko-fi support button at the bottom of the navigation drawer.
+- Change: Ko-fi link removed from About (use the drawer button instead).

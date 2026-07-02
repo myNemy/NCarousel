@@ -70,6 +70,8 @@ import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.UiEvent
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.ui.about.AboutScreen
+import dev.nemeyes.ncarousel.ui.components.KOFI_SUPPORT_URL
+import dev.nemeyes.ncarousel.ui.components.KofiDrawerSupport
 import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
 import dev.nemeyes.ncarousel.ui.library.LibraryScreen
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
@@ -428,6 +430,13 @@ private fun AuthenticatedShell(
                             }
                         },
                         icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                    )
+                    KofiDrawerSupport(
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            val intent = CustomTabsIntent.Builder().build()
+                            intent.launchUrl(context, android.net.Uri.parse(KOFI_SUPPORT_URL))
+                        },
                     )
                 }
             }

@@ -6,6 +6,7 @@
     <string name="cd_back">Indietro</string>
     <string name="nav_home">Inizio</string>
     <string name="nav_settings">Impostazioni</string>
+    <string name="nav_support_kofi">Supportami su Ko-fi</string>
     <string name="top_sign_in">Accedi</string>
 
     <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Puoi usare l\'accesso dal browser (consigliato) o salvare utente e app password.</string>
@@ -189,7 +190,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Segnala un problema</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Licenze open-source</string>
     <string name="nc_about_view_license">Vedi licenza</string>
 </resources>

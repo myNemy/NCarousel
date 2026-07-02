@@ -5,6 +5,7 @@
     <string name="cd_back">Terug</string>
     <string name="nav_home">Start</string>
     <string name="nav_settings">Instellingen</string>
+    <string name="nav_support_kofi">Steun mij op Ko-fi</string>
     <string name="top_sign_in">Aanmelden</string>
     <string name="login_intro">Verbind je Nextcloud-server om foto\'s als achtergrond te gebruiken. Je kunt inloggen via de browser (aanbevolen) of gebruikersnaam en app-wachtwoord opslaan.</string>
     <string name="settings_group_account">Account</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Probleem melden</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Open-source-licenties</string>
     <string name="nc_about_view_license">Licentie bekijken</string>
 </resources>

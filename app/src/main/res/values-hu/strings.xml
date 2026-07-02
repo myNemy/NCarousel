@@ -5,6 +5,7 @@
     <string name="cd_back">Vissza</string>
     <string name="nav_home">Kezdőlap</string>
     <string name="nav_settings">Beállítások</string>
+    <string name="nav_support_kofi">Támogass a Ko-fi-n</string>
     <string name="top_sign_in">Bejelentkezés</string>
     <string name="login_intro">Csatlakoztassa Nextcloud-kiszolgálóját a fényképek háttérképként való használatához. Bejelentkezhet a böngészőben (ajánlott), vagy elmentheti a felhasználónevet és az alkalmazásjelszót.</string>
     <string name="settings_group_account">Fiók</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Hiba bejelentése</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Nyílt forráskódú licencek</string>
     <string name="nc_about_view_license">Licenc megtekintése</string>
 </resources>

@@ -5,6 +5,7 @@
     <string name="cd_back">Zpět</string>
     <string name="nav_home">Domů</string>
     <string name="nav_settings">Nastavení</string>
+    <string name="nav_support_kofi">Podpořte mě na Ko-fi</string>
     <string name="top_sign_in">Přihlásit se</string>
     <string name="login_intro">Připojte svůj server Nextcloud a používejte fotky jako tapetu. Můžete se přihlásit v prohlížeči (doporučeno) nebo uložit uživatelské jméno a heslo aplikace.</string>
     <string name="settings_group_account">Účet</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Nahlásit problém</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Open source licence</string>
     <string name="nc_about_view_license">Zobrazit licenci</string>
 </resources>

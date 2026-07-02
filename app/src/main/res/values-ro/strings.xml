@@ -5,6 +5,7 @@
     <string name="cd_back">Înapoi</string>
     <string name="nav_home">Acasă</string>
     <string name="nav_settings">Setări</string>
+    <string name="nav_support_kofi">Susține-mă pe Ko-fi</string>
     <string name="top_sign_in">Conectare</string>
     <string name="login_intro">Conectați serverul Nextcloud pentru a folosi fotografiile ca fundal. Vă puteți autentifica în browser (recomandat) sau salva numele de utilizator și parola aplicației.</string>
     <string name="settings_group_account">Cont</string>
@@ -180,7 +181,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Raportează o problemă</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Licențe open source</string>
     <string name="nc_about_view_license">Vezi licența</string>
 </resources>

@@ -7,6 +7,7 @@
     <string name="cd_back">Back</string>
     <string name="nav_home">Home</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_support_kofi">Support on Ko-fi</string>
     <string name="top_sign_in">Sign in</string>
 
     <!-- Login / connection -->
@@ -195,7 +196,6 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Report an issue</string>
-    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Open-source licenses</string>
     <string name="nc_about_view_license">View license</string>
 </resources>
