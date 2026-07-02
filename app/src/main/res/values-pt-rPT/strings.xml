@@ -180,6 +180,7 @@
     <string name="nc_about_github">GitHub</string>
     <string name="nc_about_forgejo">Forgejo</string>
     <string name="nc_about_issues">Reportar problema</string>
+    <string name="nc_about_kofi">Ko-fi</string>
     <string name="nc_about_oss_licenses">Licenças open source</string>
     <string name="nc_about_view_license">Ver licença</string>
 </resources>

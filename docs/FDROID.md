@@ -134,7 +134,7 @@ WebSite: https://github.com/myNemy/NCarousel
 SourceCode: https://github.com/myNemy/NCarousel
 IssueTracker: https://github.com/myNemy/NCarousel/issues
 Changelog: https://github.com/myNemy/NCarousel/releases
-# Donate: (web link)
+Donate: https://ko-fi.com/nemeyes
 # Liberapay: (user name)
 # Bitcoin: (bitcoin address)
 

@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -328,6 +329,27 @@ private fun AuthenticatedShell(
         )
     }
 
+    val navigateUp: () -> Unit = {
+        scope.launch {
+            if (drawerState.isOpen) {
+                drawerState.close()
+                return@launch
+            }
+            if (currentRoute != null && currentRoute != AppDestinations.MAIN) {
+                if (!navController.popBackStack()) {
+                    navController.popBackStack(AppDestinations.MAIN, inclusive = false)
+                }
+            }
+        }
+    }
+
+    BackHandler(
+        enabled = drawerState.isOpen ||
+            (currentRoute != null && currentRoute != AppDestinations.MAIN),
+    ) {
+        navigateUp()
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -482,7 +504,7 @@ private fun AuthenticatedShell(
                                         }
                                     },
                                     navigationIcon = {
-                                        IconButton(onClick = { navController.popBackStack() }) {
+                                        IconButton(onClick = navigateUp) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
                                                 contentDescription = stringResource(R.string.cd_back),
@@ -547,7 +569,7 @@ private fun AuthenticatedShell(
                                         }
                                     },
                                     navigationIcon = {
-                                        IconButton(onClick = { navController.popBackStack() }) {
+                                        IconButton(onClick = navigateUp) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
                                                 contentDescription = stringResource(R.string.cd_back),
@@ -581,7 +603,7 @@ private fun AuthenticatedShell(
                                         }
                                     },
                                     navigationIcon = {
-                                        IconButton(onClick = { navController.popBackStack() }) {
+                                        IconButton(onClick = navigateUp) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
                                                 contentDescription = stringResource(R.string.cd_back),
@@ -620,7 +642,7 @@ private fun AuthenticatedShell(
                                         }
                                     },
                                     navigationIcon = {
-                                        IconButton(onClick = { navController.popBackStack() }) {
+                                        IconButton(onClick = navigateUp) {
                                             Icon(
                                                 Icons.AutoMirrored.Filled.ArrowBack,
                                                 contentDescription = stringResource(R.string.cd_back),

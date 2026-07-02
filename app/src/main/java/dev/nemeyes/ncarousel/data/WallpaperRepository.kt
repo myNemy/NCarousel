@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
+import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import java.io.ByteArrayInputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -63,7 +64,18 @@ class WallpaperRepository(private val context: Context) {
         if (cropped != upright) upright.recycle()
 
         val which = target.toWallpaperSetFlags()
-        wallpaperManager.setBitmap(cropped, null, true, which)
+        when (target) {
+            WallpaperTarget.HOME_AND_LOCK -> {
+                // Some launchers/OEM builds apply FLAG_SYSTEM and FLAG_LOCK inconsistently when
+                // combined; set home and lock in separate calls for a reliable match.
+                wallpaperManager.setBitmap(cropped, null, true, WallpaperManager.FLAG_SYSTEM)
+                wallpaperManager.setBitmap(cropped, null, true, WallpaperManager.FLAG_LOCK)
+            }
+            else -> wallpaperManager.setBitmap(cropped, null, true, which)
+        }
+        if (target == WallpaperTarget.HOME_AND_LOCK) {
+            HomeWallpaperResync.schedule(context)
+        }
         cropped.recycle()
     }
 

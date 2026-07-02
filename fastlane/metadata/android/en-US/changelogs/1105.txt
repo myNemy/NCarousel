@@ -1,0 +1,4 @@
+- Fix: Prevent stuck busy state and improve back navigation (drawer + system back).
+- Fix: Load cached image list on a background thread to avoid UI freezes.
+- Fix: Keep home and lock wallpapers aligned (separate apply + home resync on unlock).
+- Add: Ko-fi support link on the About screen.

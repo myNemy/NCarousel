@@ -34,7 +34,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -178,6 +180,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private enum class BatteryOptConsentTrigger { EnableAutoSwitch, SettingsBanner }
 
     private var batteryOptConsentTrigger: BatteryOptConsentTrigger? = null
+
+    /** Prevents a cancelled/slow job from clearing [MainUiState.busy] while a newer one runs. */
+    private var busyToken = 0
+    private var loginJob: Job? = null
+
+    private fun beginBusy(): Int {
+        val token = ++busyToken
+        _ui.update { it.copy(busy = true) }
+        return token
+    }
+
+    private fun endBusy(token: Int) {
+        if (busyToken == token) {
+            _ui.update { it.copy(busy = false) }
+        }
+    }
+
+    private fun clearBusyState() {
+        busyToken++
+        _ui.update { it.copy(busy = false) }
+    }
 
     init {
         refreshBatteryOptimizationStatus()
@@ -376,66 +399,81 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
             return
         }
-        viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_login_starting_nextcloud)) }
-            val flow = NextcloudLoginFlowV2(http)
-            val started = flow.start(s.serverUrl)
-            started.fold(
-                onSuccess = { start ->
-                    _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
-                    _ui.update { it.copy(statusMessage = appStr(R.string.status_complete_login_browser)) }
-                    val polled = flow.pollUntilDone(start.pollEndpoint, start.pollToken, expectedServerBaseUrl = s.serverUrl)
-                    polled.fold(
-                        onSuccess = { ok ->
-                            val userId = OcsUserClient(http).fetchUserId(ok.server, ok.loginName, ok.appPassword)
-                                .getOrElse { ok.loginName }
-                            val acc = dev.nemeyes.ncarousel.data.accounts.NextcloudAccount(
-                                serverBaseUrl = ok.server,
-                                userId = userId,
-                                loginName = ok.loginName,
-                                appPassword = ok.appPassword,
-                                remoteFolder = "Photos",
-                            )
-                            accounts.upsert(acc)
-                            accounts.setActiveAccountId(acc.id)
-                            _ui.update {
-                                val active = accounts.getActiveAccount()
-                                it.copy(
-                                    busy = false,
-                                    hasActiveAccount = true,
-                                    accounts = accountsUi(),
-                                    activeAccountId = accounts.getActiveAccountId(),
-                                    serverUrl = active?.serverBaseUrl.orEmpty(),
-                                    username = active?.userId.orEmpty(),
-                                    password = active?.appPassword.orEmpty(),
-                                    remoteFolder = active?.remoteFolder.orEmpty(),
-                                    statusMessage = appStr(R.string.msg_login_complete_saved),
-                                    instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
-                                    instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },
-                                )
-                            }
-                            WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
-                            scheduleThemingRefresh()
-                        },
-                        onFailure = { e ->
-                            _ui.update {
-                                it.copy(
-                                    busy = false,
-                                    statusMessage = appStr(R.string.msg_login_failed, e.message ?: e.javaClass.simpleName),
-                                )
-                            }
-                        },
-                    )
-                },
-                onFailure = { e ->
-                    _ui.update {
-                        it.copy(
-                            busy = false,
-                            statusMessage = appStr(R.string.msg_login_could_not_start, e.message ?: e.javaClass.simpleName),
+        loginJob?.cancel()
+        loginJob = viewModelScope.launch {
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_login_starting_nextcloud)) }
+            try {
+                val flow = NextcloudLoginFlowV2(http)
+                val started = flow.start(s.serverUrl)
+                started.fold(
+                    onSuccess = { start ->
+                        _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
+                        _ui.update { it.copy(statusMessage = appStr(R.string.status_complete_login_browser)) }
+                        val polled = flow.pollUntilDone(
+                            start.pollEndpoint,
+                            start.pollToken,
+                            expectedServerBaseUrl = s.serverUrl,
                         )
-                    }
-                },
-            )
+                        polled.fold(
+                            onSuccess = { ok ->
+                                val userId = OcsUserClient(http).fetchUserId(ok.server, ok.loginName, ok.appPassword)
+                                    .getOrElse { ok.loginName }
+                                val acc = dev.nemeyes.ncarousel.data.accounts.NextcloudAccount(
+                                    serverBaseUrl = ok.server,
+                                    userId = userId,
+                                    loginName = ok.loginName,
+                                    appPassword = ok.appPassword,
+                                    remoteFolder = "Photos",
+                                )
+                                accounts.upsert(acc)
+                                accounts.setActiveAccountId(acc.id)
+                                _ui.update {
+                                    val active = accounts.getActiveAccount()
+                                    it.copy(
+                                        hasActiveAccount = true,
+                                        accounts = accountsUi(),
+                                        activeAccountId = accounts.getActiveAccountId(),
+                                        serverUrl = active?.serverBaseUrl.orEmpty(),
+                                        username = active?.userId.orEmpty(),
+                                        password = active?.appPassword.orEmpty(),
+                                        remoteFolder = active?.remoteFolder.orEmpty(),
+                                        statusMessage = appStr(R.string.msg_login_complete_saved),
+                                        instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
+                                        instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },
+                                    )
+                                }
+                                WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
+                                scheduleThemingRefresh()
+                            },
+                            onFailure = { e ->
+                                _ui.update {
+                                    it.copy(
+                                        statusMessage = appStr(
+                                            R.string.msg_login_failed,
+                                            e.message ?: e.javaClass.simpleName,
+                                        ),
+                                    )
+                                }
+                            },
+                        )
+                    },
+                    onFailure = { e ->
+                        _ui.update {
+                            it.copy(
+                                statusMessage = appStr(
+                                    R.string.msg_login_could_not_start,
+                                    e.message ?: e.javaClass.simpleName,
+                                ),
+                            )
+                        }
+                    },
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } finally {
+                endBusy(token)
+            }
         }
     }
 
@@ -578,23 +616,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = null) }
-            val client = NextcloudWebDavClient(
-                http,
-                active.serverBaseUrl,
-                active.userId,
-                active.loginName,
-                active.appPassword,
-            )
-            val result = client.verifyReachable()
-            _ui.update {
-                it.copy(
-                    busy = false,
-                    statusMessage = result.fold(
-                        onSuccess = { appStr(R.string.msg_webdav_ok) },
-                        onFailure = { e -> appStr(R.string.msg_error_colon, e.message ?: e.javaClass.simpleName) },
-                    ),
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = null) }
+            try {
+                val client = NextcloudWebDavClient(
+                    http,
+                    active.serverBaseUrl,
+                    active.userId,
+                    active.loginName,
+                    active.appPassword,
                 )
+                val result = client.verifyReachable()
+                _ui.update {
+                    it.copy(
+                        statusMessage = result.fold(
+                            onSuccess = { appStr(R.string.msg_webdav_ok) },
+                            onFailure = { e -> appStr(R.string.msg_error_colon, e.message ?: e.javaClass.simpleName) },
+                        ),
+                    )
+                }
+            } finally {
+                endBusy(token)
             }
         }
     }
@@ -607,50 +649,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_scanning_folders)) }
-            // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
-            val folder = s.remoteFolder.trim().trim('/').ifBlank {
-                active.remoteFolder.ifBlank { "Photos" }
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_scanning_folders)) }
+            try {
+                // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
+                val folder = s.remoteFolder.trim().trim('/').ifBlank {
+                    active.remoteFolder.ifBlank { "Photos" }
+                }
+                val accountForSync = active.copy(remoteFolder = folder)
+                accounts.upsert(accountForSync)
+                val maxBytes = s.maxImageSizeMb.toLong() * 1024L * 1024L
+                val result = syncRepo.syncFromServer(http, accountForSync, maxBytes)
+                result.fold(
+                    onSuccess = { list ->
+                        val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
+                        val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                        val fp = WallpaperOrderEngine.libraryFingerprint(list)
+                        WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
+                        ImageListCache(getApplication(), active.id).write(list)
+                        val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode)
+                        _ui.update {
+                            it.copy(
+                                imageHrefs = list,
+                                imageFileIds = fileIds,
+                                imageCarouselIndexByHref = carouselIndices,
+                                remoteFolder = folder,
+                                statusMessage = appStr(R.string.msg_images_found, list.size),
+                            )
+                        }
+                        val app = getApplication<Application>()
+                        withContext(Dispatchers.IO) {
+                            CarouselStatusNotifications.maybeShowListRefreshed(app, carousel, list.size)
+                        }
+                    },
+                    onFailure = { e ->
+                        _ui.update {
+                            it.copy(
+                                imageHrefs = emptyList(),
+                                imageFileIds = emptyMap(),
+                                imageCarouselIndexByHref = emptyMap(),
+                                statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
+                            )
+                        }
+                    },
+                )
+            } finally {
+                endBusy(token)
             }
-            val accountForSync = active.copy(remoteFolder = folder)
-            accounts.upsert(accountForSync)
-            val maxBytes = s.maxImageSizeMb.toLong() * 1024L * 1024L
-            val result = syncRepo.syncFromServer(http, accountForSync, maxBytes)
-            result.fold(
-                onSuccess = { list ->
-                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
-                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
-                    val fp = WallpaperOrderEngine.libraryFingerprint(list)
-                    WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
-                    ImageListCache(getApplication(), active.id).write(list)
-                    val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode)
-                    _ui.update {
-                        it.copy(
-                            busy = false,
-                            imageHrefs = list,
-                            imageFileIds = fileIds,
-                            imageCarouselIndexByHref = carouselIndices,
-                            remoteFolder = folder,
-                            statusMessage = appStr(R.string.msg_images_found, list.size),
-                        )
-                    }
-                    val app = getApplication<Application>()
-                    withContext(Dispatchers.IO) {
-                        CarouselStatusNotifications.maybeShowListRefreshed(app, carousel, list.size)
-                    }
-                },
-                onFailure = { e ->
-                    _ui.update {
-                        it.copy(
-                            busy = false,
-                            imageHrefs = emptyList(),
-                            imageFileIds = emptyMap(),
-                            imageCarouselIndexByHref = emptyMap(),
-                            statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
-                        )
-                    }
-                },
-            )
         }
     }
 
@@ -665,25 +710,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_downloading)) }
-            val err = withContext(Dispatchers.IO) {
-                NextWallpaperApplicator.applyNext(
-                    getApplication(),
-                    orderModeOverride = s.orderMode,
-                    wallpaperTargetOverride = s.wallpaperTarget,
-                )
-            }
-            _ui.update {
-                it.copy(
-                    busy = false,
-                    statusMessage = when {
-                        err == null -> appStr(R.string.msg_wallpaper_updated)
-                        else -> err
-                    },
-                )
-            }
-            if (err == null) {
-                refreshWallpaperExif()
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_downloading)) }
+            try {
+                val err = withContext(Dispatchers.IO) {
+                    NextWallpaperApplicator.applyNext(
+                        getApplication(),
+                        orderModeOverride = s.orderMode,
+                        wallpaperTargetOverride = s.wallpaperTarget,
+                    )
+                }
+                _ui.update {
+                    it.copy(
+                        statusMessage = when {
+                            err == null -> appStr(R.string.msg_wallpaper_updated)
+                            else -> err
+                        },
+                    )
+                }
+                if (err == null) {
+                    refreshWallpaperExif()
+                }
+            } finally {
+                endBusy(token)
             }
         }
     }
@@ -700,54 +749,69 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            _ui.update { it.copy(busy = true, statusMessage = appStr(R.string.status_downloading)) }
-            val err = withContext(Dispatchers.IO) {
-                NextWallpaperApplicator.applyHref(
-                    getApplication(),
-                    href = href,
-                    hrefsForProgress = s.imageHrefs,
-                    wallpaperTargetOverride = s.wallpaperTarget,
-                )
-            }
-            _ui.update {
-                it.copy(
-                    busy = false,
-                    statusMessage = when {
-                        err == null -> appStr(R.string.msg_wallpaper_updated)
-                        else -> err
-                    },
-                )
-            }
-            if (err == null) {
-                refreshWallpaperExif()
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_downloading)) }
+            try {
+                val err = withContext(Dispatchers.IO) {
+                    NextWallpaperApplicator.applyHref(
+                        getApplication(),
+                        href = href,
+                        hrefsForProgress = s.imageHrefs,
+                        wallpaperTargetOverride = s.wallpaperTarget,
+                    )
+                }
+                _ui.update {
+                    it.copy(
+                        statusMessage = when {
+                            err == null -> appStr(R.string.msg_wallpaper_updated)
+                            else -> err
+                        },
+                    )
+                }
+                if (err == null) {
+                    refreshWallpaperExif()
+                }
+            } finally {
+                endBusy(token)
             }
         }
     }
 
     fun loadCachedListIfAny() {
         val active = activeOrNull() ?: return
+        val accountId = active.id
         viewModelScope.launch {
-            val legacy = ImageListCache(getApplication(), active.id).read()
-            if (legacy.isNotEmpty()) {
-                val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
-                val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
-                val s = _ui.value
-                val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, s.orderMode)
-                _ui.update { it.copy(imageHrefs = legacy, imageFileIds = fileIds, imageCarouselIndexByHref = carouselIndices) }
-                return@launch
-            }
-            val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
-            val cached = hrefsWithId.map { it.first }
-            val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
-            if (cached.isNotEmpty()) {
-                val s = _ui.value
-                val carouselIndices = computeCarouselIndicesForActiveAccount(cached, s.orderMode)
-                _ui.update { it.copy(imageHrefs = cached, imageFileIds = fileIds, imageCarouselIndexByHref = carouselIndices) }
+            val orderMode = _ui.value.orderMode
+            val loaded = withContext(Dispatchers.IO) {
+                val legacy = ImageListCache(getApplication(), accountId).read()
+                if (legacy.isNotEmpty()) {
+                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(accountId)
+                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                    val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, orderMode)
+                    Triple(legacy, fileIds, carouselIndices)
+                } else {
+                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(accountId)
+                    val cached = hrefsWithId.map { it.first }
+                    if (cached.isEmpty()) return@withContext null
+                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                    val carouselIndices = computeCarouselIndicesForActiveAccount(cached, orderMode)
+                    Triple(cached, fileIds, carouselIndices)
+                }
+            } ?: return@launch
+            if (activeOrNull()?.id != accountId) return@launch
+            _ui.update {
+                it.copy(
+                    imageHrefs = loaded.first,
+                    imageFileIds = loaded.second,
+                    imageCarouselIndexByHref = loaded.third,
+                )
             }
         }
     }
 
     fun setActiveAccount(id: String) {
+        loginJob?.cancel()
+        clearBusyState()
         accounts.setActiveAccountId(id)
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         val a = accounts.getActiveAccount()
@@ -773,6 +837,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteAccount(id: String) {
+        loginJob?.cancel()
+        clearBusyState()
         carousel.clearThemingForAccount(id)
         LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
         accounts.delete(id)

@@ -62,6 +62,7 @@ fun AboutScreen(
     val repoUrl = "https://github.com/myNemy/NCarousel"
     val forgejoUrl = "https://forgejo.it/Nemeyes/NCarousel"
     val issuesUrl = "https://github.com/myNemy/NCarousel/issues"
+    val kofiUrl = "https://ko-fi.com/nemeyes"
 
     val apache = stringResource(R.string.about_license_apache)
     val licenses = listOf(
@@ -143,6 +144,7 @@ fun AboutScreen(
                     Button(onClick = { onOpenUrl(forgejoUrl) }) { Text(stringResource(R.string.nc_about_forgejo)) }
                 }
                 Button(onClick = { onOpenUrl(issuesUrl) }) { Text(stringResource(R.string.nc_about_issues)) }
+                Button(onClick = { onOpenUrl(kofiUrl) }) { Text(stringResource(R.string.nc_about_kofi)) }
             }
         }
 
