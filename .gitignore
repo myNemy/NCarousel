@@ -31,4 +31,3 @@ app/ncarousel-ci.keystore
 # Artefatti di debug / tooling
 *.hprof
 .kotlin/
-.cursor/

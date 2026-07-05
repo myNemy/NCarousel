@@ -1,0 +1,106 @@
+---
+description: NCarousel fdroiddata metadata template, version sync, and push to GitLab fork
+globs: ../fdroiddata/metadata/dev.nemeyes.ncarousel.yml
+alwaysApply: true
+---
+
+# NCarousel `fdroiddata` metadata
+
+**File (only file to edit in fdroiddata):** `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml`  
+**Fork remote (SSH):** `myNemy` → `git@gitlab.com:myNemy/fdroiddata.git`  
+**MR branch:** `NCarousel` → [fdroid/fdroiddata](https://gitlab.com/fdroid/fdroiddata/-/merge_requests)
+
+## Agent obligation when NCarousel app version changes for F-Droid
+
+Whenever **`ncarouselBaseVersionName`** or **`ncarouselLocalVersionCode`** changes in `app/build.gradle.kts` for a release that should reach F-Droid (or the user asks to sync F-Droid metadata), the agent **MUST** — in the same work session, after green CI and `NCarousel-<version>.apk` on GitHub Releases:
+
+1. **Edit** `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` (all version fields below).
+2. **Commit** on branch `NCarousel` in the fdroiddata checkout.
+3. **Push** to the fork: `git push myNemy NCarousel` (from `../fdroiddata/`). Do not consider F-Droid metadata done until push succeeds.
+
+Do **not** only update this rule’s example or NCarousel without touching fdroiddata.
+
+### Fields to sync (must match the tagged release)
+
+| fdroiddata field | Source |
+|------------------|--------|
+| `Builds.versionName` | `ncarouselBaseVersionName` |
+| `Builds.versionCode` | `ncarouselLocalVersionCode` |
+| `CurrentVersion` | same as `versionName` |
+| `CurrentVersionCode` | same as `versionCode` |
+| `Builds.commit` | `git rev-parse "v<ncarouselBaseVersionName>^{commit}"` in NCarousel (40 hex **commit**; never the annotated **tag** object hash from plain `rev-parse v…`) |
+
+Verify `git cat-file -t <hash>` is `commit` and `git ls-remote https://github.com/myNemy/NCarousel.git <hash>` succeeds.
+
+## Reproducible upstream-signed APK (required for this app)
+
+- **`Binaries`**: HTTPS URL of the **release** APK on GitHub Releases (not `-debug`). F-Droid compares its build to this file.
+- **`AllowedAPKSigningKeys`**: SHA-256 (64 hex, lowercase) of the **CI release** signing cert. Must match `NCarousel-<version>.apk` when `NCAROUSEL_*` secrets are set.
+- **GitHub release APK** must use stable `versionName` / `versionCode` (`NCAROUSEL_PUBLISH_RELEASE_APK=true` on `assembleRelease`; CI debug uses the same stable codes when the keystore is set).
+- **Do not** point `Binaries` at debug APKs or at releases where `versionCode` was only `1000+GITHUB_RUN_NUMBER`.
+
+## Hard requirements
+
+See also **`.cursor/rules/62-fdroid-binaries-requirements-ncarousel.mdc`** (mandatory app/CI scanner and Binaries constraints).
+
+- **`dependenciesInfo` in `app/build.gradle.kts`**: `includeInApk = false`, `includeInBundle = false` — required; F-Droid scanner rejects “Dependency metadata” on `Binaries` APKs.
+- `Builds[*].commit`: full **40-character** hex hash of a **commit** only (`git cat-file -t` must be `commit`). For annotated tags, use `git rev-parse "vX.Y.Z^{commit}"` — plain `git rev-parse vX.Y.Z` returns the **tag** object and breaks reproducible verification.
+- **`Binaries` APK commit:** must match the tree CI actually built for that release asset (a docs-only push to `main` without a version bump can re-upload `NCarousel-%v.apk` with a newer `META-INF/version-control-info.textproto` revision).
+- `CurrentVersion` / `CurrentVersionCode` must not move backwards unless reviewers request it.
+- `UpdateCheckMode: Tags ^v[0-9.]+$` matches git tags `v<ncarouselBaseVersionName>`.
+
+## fdroiddata push commands (from repo root)
+
+```bash
+cd ../fdroiddata
+git checkout NCarousel   # or create from fork default
+# edit metadata/dev.nemeyes.ncarousel.yml
+git add metadata/dev.nemeyes.ncarousel.yml
+git commit -m "Update dev.nemeyes.ncarousel to <version> (<versionCode>)"
+git push myNemy NCarousel
+```
+
+SSH for GitLab: `~/.ssh/config` → `Host gitlab.com` with `IdentityFile ~/.ssh/id_ed25519`.
+
+## Canonical `metadata/dev.nemeyes.ncarousel.yml`
+
+Keep this block aligned with the real file in `fdroiddata` whenever versions change.
+
+```yaml
+Categories:
+  - Connectivity
+  - Multimedia
+  - Theming
+License: AGPL-3.0-or-later
+AuthorName: Nemeyes
+WebSite: https://github.com/myNemy/NCarousel
+SourceCode: https://github.com/myNemy/NCarousel
+IssueTracker: https://github.com/myNemy/NCarousel/issues
+Changelog: https://github.com/myNemy/NCarousel/releases
+Donate: https://ko-fi.com/nemeyes
+
+AutoName: NCarousel
+
+RepoType: git
+Repo: https://github.com/myNemy/NCarousel.git
+Binaries: https://github.com/myNemy/NCarousel/releases/download/v%v/NCarousel-%v.apk
+
+Builds:
+  - versionName: <ncarouselBaseVersionName>
+    versionCode: <ncarouselLocalVersionCode>
+    commit: <40-char hex from git rev-parse "v<version>^{commit}">
+    subdir: app
+    gradle:
+      - yes
+
+AllowedAPKSigningKeys: b15eebd793777d54444c7ff62b79ed0aeab46e820fcffea8548060a8774c8720
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: <ncarouselBaseVersionName>
+CurrentVersionCode: <ncarouselLocalVersionCode>
+```
+
+**Current example:** `0.2.50` / `1104` / `790494dd05cbcd68faa77deb502fa947c4460bcd`.
+
+More detail: `docs/FDROID.md`, `docs/DEVELOPMENT.md`.
