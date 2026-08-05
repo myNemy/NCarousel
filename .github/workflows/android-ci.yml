@@ -1,10 +1,13 @@
 name: Android CI
 
+# Branch roles (see docs/DEVELOPMENT.md):
+# - main: publish path (release APK + tag + GitHub Release → F-Droid)
+# - dev / feature/**: trial path (debug APK artifact only; no official release)
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev", "feature/**" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   workflow_dispatch:
 
 # With an explicit permissions block, every scope omitted is denied. Artifact upload
@@ -66,15 +69,16 @@ jobs:
             echo "HAS_CI_KEYSTORE=true"
           } >> "$GITHUB_ENV"
 
-      # Same stable versionName/versionCode on debug + release when keystore is set, so release
-      # can replace a sideloaded debug install (otherwise debug uses 1000+run and blocks release).
+      # With keystore: stable versionName/versionCode on debug (all branches) so a later main
+      # release can replace a sideloaded trial install. Without keystore: CI may use GITHUB_RUN_NUMBER.
       - name: Build debug APK
         env:
           NCAROUSEL_PUBLISH_RELEASE_APK: ${{ env.HAS_CI_KEYSTORE == 'true' && 'true' || '' }}
         run: ./gradlew :app:assembleDebug --no-daemon
 
+      # Release APK only on push to main (F-Droid / GitHub Release publish path).
       - name: Build release APK
-        if: env.HAS_CI_KEYSTORE == 'true'
+        if: env.HAS_CI_KEYSTORE == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           NCAROUSEL_PUBLISH_RELEASE_APK: "true"
         run: ./gradlew :app:assembleRelease --no-daemon
@@ -88,15 +92,15 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release APK
-        if: env.HAS_CI_KEYSTORE == 'true'
+        if: env.HAS_CI_KEYSTORE == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v6
         with:
           name: app-release-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
-  # After a green build on main: ensure git tag v<ncarouselBaseVersionName>, push to Forgejo if
-  # configured, then create or update a GitHub Release with APK assets (release + debug when built).
+  # After a green build on main only: tag v<ncarouselBaseVersionName>, Forgejo tag if configured,
+  # GitHub Release with APK assets. Never runs for dev / feature/**.
   release-tag:
     name: Release tag and GitHub Release
     needs: build-debug

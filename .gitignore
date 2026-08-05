@@ -1,6 +1,7 @@
 *.iml
 # Note solo locale (non versionata, non su GitHub)
 PRIVATE_README.md
+PRIVATE_TODO.md
 # F-Droid maintainer guide: see tracked file docs/FDROID.md
 .gradle
 /local.properties

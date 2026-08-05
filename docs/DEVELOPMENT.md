@@ -2,14 +2,38 @@
 
 Notes for people who **clone**, **build**, **download CI artifacts**, or **maintain** signing for NCarousel.
 
+## Branch workflow (`dev` / `main` / optional `feature/*`)
+
+Same local clone; switch with `git switch`. Cursor rules: `.cursor/rules/06-git-branch-workflow.mdc`.
+
+| Branch | Purpose |
+|--------|---------|
+| **`dev`** | Default daily work. Push → CI **debug** artifact only. No F-Droid version bump, no official GitHub Release / `Binaries` APK. |
+| **`feature/<slug>`** | Optional for a long or risky task. Branch from `dev`, merge back into `dev`. |
+| **`main`** | **Publish** only. Merge `dev` → bump version + Fastlane changelog → push → Release APK → sync `fdroiddata` → merge `main` back into `dev`. |
+
+**Continuation**
+
+1. Resume on `dev` (pull). Short fix → stay on `dev`; long task → `feature/<slug>` from `dev`.
+2. Iterate: commit/push → download **`app-debug-apk`** from Actions → sideload → repeat.
+3. When a feature branch is done: merge into `dev`, push `dev`.
+4. When ready to ship: merge `dev` → `main`, bump, push `main`, wait for Release APK, sync F-Droid, then **merge `main` → `dev`** and push `dev`.
+
+Ordinary “commit and push” on `dev` is a trial. Phrases like **publish** / **release** / **merge to main** / **F-Droid** mean the full `main` publish path.
+
 ## Pre-built APKs (GitHub Actions)
 
-On each push to `main`, the workflow **Android CI** builds a **debug** APK. If repository signing secrets are configured (see **GitHub Actions: stable APK signature** below), it also builds a **release** APK (`assembleRelease`), signed with the same keystore as CI debug.
+**Android CI** runs on pushes to `main`, `dev`, and `feature/**` (and PRs targeting `main` / `dev`).
 
-**GitHub Releases** (on `main` after a green build) attach:
+| Ref | Debug artifact | Release APK + tag + GitHub Release |
+|-----|----------------|--------------------------------------|
+| `dev` / `feature/**` | Yes (`app-debug-apk`) | No |
+| `main` (push) | Yes | Yes (when `NCAROUSEL_*` signing secrets are set) |
+
+**GitHub Releases** (only after a green build on **`main`**) attach:
 
 - `NCarousel-<version>.apk` — **release** build (only when `NCAROUSEL_*` signing secrets are set). Uses `ncarouselBaseVersionName` and `ncarouselLocalVersionCode` (CI sets `NCAROUSEL_PUBLISH_RELEASE_APK=true` for `assembleRelease`) so F-Droid `Binaries` verification matches the built APK.
-- `NCarousel-<version>-debug.apk` — **debug** build (always). With signing secrets, uses the same `versionName` / `versionCode` as the release APK so you can install release over debug. Without secrets, debug may use `0.2.47+<run>` and `versionCode` `1000+<run>`.
+- `NCarousel-<version>-debug.apk` — **debug** build on that release. With signing secrets, uses the same `versionName` / `versionCode` as the release APK so you can install release over debug. Without secrets, debug may use `0.2.47+<run>` and `versionCode` `1000+<run>`.
 
 ### “Invalid package” / “pacchetto non valido” when sideloading
 
@@ -18,22 +42,22 @@ On each push to `main`, the workflow **Android CI** builds a **debug** APK. If r
 
 ### Tags, versions, and when you see a “new” release
 
-Repository **Cursor rules** (`.cursor/rules/50-commit-push-release-automation.mdc`) require bumping **`ncarouselBaseVersionName`** (at least patch), **`ncarouselLocalVersionCode`** (+1), and adding a Fastlane changelog **before** commit/push of **app-impacting** changes, so each such push yields a **new** GitHub Release entry.
+On **`main` publish**, Cursor rules require bumping **`ncarouselBaseVersionName`** (at least patch), **`ncarouselLocalVersionCode`** (+1), and a Fastlane changelog (`.cursor/rules/50-commit-push-release-automation.mdc`). Trial commits on **`dev`** do not bump for F-Droid.
 
 CI reads **`ncarouselBaseVersionName`** from `app/build.gradle.kts` and uses the git tag **`v<that string>`** (e.g. `v0.2.40`).
 
 - **First time** that tag appears on GitHub: CI creates the annotated tag (if missing) and creates the GitHub Release, then uploads the APKs.
-- **Later pushes** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused. CI **refreshes** `NCarousel-<version>-debug.apk` but **does not replace** `NCarousel-<version>.apk` once it is already on the release (so F-Droid `Binaries` reproducible verification stays aligned with `Builds.commit`). The Releases page does **not** gain an extra row. The release **title** includes the workflow run number so you can see when assets were refreshed.
-- **F-Droid:** after bumping version, sync `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` (`commit` = `git rev-parse "v<version>^{commit}"`, or the commit of the published release APK if you must recover manually). See [FDROID.md](FDROID.md) and `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`.
-- **A new row** on the Releases page requires **bumping** `ncarouselBaseVersionName` (and, for installable builds, following the project’s `versionCode` / Fastlane changelog rules). **Changing app code alone does not create a new tag or a new release entry.**
+- **Later pushes to `main`** that **do not** change `ncarouselBaseVersionName`: the **same** tag and Release are reused. CI **refreshes** `NCarousel-<version>-debug.apk` but **does not replace** `NCarousel-<version>.apk` once it is already on the release (so F-Droid `Binaries` reproducible verification stays aligned with `Builds.commit`). The Releases page does **not** gain an extra row. The release **title** includes the workflow run number so you can see when assets were refreshed.
+- **F-Droid:** after a `main` version bump, sync `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` (`commit` = `git rev-parse "v<version>^{commit}"`). See [FDROID.md](FDROID.md) and `.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`.
+- **A new row** on the Releases page requires **bumping** `ncarouselBaseVersionName` on the publish commit. Pushing app code only to **`dev`** does **not** create a new store release.
 
 Optional: set repository secret **`FORGEJO_PUSH_TOKEN`** on GitHub so CI also pushes the same tag to Forgejo (see `.github/workflows/android-ci.yml`).
 
-To download from a workflow run without using Releases:
+To download a **trial** build from a `dev` / `feature/**` workflow run:
 
 1. Open **[Actions](https://github.com/myNemy/NCarousel/actions)** for this repository.
-2. Select the latest successful **Android CI** run.
-3. Under **Artifacts**, download **`app-debug-apk`** and, if present, **`app-release-apk`**.
+2. Select the successful **Android CI** run for that branch.
+3. Under **Artifacts**, download **`app-debug-apk`**.
 
 These CI builds are intended for testing and sideloading. For a stable signature between runs (so Android can upgrade without uninstall), configure repository secrets as described below.
 

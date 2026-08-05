@@ -1,5 +1,5 @@
 ---
-description: versionCode / versionName — align with one new GitHub Release per app publish
+description: versionCode / versionName — bump on main publish only
 globs: "**/app/build.gradle.kts"
 alwaysApply: true
 ---
@@ -8,13 +8,15 @@ alwaysApply: true
 
 ## Goal
 
-Each time **installable app** changes are **committed and pushed** to `main`, **`ncarouselBaseVersionName`** must increase (at least **patch**) so CI can publish tag **`v<versionName>`** and a **new** GitHub Release. **`ncarouselLocalVersionCode`** must **+1** every time as well, with a matching Fastlane changelog file (see `.cursor/rules/45-changelog-fdroid.mdc` and `.cursor/rules/50-commit-push-release-automation.mdc`).
+Bump **`ncarouselBaseVersionName`** (at least **patch**) and **`ncarouselLocalVersionCode`** (+1) when **publishing** app changes on **`main`**, so CI can create tag **`v<versionName>`** and a **new** GitHub Release. Add a matching Fastlane changelog (see `.cursor/rules/45-changelog-fdroid.mdc` and `.cursor/rules/50-commit-push-release-automation.mdc`).
+
+Daily try-outs on **`dev`** / **`feature/*`** do **not** require these bumps (see `.cursor/rules/06-git-branch-workflow.mdc`).
 
 ## Gradle fields
 
-- **`ncarouselLocalVersionCode`**: +1 on every release-ready push that ships app changes (monotonic for installs without `GITHUB_RUN_NUMBER`).
-- **`ncarouselBaseVersionName`**: bump patch (or minor/major) so the **public version string** and **git tag** advance — required for a **new** Releases page entry.
+- **`ncarouselLocalVersionCode`**: +1 on every **`main`** publish that ships app changes.
+- **`ncarouselBaseVersionName`**: bump patch (or minor/major) so the public version string and git tag advance.
 
 ## CI note
 
-On **GitHub Actions**, `versionCode` can use `1000 + GITHUB_RUN_NUMBER` when that env is set; `versionName` becomes `ncarouselBaseVersionName+$run`. **Still** keep **`ncarouselLocalVersionCode`** and **`ncarouselBaseVersionName`** moving on each app publish so local builds and F-Droid-style metadata stay consistent and each release is identifiable.
+On **GitHub Actions**, without `NCAROUSEL_PUBLISH_RELEASE_APK`, `versionCode` can use `1000 + GITHUB_RUN_NUMBER` and `versionName` `base+$run`. Published **`main`** release APKs use stable codes via `NCAROUSEL_PUBLISH_RELEASE_APK=true`. Keep local Gradle fields moving on each **store** publish so F-Droid metadata stays consistent.

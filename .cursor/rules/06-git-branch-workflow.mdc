@@ -1,0 +1,63 @@
+---
+description: Branch workflow — daily work on dev; publish only via main; optional feature/*
+alwaysApply: true
+---
+
+# Git branch workflow (dev / main / feature)
+
+Same local folder; switch branches with `git switch`. Do **not** treat every commit as an F-Droid publish.
+
+## Branch roles
+
+| Branch | Role |
+|--------|------|
+| **`dev`** | Default daily work: commits, debug APK via CI artifacts. **No** version bump for F-Droid, **no** GitHub Release tag path, **no** `fdroiddata` sync. |
+| **`feature/<slug>`** | Optional for long or risky tasks. Create from up-to-date `dev`. Merge back into `dev` when done. |
+| **`main`** | Publish only: merge from `dev` → bump `versionName`/`versionCode` + Fastlane changelog → push → CI Release APK → sync `fdroiddata` → **merge `main` back into `dev`**. |
+
+## Continuation (agent MUST follow)
+
+### A — Start / resume a session
+
+1. `git fetch` (both remotes as needed) and `git switch dev` (or the active `feature/…`).
+2. Pull the current branch so work continues from the latest tip.
+3. Short task → stay on `dev`. Long/risky task → `git switch -c feature/<slug>` from updated `dev`.
+
+### B — Trial iteration (not F-Droid)
+
+1. Commit on `dev` or `feature/…` **without** release version bump (unless the user explicitly asks to bump on `dev` for local tracking).
+2. Push the **active** branch to **forgejo** and **origin**.
+3. Follow CI until the **debug** artifact is available (see `.cursor/rules/62-commit-push-follow-ci-until-apk.mdc`).
+4. Do **not** sync `../fdroiddata` on this path.
+
+### C — Finish a feature branch
+
+1. Merge `feature/…` → `dev`, push `dev`.
+2. Optionally delete the feature branch locally/remotely.
+3. Continue from **B** on `dev`.
+
+### D — Publish (only when user asks: publish / merge to main / release / F-Droid)
+
+1. `git switch main` and pull.
+2. Merge `dev` → `main`.
+3. Apply release bump + changelog (`.cursor/rules/50-commit-push-release-automation.mdc`).
+4. Commit and push `main` to forgejo + origin.
+5. Follow CI until `NCarousel-<version>.apk` is on the GitHub Release.
+6. Sync and push `fdroiddata` (rules `61-*`, `62-fdroid-*`).
+7. **Mandatory hand-back:** `git switch dev`, merge `main` → `dev`, push `dev` to both remotes — so the next session resumes aligned with the published version.
+
+### E — After publish
+
+Resume at **A** on `dev`. New trials stay off F-Droid until the next **D**.
+
+## Trigger phrases
+
+| User intent | Agent path |
+|-------------|------------|
+| Normal app work / WIP / commit on trial | **B** (or **A** then **B**); stay off `main` |
+| Long new feature | Create `feature/<slug>` from `dev`, then **B** |
+| «pubblica», «merge in main», «release», «F-Droid» | Full **D** including **D.7** |
+
+## Default branch for unfinished work
+
+Leave WIP on `dev` or `feature/…`. Never leave unpublished trial-only commits as the sole tip of `main` without an explicit publish request.

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Commit + push: follow CI until APK
 
-When the user explicitly asks for **a commit and push**, treat it as a release/CI-follow-up workflow, not just a git action.
+When the user explicitly asks for **a commit and push**, follow CI for that branch (see `.cursor/rules/06-git-branch-workflow.mdc`).
 
 ## Required workflow
 
@@ -13,8 +13,10 @@ When the user explicitly asks for **a commit and push**, treat it as a release/C
 - If CI fails, **read the failing job logs**, identify the real root cause, and propose/apply a fix.
 - Iterate **fix → new commit → push → re-check Actions** until:
   - the workflow is green **and**
-  - an **APK artifact** is produced/available (artifact upload or release asset), or
-  - progress is blocked by something requiring user action (secrets, permissions, manual approvals, required review, etc.).
+  - an **APK** is available:
+    - **`dev` / `feature/*`:** debug **artifact** (`app-debug-apk`) is enough
+    - **`main` (publish):** GitHub Release asset **`NCarousel-<version>.apk`** when signing secrets are set (then fdroiddata + merge `main` → `dev`)
+  - or progress is blocked by something requiring user action (secrets, permissions, manual approvals, required review, etc.).
 
 ## Communication expectations
 

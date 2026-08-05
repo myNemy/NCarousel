@@ -10,9 +10,11 @@ alwaysApply: true
 
 ## Doppio remoto (obbligatorio)
 
-Questo repo ha **due** remote: **`forgejo`** (Forgejo) e **`origin`** (GitHub). Dopo ogni commit che va pubblicato:
+Questo repo ha **due** remote: **`forgejo`** (Forgejo) e **`origin`** (GitHub). Dopo ogni commit che va pubblicato sul remoto:
 
-1. `git push forgejo main` (o il branch attivo; upstream predefinito: `forgejo/main`)
-2. `git push origin main`
+1. `git push forgejo <branch-attivo>` (es. `dev`, `main`, `feature/…`)
+2. `git push origin <branch-attivo>`
 
 Non considerare il lavoro “pubblicato” finché **entrambi** i push non sono riusciti (salvo indicazione esplicita del contrario).
+
+Flusso branch (`dev` prova / `main` release): **`.cursor/rules/06-git-branch-workflow.mdc`**.

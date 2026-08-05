@@ -33,5 +33,5 @@ This document is a short, developer-oriented overview of NCarousel’s architect
 
 ## CI releases (GitHub)
 
-On pushes to `main` (after a green build), CI manages the tag **`v<ncarouselBaseVersionName>`**, the matching GitHub Release, and attached APKs. **New release entries vs updating the same release** depend on whether the version string in Gradle was bumped—see [docs/DEVELOPMENT.md](DEVELOPMENT.md) (“Tags, versions, and when you see a new release”) and `.github/workflows/android-ci.yml`.
+Daily trial work uses branch **`dev`** (debug CI artifacts only). **Publish** is **`main` only**: after a green build, CI manages tag **`v<ncarouselBaseVersionName>`**, the GitHub Release, and release/debug APKs. See [docs/DEVELOPMENT.md](DEVELOPMENT.md) (branch workflow + tags) and `.github/workflows/android-ci.yml`.
 
