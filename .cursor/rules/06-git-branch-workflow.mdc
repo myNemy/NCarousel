@@ -56,7 +56,16 @@ Resume at **A** on `dev`. New trials stay off F-Droid until the next **D**.
 |-------------|------------|
 | Normal app work / WIP / commit on trial | **B** (or **A** then **B**); stay off `main` |
 | Long new feature | Create `feature/<slug>` from `dev`, then **B** |
-| «pubblica», «merge in main», «release», «F-Droid» | Full **D** including **D.7** |
+| Store metadata prep (icon, screenshots, Fastlane text) even if “for F-Droid” | **B** on `dev` — **no** bump, **no** `fdroiddata` sync |
+| «pubblica», «publish», «merge in main», «release», «promuovi», «sync F-Droid» / «aggiorna F-Droid» as ship intent | Full **D** including **D.7** |
+
+**Ambiguity:** mentioning “F-Droid” alone (e.g. “add the F-Droid icon”) means **prepare on `dev`**, not publish. Only an explicit ship/publish/sync request starts **D**.
+
+## Example — F-Droid store icon
+
+1. On **`dev`**: add `fastlane/metadata/android/en-US/images/icon.png` (and optional `featureGraphic.png`).
+2. Commit/push on **`dev`** (trial). Do **not** bump version; do **not** touch `fdroiddata`.
+3. When the user asks to **publish**: path **D** (merge → bump → Release APK → sync fdroiddata → merge `main` → `dev`).
 
 ## Default branch for unfinished work
 

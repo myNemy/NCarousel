@@ -19,7 +19,7 @@ Same local clone; switch with `git switch`. Cursor rules: `.cursor/rules/06-git-
 3. When a feature branch is done: merge into `dev`, push `dev`.
 4. When ready to ship: merge `dev` → `main`, bump, push `main`, wait for Release APK, sync F-Droid, then **merge `main` → `dev`** and push `dev`.
 
-Ordinary “commit and push” on `dev` is a trial. Phrases like **publish** / **release** / **merge to main** / **F-Droid** mean the full `main` publish path.
+Ordinary “commit and push” on `dev` is a trial. Phrases like **publish** / **release** / **merge to main** / **promuovi** mean the full `main` publish path. Mentioning **F-Droid** alone (e.g. preparing an icon) means work on `dev` first; sync `fdroiddata` only when publishing.
 
 ## Pre-built APKs (GitHub Actions)
 

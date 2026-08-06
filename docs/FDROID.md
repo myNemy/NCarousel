@@ -6,6 +6,22 @@ This doc guides maintainers through publishing **NCarousel** on **F-Droid**.
 
 **Agent/maintainer obligations (mandatory):** `.cursor/rules/62-fdroid-binaries-requirements-ncarousel.mdc` (always applied), plus rules `60` and `61` for `fdroiddata` scope and metadata sync.
 
+## Branch workflow (do not skip)
+
+Daily work and store metadata prep (icon, screenshots, descriptions) happen on **`dev`** (or `feature/*`): commit/push **without** version bump and **without** syncing `fdroiddata`.
+
+**Publish / F-Droid store update** happens only on **`main`**, and only when explicitly requested (e.g. publish / merge to main / release). Then:
+
+1. Merge `dev` → `main`
+2. Bump `ncarouselBaseVersionName` + `ncarouselLocalVersionCode` + Fastlane changelog
+3. Push `main` → wait for `NCarousel-<version>.apk` on the GitHub Release
+4. Sync `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` and push the fork branch
+5. Merge `main` → `dev` so the next session continues from the published line
+
+Full agent checklist: `.cursor/rules/06-git-branch-workflow.mdc` (path **D**) and [DEVELOPMENT.md](DEVELOPMENT.md).
+
+Preparing Fastlane assets (e.g. `images/icon.png`) is **not** by itself a publish: land them on `dev` first; bump + fdroiddata only on the explicit publish step.
+
 ## What F-Droid will do vs what you do
 
 - F-Droid will **build** the app from source and **sign** it with their key.
@@ -45,12 +61,14 @@ What you should do for each release:
 
 ## Step 2 — Bump versionCode and create a release tag
 
+Do this on the **`main` publish** path (after merging trial work from `dev`), not on routine `dev` commits.
+
 Open `app/build.gradle.kts` and update:
 
 - `ncarouselLocalVersionCode`: increment by 1
 - `ncarouselBaseVersionName`: bump if you want (e.g. patch version)
 
-Then commit and create a tag, e.g. `v0.2.38`.
+Then commit and push `main`. CI creates the tag (e.g. `v0.2.53`) and GitHub Release when appropriate; you may still create `v…` locally if needed.
 
 ## Step 3 — Verify the release build locally
 
