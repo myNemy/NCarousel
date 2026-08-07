@@ -668,7 +668,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             val token = beginBusy()
-            _ui.update { it.copy(statusMessage = appStr(R.string.status_scanning_folders)) }
             try {
                 // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
                 val folder = s.remoteFolder.trim().trim('/').ifBlank {

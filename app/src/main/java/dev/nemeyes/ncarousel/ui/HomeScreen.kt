@@ -144,10 +144,12 @@ fun HomeScreen(viewModel: MainViewModel) {
 
     LaunchedEffect(state.statusMessage) {
         val msg = state.statusMessage
-        if (!msg.isNullOrBlank()) {
-            snackbar.showSnackbar(msg)
-            viewModel.clearStatus()
-        }
+        if (msg.isNullOrBlank()) return@LaunchedEffect
+        // Clear first so an identical follow-up message (e.g. same image count after
+        // pull-to-refresh) still retriggers this effect, and so a later success is not
+        // wiped by clearStatus after a cancelled intermediate snackbar.
+        viewModel.clearStatus()
+        snackbar.showSnackbar(msg)
     }
 
     LaunchedEffect(viewModel) {
@@ -442,9 +444,7 @@ private fun AuthenticatedShell(
             }
         },
     ) {
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbar) },
-        ) { scaffoldInner ->
+        Scaffold { scaffoldInner ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -677,6 +677,10 @@ private fun AuthenticatedShell(
                         }
                     }
                 }
+                SnackbarHost(
+                    hostState = snackbar,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
         }
     }
