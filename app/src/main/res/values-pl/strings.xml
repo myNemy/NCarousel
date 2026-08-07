@@ -23,6 +23,7 @@
     <string name="remove_active_account">Usuń aktywne konto</string>
     <string name="field_order_mode">Tryb kolejności</string>
     <string name="field_wallpaper_target">Ustaw tapetę na</string>
+    <string name="field_wallpaper_crop">Dopasowanie obrazu</string>
     <string name="field_max_image_mb">Maks. rozmiar obrazu (MB)</string>
     <string name="hint_max_mb_unlimited">0 = bez limitu</string>
     <string name="field_disk_cache_mb">Pamięć podręczna obrazów (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Ekran główny i blokady</string>
     <string name="wallpaper_target_home_only">Tylko ekran główny</string>
     <string name="wallpaper_target_lock_only">Tylko ekran blokady</string>
+
+    <string name="wallpaper_crop_cover">Wypełnij (przytnij)</string>
+    <string name="wallpaper_crop_fit">Dopasuj (pasy)</string>
+    <string name="wallpaper_crop_center">Wyśrodkuj (bez powiększania)</string>
     <string name="main_intro_body">Tapety z Nextcloud. Automatyczna zmiana przez WorkManager (min. %1$d min; w trybie Doze opóźnienia mogą być dłuższe).</string>
     <string name="main_images_in_list">Obrazy na liście: %1$d</string>
     <string name="main_test_connection">Test połączenia</string>

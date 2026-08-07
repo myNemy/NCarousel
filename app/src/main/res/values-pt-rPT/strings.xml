@@ -23,6 +23,7 @@
     <string name="remove_active_account">Remover conta ativa</string>
     <string name="field_order_mode">Modo de ordem</string>
     <string name="field_wallpaper_target">Aplicar fundo do ecrã em</string>
+    <string name="field_wallpaper_crop">Ajuste da imagem</string>
     <string name="field_max_image_mb">Tamanho máx. da imagem (MB)</string>
     <string name="hint_max_mb_unlimited">0 = sem limite</string>
     <string name="field_disk_cache_mb">Cache de imagens em disco (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Ecrã inicial e de bloqueio</string>
     <string name="wallpaper_target_home_only">Só ecrã inicial</string>
     <string name="wallpaper_target_lock_only">Só ecrã de bloqueio</string>
+
+    <string name="wallpaper_crop_cover">Preencher (recortar)</string>
+    <string name="wallpaper_crop_fit">Ajustar (faixas)</string>
+    <string name="wallpaper_crop_center">Centrar (sem ampliar)</string>
     <string name="main_intro_body">Fundos do Nextcloud. Alterações automáticas via WorkManager (mínimo %1$d min; em Doze os atrasos podem ser maiores).</string>
     <string name="main_images_in_list">Imagens na lista: %1$d</string>
     <string name="main_test_connection">Testar ligação</string>

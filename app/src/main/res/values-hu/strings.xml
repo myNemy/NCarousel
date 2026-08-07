@@ -23,6 +23,7 @@
     <string name="remove_active_account">Aktív fiók eltávolítása</string>
     <string name="field_order_mode">Sorrend mód</string>
     <string name="field_wallpaper_target">Háttérkép alkalmazása</string>
+    <string name="field_wallpaper_crop">Képméretillesztés</string>
     <string name="field_max_image_mb">Max. képméret (MB)</string>
     <string name="hint_max_mb_unlimited">0 = korlát nélkül</string>
     <string name="field_disk_cache_mb">Lemezes képgyorsítótár (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Kezdő- és zárolási képernyő</string>
     <string name="wallpaper_target_home_only">Csak kezdőképernyő</string>
     <string name="wallpaper_target_lock_only">Csak zárolási képernyő</string>
+
+    <string name="wallpaper_crop_cover">Kitöltés (vágás)</string>
+    <string name="wallpaper_crop_fit">Illesztés (sávok)</string>
+    <string name="wallpaper_crop_center">Középre (nagyítás nélkül)</string>
     <string name="main_intro_body">Háttérképek a Nextcloudból. Automatikus váltás WorkManagerrel (minimum %1$d perc; Doze alatt a késleltetés nagyobb lehet).</string>
     <string name="main_images_in_list">Képek a listában: %1$d</string>
     <string name="main_test_connection">Kapcsolat tesztelése</string>

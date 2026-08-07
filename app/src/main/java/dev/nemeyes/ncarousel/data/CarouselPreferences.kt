@@ -21,6 +21,13 @@ class CarouselPreferences(context: Context) {
             ?: WallpaperTarget.HOME_AND_LOCK
         set(value) { prefs.edit().putString(KEY_WALLPAPER_TARGET, value.name).apply() }
 
+    /** How images are fitted onto the wallpaper bitmap ([WallpaperCropMode]). */
+    var wallpaperCropMode: WallpaperCropMode
+        get() = prefs.getString(KEY_WALLPAPER_CROP, null)
+            ?.let { runCatching { WallpaperCropMode.valueOf(it) }.getOrNull() }
+            ?: WallpaperCropMode.COVER
+        set(value) { prefs.edit().putString(KEY_WALLPAPER_CROP, value.name).apply() }
+
     /** 0 = no limit (bytes not checked or unknown sizes kept). */
     var maxImageSizeMb: Int
         get() = prefs.getInt(KEY_MAX_MB, 0).coerceAtLeast(0)
@@ -136,6 +143,7 @@ class CarouselPreferences(context: Context) {
         private const val PREFS = "ncarousel_carousel"
         private const val KEY_ORDER = "order_mode"
         private const val KEY_WALLPAPER_TARGET = "wallpaper_target"
+        private const val KEY_WALLPAPER_CROP = "wallpaper_crop_mode"
         private const val KEY_MAX_MB = "max_image_mb"
         private const val KEY_DISK_CACHE_MB = "max_wallpaper_disk_cache_mb"
         private const val KEY_AUTO = "auto_wallpaper"

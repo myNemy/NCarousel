@@ -50,6 +50,7 @@ import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
+import dev.nemeyes.ncarousel.data.WallpaperCropMode
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
@@ -75,6 +76,7 @@ fun SettingsScreen(
     onSaveCarousel: () -> Unit,
     onOrderModeChange: (OrderMode) -> Unit,
     onWallpaperTargetChange: (WallpaperTarget) -> Unit,
+    onWallpaperCropModeChange: (WallpaperCropMode) -> Unit,
     onMaxMbChange: (String) -> Unit,
     onMaxDiskCacheMbChange: (String) -> Unit,
     onClearWallpaperDiskCache: () -> Unit,
@@ -93,6 +95,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var orderExpanded by remember { mutableStateOf(false) }
     var wallpaperTargetExpanded by remember { mutableStateOf(false) }
+    var wallpaperCropExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
     var geocoderOrderExpanded by remember { mutableStateOf(false) }
 
@@ -282,6 +285,42 @@ fun SettingsScreen(
                             onClick = {
                                 onWallpaperTargetChange(t)
                                 wallpaperTargetExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+            ExposedDropdownMenuBox(
+                expanded = wallpaperCropExpanded,
+                onExpandedChange = { wallpaperCropExpanded = it },
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(
+                            type = MenuAnchorType.PrimaryNotEditable,
+                            enabled = !state.busy,
+                        ),
+                    readOnly = true,
+                    value = wallpaperCropModeLabel(state.wallpaperCropMode),
+                    onValueChange = {},
+                    label = { Text(stringResource(R.string.field_wallpaper_crop)) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = wallpaperCropExpanded)
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    enabled = !state.busy,
+                )
+                ExposedDropdownMenu(
+                    expanded = wallpaperCropExpanded,
+                    onDismissRequest = { wallpaperCropExpanded = false },
+                ) {
+                    WallpaperCropMode.entries.forEach { mode ->
+                        DropdownMenuItem(
+                            text = { Text(wallpaperCropModeLabel(mode)) },
+                            onClick = {
+                                onWallpaperCropModeChange(mode)
+                                wallpaperCropExpanded = false
                             },
                         )
                     }
@@ -528,4 +567,11 @@ private fun wallpaperTargetLabelRes(target: WallpaperTarget): String = when (tar
     WallpaperTarget.HOME_AND_LOCK -> stringResource(R.string.wallpaper_target_home_lock)
     WallpaperTarget.HOME_ONLY -> stringResource(R.string.wallpaper_target_home_only)
     WallpaperTarget.LOCK_ONLY -> stringResource(R.string.wallpaper_target_lock_only)
+}
+
+@Composable
+private fun wallpaperCropModeLabel(mode: WallpaperCropMode): String = when (mode) {
+    WallpaperCropMode.COVER -> stringResource(R.string.wallpaper_crop_cover)
+    WallpaperCropMode.FIT -> stringResource(R.string.wallpaper_crop_fit)
+    WallpaperCropMode.CENTER -> stringResource(R.string.wallpaper_crop_center)
 }

@@ -23,6 +23,7 @@
     <string name="remove_active_account">Elimină contul activ</string>
     <string name="field_order_mode">Mod ordine</string>
     <string name="field_wallpaper_target">Aplică fundalul pe</string>
+    <string name="field_wallpaper_crop">Potrivire imagine</string>
     <string name="field_max_image_mb">Dimensiune maximă imagine (MB)</string>
     <string name="hint_max_mb_unlimited">0 = fără limită</string>
     <string name="field_disk_cache_mb">Cache imagini pe disc (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Ecran principal și blocare</string>
     <string name="wallpaper_target_home_only">Doar ecran principal</string>
     <string name="wallpaper_target_lock_only">Doar ecran de blocare</string>
+
+    <string name="wallpaper_crop_cover">Umple (decupează)</string>
+    <string name="wallpaper_crop_fit">Încadrează (benzi)</string>
+    <string name="wallpaper_crop_center">Centrează (fără mărire)</string>
     <string name="main_intro_body">Fundaluri din Nextcloud. Schimbări automate prin WorkManager (minim %1$d min; în Doze întârzierile pot fi mai mari).</string>
     <string name="main_images_in_list">Imagini în listă: %1$d</string>
     <string name="main_test_connection">Testează conexiunea</string>

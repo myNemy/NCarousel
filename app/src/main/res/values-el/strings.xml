@@ -23,6 +23,7 @@
     <string name="remove_active_account">Αφαίρεση ενεργού λογαριασμού</string>
     <string name="field_order_mode">Λειτουργία σειράς</string>
     <string name="field_wallpaper_target">Εφαρμογή ταπετσαρίας σε</string>
+    <string name="field_wallpaper_crop">Προσαρμογή εικόνας</string>
     <string name="field_max_image_mb">Μέγ. μέγεθος εικόνας (MB)</string>
     <string name="hint_max_mb_unlimited">0 = χωρίς όριο</string>
     <string name="field_disk_cache_mb">Κρυφή μνήμη εικόνων στο δίσκο (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Αρχική και κλειδώματος</string>
     <string name="wallpaper_target_home_only">Μόνο αρχική οθόνη</string>
     <string name="wallpaper_target_lock_only">Μόνο οθόνη κλειδώματος</string>
+
+    <string name="wallpaper_crop_cover">Γέμισμα (περικοπή)</string>
+    <string name="wallpaper_crop_fit">Προσαρμογή (ταινίες)</string>
+    <string name="wallpaper_crop_center">Κέντρο (χωρίς μεγέθυνση)</string>
     <string name="main_intro_body">Ταπετσαρίες από Nextcloud. Αυτόματες αλλαγές μέσω WorkManager (ελάχιστο %1$d λεπ· σε Doze οι καθυστερήσεις μπορεί να είναι μεγαλύτερες).</string>
     <string name="main_images_in_list">Εικόνες στη λίστα: %1$d</string>
     <string name="main_test_connection">Έλεγχος σύνδεσης</string>

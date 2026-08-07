@@ -23,6 +23,7 @@
     <string name="remove_active_account">Odebrat aktivní účet</string>
     <string name="field_order_mode">Režim pořadí</string>
     <string name="field_wallpaper_target">Použít tapetu na</string>
+    <string name="field_wallpaper_crop">Přizpůsobení obrázku</string>
     <string name="field_max_image_mb">Max. velikost obrázku (MB)</string>
     <string name="hint_max_mb_unlimited">0 = bez limitu</string>
     <string name="field_disk_cache_mb">Mezipaměť obrázků na disku (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Domovská a uzamykací obrazovka</string>
     <string name="wallpaper_target_home_only">Jen domovská obrazovka</string>
     <string name="wallpaper_target_lock_only">Jen uzamykací obrazovka</string>
+
+    <string name="wallpaper_crop_cover">Vyplnit (oříznout)</string>
+    <string name="wallpaper_crop_fit">Vejít (pruhy)</string>
+    <string name="wallpaper_crop_center">Na střed (bez zvětšení)</string>
     <string name="main_intro_body">Tapety z Nextcloud. Automatické změny přes WorkManager (min. %1$d min; v režimu Doze mohou být prodlevy delší).</string>
     <string name="main_images_in_list">Obrázků v seznamu: %1$d</string>
     <string name="main_test_connection">Otestovat připojení</string>

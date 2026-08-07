@@ -23,6 +23,7 @@
     <string name="remove_active_account">Aktives Konto entfernen</string>
     <string name="field_order_mode">Reihenfolge-Modus</string>
     <string name="field_wallpaper_target">Hintergrundbild anwenden auf</string>
+    <string name="field_wallpaper_crop">Bildanpassung</string>
     <string name="field_max_image_mb">Max. Bildgröße (MB)</string>
     <string name="hint_max_mb_unlimited">0 = kein Limit</string>
     <string name="field_disk_cache_mb">Bild-Cache auf dem Speicher (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Start- &amp; Sperrbildschirm</string>
     <string name="wallpaper_target_home_only">Nur Startbildschirm</string>
     <string name="wallpaper_target_lock_only">Nur Sperrbildschirm</string>
+
+    <string name="wallpaper_crop_cover">Füllen (zuschneiden)</string>
+    <string name="wallpaper_crop_fit">Einpassen (Ränder)</string>
+    <string name="wallpaper_crop_center">Zentrieren (ohne Vergrößern)</string>
     <string name="main_intro_body">Hintergrundbilder aus Nextcloud. Automatischer Wechsel über WorkManager (mindestens %1$d Min.; in Doze können Verzögerungen länger sein).</string>
     <string name="main_images_in_list">Bilder in der Liste: %1$d</string>
     <string name="main_test_connection">Verbindung testen</string>

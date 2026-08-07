@@ -25,6 +25,7 @@
     <string name="remove_active_account">Rimuovi account attivo</string>
     <string name="field_order_mode">Modalità ordine</string>
     <string name="field_wallpaper_target">Dove applicare lo sfondo</string>
+    <string name="field_wallpaper_crop">Adattamento immagine</string>
     <string name="field_max_image_mb">Dimensione massima immagine (MB)</string>
     <string name="hint_max_mb_unlimited">0 = nessun limite</string>
     <string name="field_disk_cache_mb">Cache immagini su disco (MB)</string>
@@ -44,6 +45,10 @@
     <string name="wallpaper_target_home_lock">Home e blocco schermo</string>
     <string name="wallpaper_target_home_only">Solo schermata home</string>
     <string name="wallpaper_target_lock_only">Solo blocco schermo</string>
+
+    <string name="wallpaper_crop_cover">Riempi (ritaglia)</string>
+    <string name="wallpaper_crop_fit">Contieni (bande)</string>
+    <string name="wallpaper_crop_center">Centra (senza ingrandire)</string>
 
     <string name="main_intro_body">Sfondi da Nextcloud. Cambio automatico con WorkManager (minimo %1$d min; in Doze i ritardi possono allungarsi).</string>
     <string name="main_images_in_list">Immagini in elenco: %1$d</string>

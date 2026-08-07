@@ -23,6 +23,7 @@
     <string name="remove_active_account">Actief account verwijderen</string>
     <string name="field_order_mode">Volgordemodus</string>
     <string name="field_wallpaper_target">Achtergrond toepassen op</string>
+    <string name="field_wallpaper_crop">Beeldaanpassing</string>
     <string name="field_max_image_mb">Max. afbeeldingsgrootte (MB)</string>
     <string name="hint_max_mb_unlimited">0 = geen limiet</string>
     <string name="field_disk_cache_mb">Schijfcache voor afbeeldingen (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Start- &amp; vergrendelscherm</string>
     <string name="wallpaper_target_home_only">Alleen startscherm</string>
     <string name="wallpaper_target_lock_only">Alleen vergrendelscherm</string>
+
+    <string name="wallpaper_crop_cover">Vullen (bijsnijden)</string>
+    <string name="wallpaper_crop_fit">Passend (balken)</string>
+    <string name="wallpaper_crop_center">Centreren (niet vergroten)</string>
     <string name="main_intro_body">Achtergronden van Nextcloud. Automatische wissels via WorkManager (minimaal %1$d min.; in Doze kunnen vertragingen langer zijn).</string>
     <string name="main_images_in_list">Afbeeldingen in lijst: %1$d</string>
     <string name="main_test_connection">Verbinding testen</string>

@@ -27,6 +27,7 @@
     <string name="remove_active_account">Remove active account</string>
     <string name="field_order_mode">Order mode</string>
     <string name="field_wallpaper_target">Apply wallpaper to</string>
+    <string name="field_wallpaper_crop">Image fit</string>
     <string name="field_max_image_mb">Max image size (MB)</string>
     <string name="hint_max_mb_unlimited">0 = no limit</string>
     <string name="field_disk_cache_mb">On-disk image cache (MB)</string>
@@ -46,6 +47,10 @@
     <string name="wallpaper_target_home_lock">Home &amp; lock screen</string>
     <string name="wallpaper_target_home_only">Home screen only</string>
     <string name="wallpaper_target_lock_only">Lock screen only</string>
+
+    <string name="wallpaper_crop_cover">Fill (crop)</string>
+    <string name="wallpaper_crop_fit">Fit (letterbox)</string>
+    <string name="wallpaper_crop_center">Center (no upscale)</string>
 
     <!-- Main home -->
     <string name="main_intro_body">Wallpapers from Nextcloud. Automatic changes via WorkManager (minimum %1$d min; delays may be longer in Doze).</string>

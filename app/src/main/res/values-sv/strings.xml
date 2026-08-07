@@ -23,6 +23,7 @@
     <string name="remove_active_account">Ta bort aktivt konto</string>
     <string name="field_order_mode">Sorteringsläge</string>
     <string name="field_wallpaper_target">Använd bakgrund på</string>
+    <string name="field_wallpaper_crop">Bildpassning</string>
     <string name="field_max_image_mb">Max. bildstorlek (MB)</string>
     <string name="hint_max_mb_unlimited">0 = ingen gräns</string>
     <string name="field_disk_cache_mb">Bildcache på disk (MB)</string>
@@ -40,6 +41,10 @@
     <string name="wallpaper_target_home_lock">Hem &amp; låsskärm</string>
     <string name="wallpaper_target_home_only">Endast hemskärm</string>
     <string name="wallpaper_target_lock_only">Endast låsskärm</string>
+
+    <string name="wallpaper_crop_cover">Fyll (beskär)</string>
+    <string name="wallpaper_crop_fit">Anpassa (kanter)</string>
+    <string name="wallpaper_crop_center">Centrera (utan förstoring)</string>
     <string name="main_intro_body">Bakgrunder från Nextcloud. Automatiska byten via WorkManager (minst %1$d min; i Doze kan fördröjningar bli längre).</string>
     <string name="main_images_in_list">Bilder i listan: %1$d</string>
     <string name="main_test_connection">Testa anslutning</string>
