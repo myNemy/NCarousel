@@ -175,8 +175,8 @@
     <string name="nc_library_root_folder">(gyökérmappa)</string>
     <string name="nc_library_folder_filter_label">Mappa</string>
     <string name="nc_library_folder_filter_all">Minden mappa</string>
-    <string name="nc_library_search_label">Search</string>
-    <string name="nc_library_search_placeholder">Folder or filename</string>
+    <string name="nc_library_search_label">Keresés</string>
+    <string name="nc_library_search_placeholder">Mappa vagy fájlnév</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Jelenlegi háttérkép</string>
     <string name="nc_about_title">Névjegy</string>

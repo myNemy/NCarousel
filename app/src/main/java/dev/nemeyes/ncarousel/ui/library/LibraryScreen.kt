@@ -4,12 +4,12 @@ import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,19 +22,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.stickyHeader
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,7 +49,9 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
@@ -145,7 +153,7 @@ fun LibraryScreen(
     var folderFilter by remember { mutableStateOf<String?>(null) }
     var folderMenuExpanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val rootFolderLabel = stringResource(R.string.nc_library_root_folder)
     val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
 
@@ -253,107 +261,125 @@ fun LibraryScreen(
             modifier = Modifier.fillMaxSize(),
             state = listState,
         ) {
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.nc_library_count, itemCount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-                Spacer(modifier.height(8.dp))
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    enabled = !state.busy,
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.nc_library_search_label)) },
-                    placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
-                )
-                if (showFolderFilter) {
-                    Spacer(modifier.height(8.dp))
-                    ExposedDropdownMenuBox(
-                        expanded = folderMenuExpanded,
-                        onExpandedChange = { folderMenuExpanded = it },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            stickyHeader {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    shadowElevation = 2.dp,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        Text(
+                            text = stringResource(R.string.nc_library_count, itemCount),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(
-                                    type = MenuAnchorType.PrimaryNotEditable,
-                                    enabled = !state.busy,
-                                ),
-                            readOnly = true,
-                            value = folderFilterDisplay,
-                            onValueChange = {},
-                            label = { Text(stringResource(R.string.nc_library_folder_filter_label)) },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = folderMenuExpanded)
-                            },
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier.fillMaxWidth(),
                             enabled = !state.busy,
                             singleLine = true,
-                        )
-                        ExposedDropdownMenu(
-                            expanded = folderMenuExpanded,
-                            onDismissRequest = { folderMenuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(allFoldersLabel) },
-                                onClick = {
-                                    folderFilter = null
-                                    folderMenuExpanded = false
-                                },
-                            )
-                            folderOptions.forEach { path ->
-                                val label = path.ifBlank { rootFolderLabel }
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = label,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    },
-                                    onClick = {
-                                        folderFilter = path
-                                        folderMenuExpanded = false
-                                    },
+                            label = { Text(stringResource(R.string.nc_library_search_label)) },
+                            placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Search,
+                                    contentDescription = null,
                                 )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(),
+                        )
+                        if (showFolderFilter) {
+                            ExposedDropdownMenuBox(
+                                expanded = folderMenuExpanded,
+                                onExpandedChange = { folderMenuExpanded = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                OutlinedTextField(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(
+                                            type = MenuAnchorType.PrimaryNotEditable,
+                                            enabled = !state.busy,
+                                        ),
+                                    readOnly = true,
+                                    value = folderFilterDisplay,
+                                    onValueChange = {},
+                                    label = { Text(stringResource(R.string.nc_library_folder_filter_label)) },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = folderMenuExpanded)
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                    enabled = !state.busy,
+                                    singleLine = true,
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = folderMenuExpanded,
+                                    onDismissRequest = { folderMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(allFoldersLabel) },
+                                        onClick = {
+                                            folderFilter = null
+                                            folderMenuExpanded = false
+                                        },
+                                    )
+                                    folderOptions.forEach { path ->
+                                        val label = path.ifBlank { rootFolderLabel }
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = label,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            },
+                                            onClick = {
+                                                folderFilter = path
+                                                folderMenuExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
                             }
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.FOLDERS,
+                                onClick = { sortMode = LibrarySortMode.FOLDERS },
+                                label = { Text(stringResource(R.string.nc_library_sort_folders)) },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.NAME,
+                                onClick = { sortMode = LibrarySortMode.NAME },
+                                label = { Text(stringResource(R.string.nc_library_sort_name)) },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.DATE,
+                                onClick = { sortMode = LibrarySortMode.DATE },
+                                label = { Text(stringResource(R.string.nc_library_sort_date)) },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.INDEX,
+                                onClick = { sortMode = LibrarySortMode.INDEX },
+                                label = { Text(stringResource(R.string.nc_library_sort_index)) },
+                            )
                         }
                     }
                 }
-                Spacer(modifier.height(8.dp))
-                @OptIn(ExperimentalLayoutApi::class)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.FOLDERS,
-                        onClick = { sortMode = LibrarySortMode.FOLDERS },
-                        label = { Text(stringResource(R.string.nc_library_sort_folders)) },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.NAME,
-                        onClick = { sortMode = LibrarySortMode.NAME },
-                        label = { Text(stringResource(R.string.nc_library_sort_name)) },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.DATE,
-                        onClick = { sortMode = LibrarySortMode.DATE },
-                        label = { Text(stringResource(R.string.nc_library_sort_date)) },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.INDEX,
-                        onClick = { sortMode = LibrarySortMode.INDEX },
-                        label = { Text(stringResource(R.string.nc_library_sort_index)) },
-                    )
-                }
-                Spacer(modifier.height(8.dp))
             }
             itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
                 val ctx = LocalContext.current
@@ -445,7 +471,7 @@ fun LibraryScreen(
                             .clickable(enabled = !state.busy) { onApplyHref(row.href) },
                 )
             }
-            item { Spacer(modifier.height(8.dp)) }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
 
         if (showFastScroll && (fastScrollVisible || dragActive)) {
@@ -454,11 +480,11 @@ fun LibraryScreen(
                     Modifier
                         .fillMaxHeight()
                         .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
-                        .align(androidx.compose.ui.Alignment.CenterEnd),
+                        .align(Alignment.CenterEnd),
                 progress01 = progress01,
                 onJumpToProgress = { p ->
                     val i = (clamp01(p) * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
-                    scope.launch { listState.scrollToItem(i + 1) } // +1 header item
+                    scope.launch { listState.scrollToItem(i + 1) } // +1 sticky header
                 },
                 onDragActiveChange = { active ->
                     dragActive = active
@@ -506,7 +532,7 @@ private fun FastScroller(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(trackWidth)
-                .align(androidx.compose.ui.Alignment.Center),
+                .align(Alignment.Center),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
             content = {},
@@ -516,7 +542,7 @@ private fun FastScroller(
         val maxY = (maxHeight - thumbHeight).coerceAtLeast(0.dp)
         Surface(
             modifier = Modifier
-                .align(androidx.compose.ui.Alignment.TopCenter)
+                .align(Alignment.TopCenter)
                 .offset(y = maxY * p),
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),

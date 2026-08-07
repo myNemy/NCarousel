@@ -175,8 +175,8 @@
     <string name="nc_library_root_folder">(carpeta raíz)</string>
     <string name="nc_library_folder_filter_label">Carpeta</string>
     <string name="nc_library_folder_filter_all">Todas las carpetas</string>
-    <string name="nc_library_search_label">Search</string>
-    <string name="nc_library_search_placeholder">Folder or filename</string>
+    <string name="nc_library_search_label">Buscar</string>
+    <string name="nc_library_search_placeholder">Carpeta o nombre de archivo</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Fondo actual</string>
     <string name="nc_about_title">Acerca de</string>

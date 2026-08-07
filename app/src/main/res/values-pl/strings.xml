@@ -175,8 +175,8 @@
     <string name="nc_library_root_folder">(folder główny)</string>
     <string name="nc_library_folder_filter_label">Folder</string>
     <string name="nc_library_folder_filter_all">Wszystkie foldery</string>
-    <string name="nc_library_search_label">Search</string>
-    <string name="nc_library_search_placeholder">Folder or filename</string>
+    <string name="nc_library_search_label">Szukaj</string>
+    <string name="nc_library_search_placeholder">Folder lub nazwa pliku</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Aktualna tapeta</string>
     <string name="nc_about_title">O aplikacji</string>

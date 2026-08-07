@@ -175,8 +175,8 @@
     <string name="nc_library_root_folder">(rotmapp)</string>
     <string name="nc_library_folder_filter_label">Mapp</string>
     <string name="nc_library_folder_filter_all">Alla mappar</string>
-    <string name="nc_library_search_label">Search</string>
-    <string name="nc_library_search_placeholder">Folder or filename</string>
+    <string name="nc_library_search_label">Sök</string>
+    <string name="nc_library_search_placeholder">Mapp eller filnamn</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Aktuell bakgrund</string>
     <string name="nc_about_title">Om</string>
