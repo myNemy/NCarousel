@@ -26,6 +26,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -147,6 +149,8 @@ fun LibraryScreen(
     onApplyHref: (String) -> Unit,
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
+    /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
+    var sortAscending by remember { mutableStateOf(true) }
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
@@ -188,8 +192,25 @@ fun LibraryScreen(
         }
     }
 
-    val sortedRows = remember(rows, sortMode, state.imageLastModifiedEpochMs, state.imageCarouselIndexByHref) {
-        when (sortMode) {
+    fun selectSortMode(mode: LibrarySortMode) {
+        if (sortMode == mode) {
+            sortAscending = !sortAscending
+        } else {
+            sortMode = mode
+            // Date opens newest-first; other modes open ascending.
+            sortAscending = mode != LibrarySortMode.DATE
+        }
+    }
+
+    val sortedRows = remember(
+        rows,
+        sortMode,
+        sortAscending,
+        state.imageLastModifiedEpochMs,
+        state.imageCarouselIndexByHref,
+    ) {
+        val ascending = sortAscending
+        val base = when (sortMode) {
             LibrarySortMode.NAME ->
                 rows.sortedWith(
                     compareBy<LibraryRow> { it.fileName.lowercase() }.thenBy { it.folderPath.lowercase() },
@@ -199,15 +220,27 @@ fun LibraryScreen(
                     compareBy<LibraryRow> { it.folderPath.lowercase() }.thenBy { it.fileName.lowercase() },
                 )
             LibrarySortMode.DATE ->
-                rows.sortedWith(
-                    compareByDescending<LibraryRow> { state.imageLastModifiedEpochMs[it.href] ?: Long.MIN_VALUE }
-                        .thenBy { it.fileName.lowercase() },
-                )
+                if (ascending) {
+                    rows.sortedWith(
+                        compareBy<LibraryRow> { state.imageLastModifiedEpochMs[it.href] ?: Long.MAX_VALUE }
+                            .thenBy { it.fileName.lowercase() },
+                    )
+                } else {
+                    rows.sortedWith(
+                        compareByDescending<LibraryRow> { state.imageLastModifiedEpochMs[it.href] ?: Long.MIN_VALUE }
+                            .thenBy { it.fileName.lowercase() },
+                    )
+                }
             LibrarySortMode.INDEX ->
                 rows.sortedWith(
                     compareBy<LibraryRow> { state.imageCarouselIndexByHref[it.href] ?: Int.MAX_VALUE }
                         .thenBy { it.fileName.lowercase() },
                 )
+        }
+        when {
+            sortMode == LibrarySortMode.DATE -> base
+            ascending -> base
+            else -> base.asReversed()
         }
     }
     val filteredRows = remember(sortedRows, query, folderFilter, state.lastWallpaperHref) {
@@ -351,25 +384,54 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val directionIcon = if (sortAscending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward
                     FilterChip(
                         selected = sortMode == LibrarySortMode.FOLDERS,
-                        onClick = { sortMode = LibrarySortMode.FOLDERS },
+                        onClick = { selectSortMode(LibrarySortMode.FOLDERS) },
                         label = { Text(stringResource(R.string.nc_library_sort_folders)) },
+                        leadingIcon = if (sortMode == LibrarySortMode.FOLDERS) {
+                            {
+                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        } else {
+                            null
+                        },
                     )
                     FilterChip(
                         selected = sortMode == LibrarySortMode.NAME,
-                        onClick = { sortMode = LibrarySortMode.NAME },
+                        onClick = { selectSortMode(LibrarySortMode.NAME) },
                         label = { Text(stringResource(R.string.nc_library_sort_name)) },
+                        leadingIcon = if (sortMode == LibrarySortMode.NAME) {
+                            {
+                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        } else {
+                            null
+                        },
                     )
                     FilterChip(
                         selected = sortMode == LibrarySortMode.DATE,
-                        onClick = { sortMode = LibrarySortMode.DATE },
+                        onClick = { selectSortMode(LibrarySortMode.DATE) },
                         label = { Text(stringResource(R.string.nc_library_sort_date)) },
+                        leadingIcon = if (sortMode == LibrarySortMode.DATE) {
+                            {
+                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        } else {
+                            null
+                        },
                     )
                     FilterChip(
                         selected = sortMode == LibrarySortMode.INDEX,
-                        onClick = { sortMode = LibrarySortMode.INDEX },
+                        onClick = { selectSortMode(LibrarySortMode.INDEX) },
                         label = { Text(stringResource(R.string.nc_library_sort_index)) },
+                        leadingIcon = if (sortMode == LibrarySortMode.INDEX) {
+                            {
+                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        } else {
+                            null
+                        },
                     )
                 }
             }
