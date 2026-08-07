@@ -93,6 +93,11 @@ class CarouselPreferences(context: Context) {
             ?: GeocoderOrderMode.NOMINATIM_FIRST
         set(value) { prefs.edit().putString(KEY_GEO_ORDER, value.name).apply() }
 
+    /** Library screen layout: grid when true, list when false. */
+    var libraryViewIsGrid: Boolean
+        get() = prefs.getBoolean(KEY_LIBRARY_GRID, false)
+        set(value) { prefs.edit().putBoolean(KEY_LIBRARY_GRID, value).apply() }
+
     /**
      * After [completeInitialConsentFlow] runs once, the app stops showing the first-launch consent dialog.
      */
@@ -143,6 +148,7 @@ class CarouselPreferences(context: Context) {
         private const val KEY_GEO_PLATFORM = "geocoder_platform_enabled"
         private const val KEY_GEO_PHOTON = "geocoder_photon_enabled"
         private const val KEY_GEO_ORDER = "geocoder_order_mode"
+        private const val KEY_LIBRARY_GRID = "library_view_is_grid"
         private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
         private const val KEY_THEMING_COLOR = "theming_color_"
         private const val KEY_THEMING_ON_PRIMARY = "theming_on_primary_"

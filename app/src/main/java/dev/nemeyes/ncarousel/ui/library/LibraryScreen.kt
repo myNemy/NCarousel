@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -52,6 +55,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -68,6 +72,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -95,6 +100,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
+import dev.nemeyes.ncarousel.data.CarouselPreferences
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 
@@ -225,7 +231,13 @@ fun LibraryScreen(
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
     var sortAscending by remember { mutableStateOf(true) }
-    var viewMode by remember { mutableStateOf(LibraryViewMode.LIST) }
+    val appContext = LocalContext.current.applicationContext
+    val libraryPrefs = remember(appContext) { CarouselPreferences(appContext) }
+    var viewMode by remember {
+        mutableStateOf(
+            if (libraryPrefs.libraryViewIsGrid) LibraryViewMode.GRID else LibraryViewMode.LIST,
+        )
+    }
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
@@ -522,6 +534,7 @@ fun LibraryScreen(
                                 LibraryViewMode.LIST -> LibraryViewMode.GRID
                                 LibraryViewMode.GRID -> LibraryViewMode.LIST
                             }
+                            libraryPrefs.libraryViewIsGrid = viewMode == LibraryViewMode.GRID
                         },
                     ) {
                         when (viewMode) {
@@ -906,14 +919,16 @@ private fun LibraryFullscreenPreview(
         ),
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing),
             color = Color.Black,
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
@@ -993,17 +1008,26 @@ private fun LibraryFullscreenPreview(
                         contentScale = ContentScale.Fit,
                     )
                 }
+                val compactPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 4.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    OutlinedButton(
+                    TextButton(
                         onClick = onToggleExclude,
                         enabled = !state.busy,
-                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = compactPadding,
                     ) {
+                        Icon(
+                            imageVector = if (isExcluded) Icons.Outlined.CheckCircle else Icons.Outlined.Block,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             stringResource(
                                 if (isExcluded) R.string.nc_library_include else R.string.nc_library_exclude,
@@ -1014,6 +1038,7 @@ private fun LibraryFullscreenPreview(
                         onClick = onApplyOnly,
                         enabled = !state.busy,
                         modifier = Modifier.fillMaxWidth(),
+                        contentPadding = compactPadding,
                     ) {
                         Text(stringResource(R.string.nc_library_preview_apply_only))
                     }
@@ -1021,6 +1046,11 @@ private fun LibraryFullscreenPreview(
                         onClick = onApplyAndAdvance,
                         enabled = !state.busy,
                         modifier = Modifier.fillMaxWidth(),
+                        contentPadding = compactPadding,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                     ) {
                         Text(stringResource(R.string.nc_library_preview_apply_advance))
                     }
