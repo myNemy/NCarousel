@@ -44,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -161,20 +162,28 @@ fun LibraryScreen(
     val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
 
     if (state.imageHrefs.isEmpty()) {
-        Column(
-            modifier = modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        PullToRefreshBox(
+            isRefreshing = state.busy,
+            onRefresh = onRefreshList,
+            modifier = modifier.fillMaxSize(),
         ) {
-            Text(
-                text = stringResource(R.string.nc_library_empty_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = stringResource(R.string.nc_library_empty_body),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Button(onClick = onRefreshList, enabled = !state.busy) {
-                Text(stringResource(R.string.nc_library_refresh))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.nc_library_empty_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.nc_library_empty_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(onClick = onRefreshList, enabled = !state.busy) {
+                    Text(stringResource(R.string.nc_library_refresh))
+                }
             }
         }
         return
@@ -437,11 +446,16 @@ fun LibraryScreen(
             }
         }
 
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
-            ) {
+        PullToRefreshBox(
+            isRefreshing = state.busy,
+            onRefresh = onRefreshList,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                ) {
                 itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
                     val ctx = LocalContext.current
                     val fileId = state.imageFileIds[row.href]
@@ -552,6 +566,7 @@ fun LibraryScreen(
                         if (active) fastScrollVisible = true
                     },
                 )
+            }
             }
         }
     }
