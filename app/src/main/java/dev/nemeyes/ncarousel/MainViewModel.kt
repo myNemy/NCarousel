@@ -797,7 +797,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val lastModified: Map<String, Long>,
                     val carouselIndices: Map<String, Int>,
                 )
-                fun metaMaps(hrefs: List<String>): Pair<Map<String, Long>, Map<String, Long>> {
+                suspend fun metaMaps(hrefs: List<String>): Pair<Map<String, Long>, Map<String, Long>> {
                     val meta = syncRepo.readCachedHrefsWithMeta(accountId)
                     val fileIds = meta.mapNotNull { (href, id, _) -> id?.let { href to it } }.toMap()
                     val lastModified = meta.mapNotNull { (href, _, raw) ->
