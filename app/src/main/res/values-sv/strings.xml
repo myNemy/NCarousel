@@ -173,6 +173,8 @@
     <string name="nc_library_sort_date">Datum</string>
     <string name="nc_library_sort_index">Karusell</string>
     <string name="nc_library_root_folder">(rotmapp)</string>
+    <string name="nc_library_folder_filter_label">Mapp</string>
+    <string name="nc_library_folder_filter_all">Alla mappar</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>

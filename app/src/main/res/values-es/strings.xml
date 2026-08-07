@@ -173,6 +173,8 @@
     <string name="nc_library_sort_date">Fecha</string>
     <string name="nc_library_sort_index">Carrusel</string>
     <string name="nc_library_root_folder">(carpeta raíz)</string>
+    <string name="nc_library_folder_filter_label">Carpeta</string>
+    <string name="nc_library_folder_filter_all">Todas las carpetas</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>

@@ -188,6 +188,8 @@
     <string name="nc_library_sort_date">Date</string>
     <string name="nc_library_sort_index">Carousel</string>
     <string name="nc_library_root_folder">(root folder)</string>
+    <string name="nc_library_folder_filter_label">Folder</string>
+    <string name="nc_library_folder_filter_all">All folders</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>

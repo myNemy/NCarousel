@@ -173,6 +173,8 @@
     <string name="nc_library_sort_date">Dátum</string>
     <string name="nc_library_sort_index">Körhinta</string>
     <string name="nc_library_root_folder">(gyökérmappa)</string>
+    <string name="nc_library_folder_filter_label">Mappa</string>
+    <string name="nc_library_folder_filter_all">Minden mappa</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>

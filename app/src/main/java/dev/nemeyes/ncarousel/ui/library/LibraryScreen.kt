@@ -3,29 +3,34 @@ package dev.nemeyes.ncarousel.ui.library
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,8 +51,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
-import okhttp3.Credentials
 import kotlinx.coroutines.launch
+import okhttp3.Credentials
 
 private enum class LibrarySortMode { NAME, FOLDERS, DATE, INDEX }
 
@@ -94,6 +99,35 @@ private fun previewUrl(serverBaseUrl: String, fileId: Long, sizePx: Int): String
 
 private fun clamp01(v: Float): Float = v.coerceIn(0f, 1f)
 
+/** Distinct folder paths under the remote folder, including ancestors; "" = files in remote root. */
+private fun libraryFolderOptions(rows: List<LibraryRow>): List<String> {
+    val set = linkedSetOf<String>()
+    for (r in rows) {
+        val p = r.folderPath
+        if (p.isEmpty()) {
+            set.add("")
+            continue
+        }
+        set.add(p)
+        var i = p.indexOf('/')
+        while (i >= 0) {
+            set.add(p.substring(0, i))
+            i = p.indexOf('/', i + 1)
+        }
+    }
+    return set.sortedWith(
+        compareBy<String> { it.isNotEmpty() }.thenBy { it.lowercase() },
+    )
+}
+
+/** [folderFilter] null = all; "" = remote root only; otherwise path and descendants. */
+private fun matchesFolderFilter(row: LibraryRow, folderFilter: String?): Boolean {
+    if (folderFilter == null) return true
+    if (folderFilter.isEmpty()) return row.folderPath.isEmpty()
+    return row.folderPath == folderFilter || row.folderPath.startsWith("$folderFilter/")
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     modifier: Modifier = Modifier,
@@ -103,8 +137,13 @@ fun LibraryScreen(
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     var query by remember { mutableStateOf("") }
+    /** null = all folders; "" = remote root; else relative path under remote folder. */
+    var folderFilter by remember { mutableStateOf<String?>(null) }
+    var folderMenuExpanded by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val rootFolderLabel = stringResource(R.string.nc_library_root_folder)
+    val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
 
     if (state.imageHrefs.isEmpty()) {
         Column(
@@ -129,6 +168,15 @@ fun LibraryScreen(
     val rows = remember(state.imageHrefs, state.remoteFolder) {
         state.imageHrefs.map { toLibraryRow(it, state.remoteFolder) }
     }
+    val folderOptions = remember(rows) { libraryFolderOptions(rows) }
+    val showFolderFilter = folderOptions.any { it.isNotEmpty() }
+
+    LaunchedEffect(folderOptions, folderFilter) {
+        if (folderFilter != null && folderFilter !in folderOptions) {
+            folderFilter = null
+        }
+    }
+
     val sortedRows = remember(rows, sortMode, state.imageLastModifiedEpochMs, state.imageCarouselIndexByHref) {
         when (sortMode) {
             LibrarySortMode.NAME ->
@@ -151,15 +199,15 @@ fun LibraryScreen(
                 )
         }
     }
-    val filteredRows = remember(sortedRows, query) {
+    val filteredRows = remember(sortedRows, query, folderFilter) {
         val q = query.trim().lowercase()
-        if (q.isEmpty()) {
-            sortedRows
-        } else {
-            sortedRows.filter { r ->
-                r.fileName.lowercase().contains(q) ||
-                    r.folderPath.lowercase().contains(q)
-            }
+        sortedRows.filter { r ->
+            matchesFolderFilter(r, folderFilter) &&
+                (
+                    q.isEmpty() ||
+                        r.fileName.lowercase().contains(q) ||
+                        r.folderPath.lowercase().contains(q)
+                    )
         }
     }
 
@@ -178,10 +226,15 @@ fun LibraryScreen(
         if (isListScrolling) {
             fastScrollVisible = true
         } else {
-            // Hide shortly after scrolling stops.
             kotlinx.coroutines.delay(900)
             if (!dragActive) fastScrollVisible = false
         }
+    }
+
+    val folderFilterDisplay = when (folderFilter) {
+        null -> allFoldersLabel
+        "" -> rootFolderLabel
+        else -> folderFilter
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -196,7 +249,7 @@ fun LibraryScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier.height(8.dp))
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -206,7 +259,62 @@ fun LibraryScreen(
                     label = { Text(stringResource(R.string.nc_library_search_label)) },
                     placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
                 )
-                Spacer(Modifier.height(8.dp))
+                if (showFolderFilter) {
+                    Spacer(modifier.height(8.dp))
+                    ExposedDropdownMenuBox(
+                        expanded = folderMenuExpanded,
+                        onExpandedChange = { folderMenuExpanded = it },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(
+                                    type = MenuAnchorType.PrimaryNotEditable,
+                                    enabled = !state.busy,
+                                ),
+                            readOnly = true,
+                            value = folderFilterDisplay,
+                            onValueChange = {},
+                            label = { Text(stringResource(R.string.nc_library_folder_filter_label)) },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = folderMenuExpanded)
+                            },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            enabled = !state.busy,
+                            singleLine = true,
+                        )
+                        ExposedDropdownMenu(
+                            expanded = folderMenuExpanded,
+                            onDismissRequest = { folderMenuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(allFoldersLabel) },
+                                onClick = {
+                                    folderFilter = null
+                                    folderMenuExpanded = false
+                                },
+                            )
+                            folderOptions.forEach { path ->
+                                val label = path.ifBlank { rootFolderLabel }
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = label,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    onClick = {
+                                        folderFilter = path
+                                        folderMenuExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier.height(8.dp))
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -266,7 +374,7 @@ fun LibraryScreen(
                     },
                     supportingContent = {
                         Text(
-                            text = row.folderPath.ifBlank { stringResource(R.string.nc_library_root_folder) },
+                            text = row.folderPath.ifBlank { rootFolderLabel },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -278,7 +386,7 @@ fun LibraryScreen(
                             .padding(horizontal = 8.dp),
                 )
             }
-            item { Spacer(Modifier.height(8.dp)) }
+            item { Spacer(modifier.height(8.dp)) }
         }
 
         if (showFastScroll && (fastScrollVisible || dragActive)) {
@@ -359,4 +467,3 @@ private fun FastScroller(
         }
     }
 }
-

@@ -173,6 +173,8 @@
     <string name="nc_library_sort_date">Data</string>
     <string name="nc_library_sort_index">Karuzela</string>
     <string name="nc_library_root_folder">(folder główny)</string>
+    <string name="nc_library_folder_filter_label">Folder</string>
+    <string name="nc_library_folder_filter_all">Wszystkie foldery</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
