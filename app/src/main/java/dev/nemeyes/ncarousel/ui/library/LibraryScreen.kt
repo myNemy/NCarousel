@@ -231,10 +231,10 @@ fun LibraryScreen(
         }
     }
 
-    val folderFilterDisplay = when (folderFilter) {
+    val folderFilterDisplay = when (val selected = folderFilter) {
         null -> allFoldersLabel
         "" -> rootFolderLabel
-        else -> folderFilter
+        else -> selected
     }
 
     Box(modifier = modifier.fillMaxSize()) {
