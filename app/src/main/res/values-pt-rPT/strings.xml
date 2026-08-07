@@ -70,6 +70,8 @@
     <string name="msg_error_colon">Erro: %1$s</string>
     <string name="status_scanning_folders">A analisar pastas…</string>
     <string name="msg_images_found">Encontradas %1$d imagens.</string>
+    <string name="msg_excluded_from_carousel">Excluída do carrossel.</string>
+    <string name="msg_included_in_carousel">Incluída novamente no carrossel.</string>
     <string name="msg_list_error">Erro na lista: %1$s</string>
     <string name="msg_refresh_list_first">Atualize primeiro a lista de imagens.</string>
     <string name="status_downloading">A transferir…</string>
@@ -144,6 +146,7 @@
     <string name="qs_tile_err_no_account">Sem conta Nextcloud ativa</string>
     <string name="qs_tile_err_no_list">Atualize primeiro a lista de imagens na app</string>
     <string name="qs_tile_err_no_image">Sem imagem disponível</string>
+    <string name="qs_tile_err_all_excluded">Todas as imagens estão excluídas do carrossel</string>
     <string name="qs_tile_err_download">Falha na transferência</string>
     <string name="qs_tile_err_wallpaper">Não foi possível definir o fundo</string>
     <string name="battery_opt_banner_title">Otimização da bateria</string>
@@ -188,6 +191,10 @@
     <string name="nc_library_preview_current">Fundo atual</string>
     <string name="nc_library_filters_expand">Mostrar pesquisa e filtros</string>
     <string name="nc_library_filters_collapse">Ocultar pesquisa e filtros</string>
+    <string name="nc_library_exclude">Excluir do carrossel</string>
+    <string name="nc_library_include">Incluir no carrossel</string>
+    <string name="nc_library_excluded_badge">Excluída</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">Acerca</string>
     <string name="nc_about_version">Versão %1$s (%2$d)</string>
     <string name="nc_about_summary">Fundos rotativos do Nextcloud (WebDAV), com opções de rede/bateria e escolha manual na Biblioteca.</string>

@@ -70,6 +70,8 @@
     <string name="msg_error_colon">Σφάλμα: %1$s</string>
     <string name="status_scanning_folders">Σάρωση φακέλων…</string>
     <string name="msg_images_found">Βρέθηκαν %1$d εικόνες.</string>
+    <string name="msg_excluded_from_carousel">Εξαιρέθηκε από το καρουζέλ.</string>
+    <string name="msg_included_in_carousel">Συμπεριλήφθηκε ξανά στο καρουζέλ.</string>
     <string name="msg_list_error">Σφάλμα λίστας: %1$s</string>
     <string name="msg_refresh_list_first">Ανανεώστε πρώτα τη λίστα εικόνων.</string>
     <string name="status_downloading">Λήψη…</string>
@@ -144,6 +146,7 @@
     <string name="qs_tile_err_no_account">Δεν υπάρχει ενεργός λογαριασμός Nextcloud</string>
     <string name="qs_tile_err_no_list">Ανανεώστε πρώτα τη λίστα εικόνων στην εφαρμογή</string>
     <string name="qs_tile_err_no_image">Δεν υπάρχει διαθέσιμη εικόνα</string>
+    <string name="qs_tile_err_all_excluded">Όλες οι εικόνες εξαιρούνται από το καρουζέλ</string>
     <string name="qs_tile_err_download">Η λήψη απέτυχε</string>
     <string name="qs_tile_err_wallpaper">Δεν ήταν δυνατός ο ορισμός ταπετσαρίας</string>
     <string name="battery_opt_banner_title">Βελτιστοποιήσεις μπαταρίας</string>
@@ -188,6 +191,10 @@
     <string name="nc_library_preview_current">Τρέχουσα ταπετσαρία</string>
     <string name="nc_library_filters_expand">Εμφάνιση αναζήτησης και φίλτρων</string>
     <string name="nc_library_filters_collapse">Απόκρυψη αναζήτησης και φίλτρων</string>
+    <string name="nc_library_exclude">Εξαίρεση από το καρουζέλ</string>
+    <string name="nc_library_include">Συμπερίληψη στο καρουζέλ</string>
+    <string name="nc_library_excluded_badge">Εξαιρούμενη</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">Σχετικά</string>
     <string name="nc_about_version">Έκδοση %1$s (%2$d)</string>
     <string name="nc_about_summary">Περιστρεφόμενες ταπετσαρίες από Nextcloud (WebDAV), με επιλογές δικτύου/μπαταρίας και χειροκίνητη επιλογή από τη Βιβλιοθήκη.</string>

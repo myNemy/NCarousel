@@ -58,7 +58,10 @@ object NextWallpaperApplicator {
         val carousel = CarouselPreferences(app)
         val mode = orderModeOverride ?: carousel.orderMode
         val wallpaperTarget = wallpaperTargetOverride ?: carousel.wallpaperTarget
-        val pick = WallpaperOrderEngine(app, active.id).pickWallpaper(hrefs, mode)
+        val excluded = ExcludedHrefStore(app, active.id).read()
+        val activeHrefs = ExcludedHrefStore.filterActive(hrefs, excluded)
+        if (activeHrefs.isEmpty()) return app.getString(R.string.qs_tile_err_all_excluded)
+        val pick = WallpaperOrderEngine(app, active.id).pickWallpaper(activeHrefs, mode)
             ?: return app.getString(R.string.qs_tile_err_no_image)
 
         val http = HttpClientProvider.create(app)

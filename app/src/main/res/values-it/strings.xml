@@ -76,6 +76,8 @@
     <string name="msg_error_colon">Errore: %1$s</string>
     <string name="status_scanning_folders">Scansione cartelle in corso…</string>
     <string name="msg_images_found">Trovate %1$d immagini.</string>
+    <string name="msg_excluded_from_carousel">Esclusa dal carousel.</string>
+    <string name="msg_included_in_carousel">Di nuovo inclusa nel carousel.</string>
     <string name="msg_list_error">Errore elenco: %1$s</string>
     <string name="msg_refresh_list_first">Aggiorna prima l\'elenco immagini.</string>
     <string name="status_downloading">Download in corso…</string>
@@ -153,6 +155,7 @@
     <string name="qs_tile_err_no_account">Nessun account Nextcloud attivo</string>
     <string name="qs_tile_err_no_list">Aggiorna prima l\'elenco immagini dall\'app</string>
     <string name="qs_tile_err_no_image">Nessuna immagine disponibile</string>
+    <string name="qs_tile_err_all_excluded">Tutte le immagini sono escluse dal carousel</string>
     <string name="qs_tile_err_download">Download fallito</string>
     <string name="qs_tile_err_wallpaper">Impossibile impostare lo sfondo</string>
     <string name="battery_opt_banner_title">Ottimizzazioni batteria</string>
@@ -197,6 +200,10 @@
     <string name="nc_library_preview_current">Sfondo corrente</string>
     <string name="nc_library_filters_expand">Mostra ricerca e filtri</string>
     <string name="nc_library_filters_collapse">Nascondi ricerca e filtri</string>
+    <string name="nc_library_exclude">Escludi dal carousel</string>
+    <string name="nc_library_include">Includi nel carousel</string>
+    <string name="nc_library_excluded_badge">Esclusa</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">Informazioni</string>
     <string name="nc_about_version">Versione %1$s (%2$d)</string>
     <string name="nc_about_summary">Sfondo a rotazione da Nextcloud (WebDAV), con opzioni per rete/batteria e scelta manuale dalla Libreria.</string>

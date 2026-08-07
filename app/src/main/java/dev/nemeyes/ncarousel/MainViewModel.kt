@@ -9,6 +9,7 @@ import androidx.work.ExistingWorkPolicy
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
+import dev.nemeyes.ncarousel.data.ExcludedHrefStore
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifSummary
 import dev.nemeyes.ncarousel.data.ImageListCache
@@ -74,8 +75,10 @@ data class MainUiState(
     val imageFileIds: Map<String, Long> = emptyMap(),
     /** href -> WebDAV getlastmodified as epoch ms (Library date sort), when parseable. */
     val imageLastModifiedEpochMs: Map<String, Long> = emptyMap(),
-    /** href -> 1-based carousel index ("Image X of Y") matching notifications. */
+    /** href -> 1-based carousel index ("Image X of Y") matching notifications (active/non-excluded only). */
     val imageCarouselIndexByHref: Map<String, Int> = emptyMap(),
+    /** WebDAV hrefs excluded from automatic carousel picks (still shown in Library). */
+    val excludedImageHrefs: Set<String> = emptySet(),
     /** OCS capabilities.theming.color (hex); drives [NCarouselTheme]. */
     val instanceThemingPrimaryHex: String? = null,
     /** OCS capabilities.theming.color-text. */
@@ -128,9 +131,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun computeCarouselIndicesForActiveAccount(
         hrefs: List<String>,
         mode: OrderMode,
+        excluded: Set<String> = emptySet(),
     ): Map<String, Int> = withContext(Dispatchers.IO) {
         val accId = accounts.getActiveAccountId() ?: return@withContext emptyMap()
-        WallpaperOrderEngine(getApplication(), accId).carouselIndexByHref(hrefs, mode)
+        val active = ExcludedHrefStore.filterActive(hrefs, excluded)
+        WallpaperOrderEngine(getApplication(), accId).carouselIndexByHref(active, mode)
     }
 
     private fun activeOrNull() = accounts.getActiveAccount()
@@ -507,7 +512,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         refreshBatteryOptimizationStatus()
-        _ui.update { it.copy(statusMessage = appStr(R.string.msg_carousel_options_saved)) }
+        viewModelScope.launch {
+            val indices = if (s.imageHrefs.isEmpty()) {
+                emptyMap()
+            } else {
+                computeCarouselIndicesForActiveAccount(s.imageHrefs, s.orderMode, s.excludedImageHrefs)
+            }
+            _ui.update {
+                it.copy(
+                    imageCarouselIndexByHref = indices,
+                    statusMessage = appStr(R.string.msg_carousel_options_saved),
+                )
+            }
+        }
     }
 
     fun clearWallpaperDiskCache() {
@@ -687,13 +704,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         val fp = WallpaperOrderEngine.libraryFingerprint(list)
                         WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
                         ImageListCache(getApplication(), active.id).write(list)
-                        val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode)
+                        val excluded = ExcludedHrefStore(getApplication(), active.id).read()
+                        val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode, excluded)
                         _ui.update {
                             it.copy(
                                 imageHrefs = list,
                                 imageFileIds = fileIds,
                                 imageLastModifiedEpochMs = lastModified,
                                 imageCarouselIndexByHref = carouselIndices,
+                                excludedImageHrefs = excluded,
                                 remoteFolder = folder,
                                 statusMessage = appStr(R.string.msg_images_found, list.size),
                             )
@@ -810,6 +829,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val fileIds: Map<String, Long>,
                     val lastModified: Map<String, Long>,
                     val carouselIndices: Map<String, Int>,
+                    val excluded: Set<String>,
                 )
                 suspend fun metaMaps(hrefs: List<String>): Pair<Map<String, Long>, Map<String, Long>> {
                     val meta = syncRepo.readCachedHrefsWithMeta(accountId)
@@ -820,11 +840,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val hrefSet = hrefs.toHashSet()
                     return fileIds.filterKeys { it in hrefSet } to lastModified.filterKeys { it in hrefSet }
                 }
+                val excluded = ExcludedHrefStore(getApplication(), accountId).read()
                 val legacy = ImageListCache(getApplication(), accountId).read()
                 if (legacy.isNotEmpty()) {
                     val (fileIds, lastModified) = metaMaps(legacy)
-                    val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, orderMode)
-                    CachedLibrary(legacy, fileIds, lastModified, carouselIndices)
+                    val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, orderMode, excluded)
+                    CachedLibrary(legacy, fileIds, lastModified, carouselIndices, excluded)
                 } else {
                     val meta = syncRepo.readCachedHrefsWithMeta(accountId)
                     val cached = meta.map { it.first }
@@ -833,8 +854,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val lastModified = meta.mapNotNull { (href, _, raw) ->
                         parseDavLastModifiedEpochMs(raw)?.let { href to it }
                     }.toMap()
-                    val carouselIndices = computeCarouselIndicesForActiveAccount(cached, orderMode)
-                    CachedLibrary(cached, fileIds, lastModified, carouselIndices)
+                    val carouselIndices = computeCarouselIndicesForActiveAccount(cached, orderMode, excluded)
+                    CachedLibrary(cached, fileIds, lastModified, carouselIndices, excluded)
                 }
             } ?: return@launch
             if (activeOrNull()?.id != accountId) return@launch
@@ -844,6 +865,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     imageFileIds = loaded.fileIds,
                     imageLastModifiedEpochMs = loaded.lastModified,
                     imageCarouselIndexByHref = loaded.carouselIndices,
+                    excludedImageHrefs = loaded.excluded,
+                )
+            }
+        }
+    }
+
+    fun toggleExcludedFromCarousel(href: String) {
+        val key = href.trim()
+        if (key.isBlank()) return
+        val active = activeOrNull() ?: run {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
+            return
+        }
+        viewModelScope.launch {
+            val (excluded, indices, nowExcluded) = withContext(Dispatchers.IO) {
+                val store = ExcludedHrefStore(getApplication(), active.id)
+                val nowExcluded = store.toggle(key)
+                val excluded = store.read()
+                val indices = computeCarouselIndicesForActiveAccount(
+                    _ui.value.imageHrefs,
+                    _ui.value.orderMode,
+                    excluded,
+                )
+                Triple(excluded, indices, nowExcluded)
+            }
+            _ui.update {
+                it.copy(
+                    excludedImageHrefs = excluded,
+                    imageCarouselIndexByHref = indices,
+                    statusMessage = appStr(
+                        if (nowExcluded) R.string.msg_excluded_from_carousel else R.string.msg_included_in_carousel,
+                    ),
                 )
             }
         }
@@ -868,6 +921,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 imageFileIds = emptyMap(),
                 imageLastModifiedEpochMs = emptyMap(),
                 imageCarouselIndexByHref = emptyMap(),
+                excludedImageHrefs = emptySet(),
                 lastWallpaperFileLabel = null,
                 lastWallpaperHref = null,
                 lastWallpaperFolderPath = null,
@@ -889,6 +943,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         clearBusyState()
         carousel.clearThemingForAccount(id)
         LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
+        ExcludedHrefStore(getApplication(), id).clear()
+        ImageListCache(getApplication(), id).clear()
         accounts.delete(id)
         val a = accounts.getActiveAccount()
         _ui.update {
@@ -905,6 +961,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 imageFileIds = emptyMap(),
                 imageLastModifiedEpochMs = emptyMap(),
                 imageCarouselIndexByHref = emptyMap(),
+                excludedImageHrefs = emptySet(),
                 lastWallpaperFileLabel = null,
                 lastWallpaperHref = null,
                 lastWallpaperFolderPath = null,

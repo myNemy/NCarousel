@@ -70,6 +70,8 @@
     <string name="msg_error_colon">Chyba: %1$s</string>
     <string name="status_scanning_folders">Prohledávání složek…</string>
     <string name="msg_images_found">Nalezeno %1$d obrázků.</string>
+    <string name="msg_excluded_from_carousel">Vyloučeno z karuselu.</string>
+    <string name="msg_included_in_carousel">Znovu zahrnuto do karuselu.</string>
     <string name="msg_list_error">Chyba seznamu: %1$s</string>
     <string name="msg_refresh_list_first">Nejprve obnovte seznam obrázků.</string>
     <string name="status_downloading">Stahování…</string>
@@ -144,6 +146,7 @@
     <string name="qs_tile_err_no_account">Žádný aktivní účet Nextcloud</string>
     <string name="qs_tile_err_no_list">Nejprve v aplikaci obnovte seznam obrázků</string>
     <string name="qs_tile_err_no_image">Žádný obrázek k dispozici</string>
+    <string name="qs_tile_err_all_excluded">Všechny obrázky jsou vyloučeny z karuselu</string>
     <string name="qs_tile_err_download">Stahování selhalo</string>
     <string name="qs_tile_err_wallpaper">Nelze nastavit tapetu</string>
     <string name="battery_opt_banner_title">Optimalizace baterie</string>
@@ -188,6 +191,10 @@
     <string name="nc_library_preview_current">Aktuální tapeta</string>
     <string name="nc_library_filters_expand">Zobrazit hledání a filtry</string>
     <string name="nc_library_filters_collapse">Skrýt hledání a filtry</string>
+    <string name="nc_library_exclude">Vyloučit z karuselu</string>
+    <string name="nc_library_include">Zahrnout do karuselu</string>
+    <string name="nc_library_excluded_badge">Vyloučeno</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">O aplikaci</string>
     <string name="nc_about_version">Verze %1$s (%2$d)</string>
     <string name="nc_about_summary">Střídající se tapety z Nextcloud (WebDAV), s možnostmi sítě/baterie a ručním výběrem z knihovny.</string>

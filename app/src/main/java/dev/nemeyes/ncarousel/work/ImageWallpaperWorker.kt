@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
+import dev.nemeyes.ncarousel.data.ExcludedHrefStore
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifPlaceLabel
 import dev.nemeyes.ncarousel.data.ImageListCache
@@ -65,7 +66,11 @@ class ImageWallpaperWorker(
                 listCache.write(hrefs) // legacy fast path
             }
 
-            val pick = order.pickWallpaper(hrefs, carousel.orderMode) ?: return@withContext Result.success()
+            val excluded = ExcludedHrefStore(applicationContext, active.id).read()
+            val activeHrefs = ExcludedHrefStore.filterActive(hrefs, excluded)
+            if (activeHrefs.isEmpty()) return@withContext Result.success()
+
+            val pick = order.pickWallpaper(activeHrefs, carousel.orderMode) ?: return@withContext Result.success()
             val href = pick.href
 
             val disk = WallpaperDiskCache(

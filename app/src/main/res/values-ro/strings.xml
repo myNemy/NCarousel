@@ -70,6 +70,8 @@
     <string name="msg_error_colon">Eroare: %1$s</string>
     <string name="status_scanning_folders">Se scanează dosarele…</string>
     <string name="msg_images_found">S-au găsit %1$d imagini.</string>
+    <string name="msg_excluded_from_carousel">Exclusă din carusel.</string>
+    <string name="msg_included_in_carousel">Inclusă din nou în carusel.</string>
     <string name="msg_list_error">Eroare listă: %1$s</string>
     <string name="msg_refresh_list_first">Reîmprospătați mai întâi lista de imagini.</string>
     <string name="status_downloading">Se descarcă…</string>
@@ -144,6 +146,7 @@
     <string name="qs_tile_err_no_account">Niciun cont Nextcloud activ</string>
     <string name="qs_tile_err_no_list">Reîmprospătați mai întâi lista de imagini în aplicație</string>
     <string name="qs_tile_err_no_image">Nicio imagine disponibilă</string>
+    <string name="qs_tile_err_all_excluded">Toate imaginile sunt excluse din carusel</string>
     <string name="qs_tile_err_download">Descărcare eșuată</string>
     <string name="qs_tile_err_wallpaper">Nu s-a putut seta fundalul</string>
     <string name="battery_opt_banner_title">Optimizări baterie</string>
@@ -188,6 +191,10 @@
     <string name="nc_library_preview_current">Fundal curent</string>
     <string name="nc_library_filters_expand">Afișează căutare și filtre</string>
     <string name="nc_library_filters_collapse">Ascunde căutare și filtre</string>
+    <string name="nc_library_exclude">Exclude din carusel</string>
+    <string name="nc_library_include">Include în carusel</string>
+    <string name="nc_library_excluded_badge">Exclusă</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">Despre</string>
     <string name="nc_about_version">Versiunea %1$s (%2$d)</string>
     <string name="nc_about_summary">Fundaluri rotative din Nextcloud (WebDAV), cu opțiuni rețea/baterie și alegere manuală din Bibliotecă.</string>

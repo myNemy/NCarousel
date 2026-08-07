@@ -42,6 +42,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -61,6 +63,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -76,6 +79,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -102,8 +106,9 @@ private data class LibraryPreviewTarget(
     val href: String,
     val fileName: String,
     val folderPath: String,
-    val carouselIndex: Int,
+    val carouselIndex: Int?,
     val fileId: Long?,
+    val isExcluded: Boolean,
 )
 
 private data class LibraryRow(
@@ -184,6 +189,7 @@ fun LibraryScreen(
     state: MainUiState,
     onRefreshList: () -> Unit,
     onApplyHref: (String) -> Unit,
+    onToggleExclude: (String) -> Unit,
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
@@ -201,13 +207,14 @@ fun LibraryScreen(
     val rootFolderLabel = stringResource(R.string.nc_library_root_folder)
     val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
 
-    fun openPreview(row: LibraryRow, carouselIndex: Int, fileId: Long?) {
+    fun openPreview(row: LibraryRow, carouselIndex: Int?, fileId: Long?, isExcluded: Boolean) {
         previewTarget = LibraryPreviewTarget(
             href = row.href,
             fileName = row.fileName,
             folderPath = row.folderPath,
             carouselIndex = carouselIndex,
             fileId = fileId,
+            isExcluded = isExcluded,
         )
     }
 
@@ -405,6 +412,9 @@ fun LibraryScreen(
                     val href = target.href
                     previewTarget = null
                     onApplyHref(href)
+                },
+                onToggleExclude = {
+                    onToggleExclude(target.href)
                 },
             )
         }
@@ -644,10 +654,11 @@ fun LibraryScreen(
                             modifier = Modifier.fillMaxSize(),
                             state = listState,
                         ) {
-                            itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
+                            itemsIndexed(filteredRows, key = { _, row -> row.href }) { _, row ->
                                 val ctx = LocalContext.current
                                 val fileId = state.imageFileIds[row.href]
-                                val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
+                                val isExcluded = row.href in state.excludedImageHrefs
+                                val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
                                 ListItem(
@@ -659,52 +670,84 @@ fun LibraryScreen(
                                             password = state.password,
                                             fileId = fileId,
                                             sizePx = 192,
-                                            modifier = Modifier.size(48.dp),
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .then(
+                                                    if (isExcluded) Modifier.alpha(0.45f) else Modifier,
+                                                ),
                                             isCurrent = isCurrent,
                                         )
                                     },
                                     headlineContent = {
                                         Text(
-                                            text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
+                                            text = if (carouselIndex != null) {
+                                                stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName)
+                                            } else {
+                                                row.fileName
+                                            },
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                     },
                                     supportingContent = {
+                                        val folder = row.folderPath.ifBlank { rootFolderLabel }
                                         Text(
-                                            text = if (isCurrent) {
-                                                stringResource(
-                                                    R.string.nc_library_current_in_folder,
-                                                    row.folderPath.ifBlank { rootFolderLabel },
-                                                )
-                                            } else {
-                                                row.folderPath.ifBlank { rootFolderLabel }
+                                            text = when {
+                                                isExcluded && isCurrent ->
+                                                    stringResource(R.string.nc_library_excluded_badge) + " · " +
+                                                        stringResource(R.string.nc_library_preview_current)
+                                                isExcluded ->
+                                                    stringResource(R.string.nc_library_excluded_badge) + " · " + folder
+                                                isCurrent ->
+                                                    stringResource(R.string.nc_library_current_in_folder, folder)
+                                                else -> folder
                                             },
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
-                                            color = if (isCurrent) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = when {
+                                                isExcluded -> MaterialTheme.colorScheme.error
+                                                isCurrent -> MaterialTheme.colorScheme.primary
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
                                             },
                                         )
                                     },
                                     trailingContent = {
-                                        IconButton(
-                                            onClick = { openPreview(row, carouselIndex, fileId) },
-                                            enabled = !state.busy,
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Visibility,
-                                                contentDescription = stringResource(R.string.nc_library_preview),
-                                            )
+                                        Row {
+                                            IconButton(
+                                                onClick = { onToggleExclude(row.href) },
+                                                enabled = !state.busy,
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isExcluded) {
+                                                        Icons.Outlined.CheckCircle
+                                                    } else {
+                                                        Icons.Outlined.Block
+                                                    },
+                                                    contentDescription = stringResource(
+                                                        if (isExcluded) {
+                                                            R.string.nc_library_include
+                                                        } else {
+                                                            R.string.nc_library_exclude
+                                                        },
+                                                    ),
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { openPreview(row, carouselIndex, fileId, isExcluded) },
+                                                enabled = !state.busy,
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Visibility,
+                                                    contentDescription = stringResource(R.string.nc_library_preview),
+                                                )
+                                            }
                                         }
                                     },
                                     colors = ListItemDefaults.colors(
-                                        containerColor = if (isCurrent) {
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-                                        } else {
-                                            MaterialTheme.colorScheme.surface
+                                        containerColor = when {
+                                            isCurrent -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                                            isExcluded -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                                            else -> MaterialTheme.colorScheme.surface
                                         },
                                     ),
                                     modifier =
@@ -726,7 +769,7 @@ fun LibraryScreen(
                                             .combinedClickable(
                                                 enabled = !state.busy,
                                                 onClick = { onApplyHref(row.href) },
-                                                onLongClick = { openPreview(row, carouselIndex, fileId) },
+                                                onLongClick = { openPreview(row, carouselIndex, fileId, isExcluded) },
                                             ),
                                 )
                             }
@@ -742,10 +785,11 @@ fun LibraryScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            gridItemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
+                            gridItemsIndexed(filteredRows, key = { _, row -> row.href }) { _, row ->
                                 val ctx = LocalContext.current
                                 val fileId = state.imageFileIds[row.href]
-                                val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
+                                val isExcluded = row.href in state.excludedImageHrefs
+                                val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 LibraryGridCell(
                                     ctx = ctx,
@@ -754,11 +798,13 @@ fun LibraryScreen(
                                     fileId = fileId,
                                     carouselIndex = carouselIndex,
                                     isCurrent = isCurrent,
+                                    isExcluded = isExcluded,
                                     rootFolderLabel = rootFolderLabel,
                                     enabled = !state.busy,
                                     onClick = { onApplyHref(row.href) },
-                                    onLongClick = { openPreview(row, carouselIndex, fileId) },
-                                    onPreviewClick = { openPreview(row, carouselIndex, fileId) },
+                                    onLongClick = { openPreview(row, carouselIndex, fileId, isExcluded) },
+                                    onPreviewClick = { openPreview(row, carouselIndex, fileId, isExcluded) },
+                                    onToggleExclude = { onToggleExclude(row.href) },
                                 )
                             }
                         }
@@ -800,9 +846,12 @@ private fun LibraryFullscreenPreview(
     rootFolderLabel: String,
     onDismiss: () -> Unit,
     onApply: () -> Unit,
+    onToggleExclude: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val isCurrent = state.lastWallpaperHref != null && target.href == state.lastWallpaperHref
+    val isExcluded = target.href in state.excludedImageHrefs
+    val carouselIndex = state.imageCarouselIndexByHref[target.href]
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -825,24 +874,35 @@ private fun LibraryFullscreenPreview(
                 ) {
                     Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                         Text(
-                            text = stringResource(
-                                R.string.nc_library_indexed_name,
-                                target.carouselIndex,
-                                target.fileName,
-                            ),
+                            text = if (carouselIndex != null) {
+                                stringResource(
+                                    R.string.nc_library_indexed_name,
+                                    carouselIndex,
+                                    target.fileName,
+                                )
+                            } else {
+                                target.fileName
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            text = if (isCurrent) {
-                                stringResource(R.string.nc_library_preview_current)
-                            } else {
-                                target.folderPath.ifBlank { rootFolderLabel }
+                            text = when {
+                                isExcluded && isCurrent ->
+                                    stringResource(R.string.nc_library_excluded_badge) + " · " +
+                                        stringResource(R.string.nc_library_preview_current)
+                                isExcluded -> stringResource(R.string.nc_library_excluded_badge)
+                                isCurrent -> stringResource(R.string.nc_library_preview_current)
+                                else -> target.folderPath.ifBlank { rootFolderLabel }
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.75f),
+                            color = if (isExcluded) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                Color.White.copy(alpha = 0.75f)
+                            },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -874,14 +934,30 @@ private fun LibraryFullscreenPreview(
                         contentScale = ContentScale.Fit,
                     )
                 }
-                Button(
-                    onClick = onApply,
-                    enabled = !state.busy,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(stringResource(R.string.nc_library_preview_apply))
+                    OutlinedButton(
+                        onClick = onToggleExclude,
+                        enabled = !state.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            stringResource(
+                                if (isExcluded) R.string.nc_library_include else R.string.nc_library_exclude,
+                            ),
+                        )
+                    }
+                    Button(
+                        onClick = onApply,
+                        enabled = !state.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.nc_library_preview_apply))
+                    }
                 }
             }
         }
@@ -943,13 +1019,15 @@ private fun LibraryGridCell(
     state: MainUiState,
     row: LibraryRow,
     fileId: Long?,
-    carouselIndex: Int,
+    carouselIndex: Int?,
     isCurrent: Boolean,
+    isExcluded: Boolean,
     rootFolderLabel: String,
     enabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onPreviewClick: () -> Unit,
+    onToggleExclude: () -> Unit,
 ) {
     val cellShape = RoundedCornerShape(12.dp)
     Box(
@@ -967,10 +1045,10 @@ private fun LibraryGridCell(
                 },
             )
             .background(
-                if (isCurrent) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                when {
+                    isCurrent -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                    isExcluded -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                 },
             )
             .combinedClickable(
@@ -992,49 +1070,74 @@ private fun LibraryGridCell(
                 sizePx = 512,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f),
+                    .aspectRatio(1f)
+                    .then(if (isExcluded) Modifier.alpha(0.5f) else Modifier),
                 isCurrent = false,
             )
             Text(
-                text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
+                text = if (carouselIndex != null) {
+                    stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName)
+                } else {
+                    row.fileName
+                },
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Start,
             )
             Text(
-                text = if (isCurrent) {
-                    stringResource(R.string.nc_library_current_wallpaper_short)
-                } else {
-                    row.folderPath.ifBlank { rootFolderLabel }
+                text = when {
+                    isExcluded -> stringResource(R.string.nc_library_excluded_badge)
+                    isCurrent -> stringResource(R.string.nc_library_current_wallpaper_short)
+                    else -> row.folderPath.ifBlank { rootFolderLabel }
                 },
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = if (isCurrent) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                color = when {
+                    isExcluded -> MaterialTheme.colorScheme.error
+                    isCurrent -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
         }
-        IconButton(
-            onClick = onPreviewClick,
-            enabled = enabled,
+        Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(2.dp)
-                .size(36.dp),
+                .padding(2.dp),
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Visibility,
-                contentDescription = stringResource(R.string.nc_library_preview),
-                tint = Color.White,
-                modifier = Modifier
-                    .background(Color.Black.copy(alpha = 0.45f), CircleShape)
-                    .padding(6.dp)
-                    .size(18.dp),
-            )
+            IconButton(
+                onClick = onToggleExclude,
+                enabled = enabled,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Icon(
+                    imageVector = if (isExcluded) Icons.Outlined.CheckCircle else Icons.Outlined.Block,
+                    contentDescription = stringResource(
+                        if (isExcluded) R.string.nc_library_include else R.string.nc_library_exclude,
+                    ),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .padding(6.dp)
+                        .size(18.dp),
+                )
+            }
+            IconButton(
+                onClick = onPreviewClick,
+                enabled = enabled,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Visibility,
+                    contentDescription = stringResource(R.string.nc_library_preview),
+                    tint = Color.White,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .padding(6.dp)
+                        .size(18.dp),
+                )
+            }
         }
     }
 }

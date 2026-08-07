@@ -633,6 +633,7 @@ private fun AuthenticatedShell(
                                 state = state,
                                 onRefreshList = viewModel::refreshImageList,
                                 onApplyHref = viewModel::applyWallpaperByHref,
+                                onToggleExclude = viewModel::toggleExcludedFromCarousel,
                             )
                         }
                     }

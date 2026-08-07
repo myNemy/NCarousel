@@ -70,6 +70,8 @@
     <string name="msg_error_colon">Hiba: %1$s</string>
     <string name="status_scanning_folders">Mappák beolvasása…</string>
     <string name="msg_images_found">%1$d kép található.</string>
+    <string name="msg_excluded_from_carousel">Kizárva a körforgásból.</string>
+    <string name="msg_included_in_carousel">Újra benne a körforgásban.</string>
     <string name="msg_list_error">Listahiba: %1$s</string>
     <string name="msg_refresh_list_first">Először frissítse a képlistát.</string>
     <string name="status_downloading">Letöltés…</string>
@@ -144,6 +146,7 @@
     <string name="qs_tile_err_no_account">Nincs aktív Nextcloud-fiók</string>
     <string name="qs_tile_err_no_list">Először frissítse a képlistát az alkalmazásban</string>
     <string name="qs_tile_err_no_image">Nincs elérhető kép</string>
+    <string name="qs_tile_err_all_excluded">Minden kép ki van zárva a körforgásból</string>
     <string name="qs_tile_err_download">Letöltés sikertelen</string>
     <string name="qs_tile_err_wallpaper">Nem sikerült beállítani a háttérképet</string>
     <string name="battery_opt_banner_title">Akkumulátor-optimalizálás</string>
@@ -188,6 +191,10 @@
     <string name="nc_library_preview_current">Jelenlegi háttérkép</string>
     <string name="nc_library_filters_expand">Keresés és szűrők megjelenítése</string>
     <string name="nc_library_filters_collapse">Keresés és szűrők elrejtése</string>
+    <string name="nc_library_exclude">Kizárás a körforgásból</string>
+    <string name="nc_library_include">Bevétel a körforgásba</string>
+    <string name="nc_library_excluded_badge">Kizárva</string>
+    <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_about_title">Névjegy</string>
     <string name="nc_about_version">Verzió %1$s (%2$d)</string>
     <string name="nc_about_summary">Forgó háttérképek a Nextcloudból (WebDAV), hálózat/akkumulátor beállításokkal és kézi választással a Könyvtárból.</string>
