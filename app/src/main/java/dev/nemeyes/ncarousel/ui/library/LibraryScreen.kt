@@ -203,15 +203,22 @@ fun LibraryScreen(
                 )
         }
     }
-    val filteredRows = remember(sortedRows, query, folderFilter) {
+    val filteredRows = remember(sortedRows, query, folderFilter, state.lastWallpaperHref) {
         val q = query.trim().lowercase()
-        sortedRows.filter { r ->
+        val matched = sortedRows.filter { r ->
             matchesFolderFilter(r, folderFilter) &&
                 (
                     q.isEmpty() ||
                         r.fileName.lowercase().contains(q) ||
                         r.folderPath.lowercase().contains(q)
                     )
+        }
+        val currentHref = state.lastWallpaperHref
+        if (currentHref.isNullOrBlank()) {
+            matched
+        } else {
+            val current = matched.filter { it.href == currentHref }
+            if (current.isEmpty()) matched else current + matched.filter { it.href != currentHref }
         }
     }
 
