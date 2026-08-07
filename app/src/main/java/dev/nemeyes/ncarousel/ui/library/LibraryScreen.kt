@@ -842,6 +842,7 @@ private fun LibraryThumbnail(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LibraryGridCell(
     ctx: android.content.Context,
