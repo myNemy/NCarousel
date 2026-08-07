@@ -73,9 +73,21 @@ class WallpaperRepository(private val context: Context) {
 
         try {
             applyBitmapToTargets(cropped, target)
+            snapshotAppliedWallpaperIds()
         } finally {
             cropped.recycle()
         }
+    }
+
+    /** Record system/lock wallpaper ids so OEM resync can no-op when nothing changed. */
+    private fun snapshotAppliedWallpaperIds() {
+        val systemId = runCatching {
+            wallpaperManager.getWallpaperId(WallpaperManager.FLAG_SYSTEM)
+        }.getOrDefault(0)
+        val lockId = runCatching {
+            wallpaperManager.getWallpaperId(WallpaperManager.FLAG_LOCK)
+        }.getOrDefault(0)
+        LastAppliedWallpaperStore.setAppliedWallpaperIds(app, systemId, lockId)
     }
 
     /**

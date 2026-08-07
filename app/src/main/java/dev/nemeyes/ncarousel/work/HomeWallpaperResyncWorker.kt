@@ -17,7 +17,8 @@ import kotlinx.coroutines.withContext
  * user chose [WallpaperTarget.HOME_AND_LOCK].
  *
  * Used after unlock and after a successful home+lock apply when launchers/OEMs override or clear
- * one of the surfaces. Does not schedule another resync (no loop).
+ * one of the surfaces. Skips [WallpaperManager.setBitmap] when wallpaper IDs still match the last
+ * apply (avoids a visible black flash). Does not schedule another resync (no loop).
  */
 class HomeWallpaperResyncWorker(
     context: Context,
@@ -28,6 +29,11 @@ class HomeWallpaperResyncWorker(
         val app = applicationContext
         val carousel = CarouselPreferences(app)
         if (carousel.wallpaperTarget != WallpaperTarget.HOME_AND_LOCK) {
+            return@withContext Result.success()
+        }
+
+        // Still our wallpapers → nothing to fix; rewriting would only flash black.
+        if (LastAppliedWallpaperStore.matchesCurrentWallpapers(app)) {
             return@withContext Result.success()
         }
 
