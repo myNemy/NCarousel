@@ -37,7 +37,7 @@
     <string name="auto_wallpaper_pause_title">Metti in pausa il cambio automatico</string>
     <string name="auto_wallpaper_pause_subtitle">Lascia attivo il modo automatico, ma non eseguire i cambi programmati finché non riprendi.</string>
     <string name="auto_wallpaper_unlock_title">Cambia sfondo allo sblocco</string>
-    <string name="auto_wallpaper_unlock_subtitle">Dopo lo sblocco, applica la prossima immagine (al massimo ogni %1$d min, o il tuo intervallo se più lungo). Usa la stessa regola «solo Wi‑Fi» del cambio automatico.</string>
+    <string name="auto_wallpaper_unlock_subtitle">Dopo lo sblocco, applica la prossima immagine (al massimo ogni %1$d minuti). Usa la cache se possibile; altrimenti scarica come un «successivo» manuale.</string>
     <string name="field_interval_minutes">Intervallo (minuti)</string>
     <string name="interval_supporting">Minimo %1$d minuto/i tra un cambio e il successivo.</string>
     <string name="save_carousel_options_btn">Salva opzioni e pianifica</string>

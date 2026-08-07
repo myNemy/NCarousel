@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.Button
+import androidx.glance.ButtonDefaults
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -14,7 +16,6 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -34,17 +35,13 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.work.ExistingWorkPolicy
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
-import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
-import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -196,18 +193,19 @@ private fun WidgetButton(
     modifier: GlanceModifier,
     action: Action,
 ) {
-    Text(
+    Button(
         text = label,
+        onClick = action,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = ColorProvider(Color(0xFF0082C9)),
+            contentColor = ColorProvider(Color.White),
+        ),
+        maxLines = 1,
         style = TextStyle(
-            color = ColorProvider(Color.White),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
         ),
-        modifier = modifier
-            .background(Color(0xFF0082C9))
-            .padding(vertical = 10.dp, horizontal = 4.dp)
-            .clickable(action),
     )
 }
 
@@ -217,10 +215,7 @@ class NextWallpaperWidgetAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters,
     ) {
-        withContext(Dispatchers.IO) {
-            NextWallpaperApplicator.applyNext(context)
-        }
-        NCarouselAppWidget().update(context, glanceId)
+        WidgetWallpaperActions.enqueue(context, WidgetWallpaperActions.ACTION_NEXT)
     }
 }
 
@@ -230,10 +225,7 @@ class PreviousWallpaperWidgetAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters,
     ) {
-        withContext(Dispatchers.IO) {
-            NextWallpaperApplicator.applyPrevious(context)
-        }
-        NCarouselAppWidget().update(context, glanceId)
+        WidgetWallpaperActions.enqueue(context, WidgetWallpaperActions.ACTION_PREVIOUS)
     }
 }
 
@@ -243,13 +235,6 @@ class PauseWallpaperWidgetAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters,
     ) {
-        withContext(Dispatchers.IO) {
-            val carousel = CarouselPreferences(context)
-            if (carousel.autoWallpaperEnabled) {
-                carousel.autoWallpaperPaused = !carousel.autoWallpaperPaused
-                WallpaperWorkScheduler.sync(context, ExistingWorkPolicy.REPLACE)
-            }
-        }
-        NCarouselAppWidget().update(context, glanceId)
+        WidgetWallpaperActions.enqueue(context, WidgetWallpaperActions.ACTION_PAUSE)
     }
 }

@@ -6,13 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import dev.nemeyes.ncarousel.work.HomeWallpaperResync
-import dev.nemeyes.ncarousel.work.UnlockWallpaperAdvance
+import dev.nemeyes.ncarousel.work.UnlockPresentReceiver
 
 /**
- * After unlock ([Intent.ACTION_USER_PRESENT]):
- * - re-applies home+lock when needed (OEM/launcher drift),
- * - optionally advances the carousel once (throttled) when the user enabled that setting.
+ * Dynamic [Intent.ACTION_USER_PRESENT] while the process is alive (complements the
+ * manifest [UnlockPresentReceiver] for cold starts).
  */
 class NCarouselApp : Application() {
 
@@ -24,8 +22,7 @@ class NCarouselApp : Application() {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 if (intent?.action != Intent.ACTION_USER_PRESENT) return
-                HomeWallpaperResync.schedule(context)
-                UnlockWallpaperAdvance.maybeSchedule(context)
+                UnlockPresentReceiver.onUserPresent(context)
             }
         }
         unlockReceiver = receiver

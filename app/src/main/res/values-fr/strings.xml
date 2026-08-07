@@ -35,7 +35,7 @@
     <string name="auto_wallpaper_pause_title">Pause automatic changes</string>
     <string name="auto_wallpaper_pause_subtitle">Keep automatic mode on, but skip scheduled wallpaper changes until you resume.</string>
     <string name="auto_wallpaper_unlock_title">Change wallpaper on unlock</string>
-    <string name="auto_wallpaper_unlock_subtitle">After unlocking, apply the next image (at most every %1$d min, or your interval if longer). Uses the same Wi‑Fi-only rule as automatic changes.</string>
+    <string name="auto_wallpaper_unlock_subtitle">After unlocking, apply the next image (at most every %1$d minutes). Uses cache when possible; may download like a manual next.</string>
     <string name="field_interval_minutes">Intervalle (minutes)</string>
     <string name="interval_supporting">Au moins %1$d minute(s) entre chaque changement de fond d\'écran.</string>
     <string name="save_carousel_options_btn">Enregistrer les options &amp; planifier</string>

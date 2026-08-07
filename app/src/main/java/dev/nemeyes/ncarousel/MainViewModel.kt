@@ -817,7 +817,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.status_downloading)) }
             try {
                 val err = withContext(Dispatchers.IO) {
-                    NextWallpaperApplicator.applyNext(
+                    NextWallpaperApplicator.applyNextSuspending(
                         getApplication(),
                         orderModeOverride = s.orderMode,
                         wallpaperTargetOverride = s.wallpaperTarget,
@@ -851,7 +851,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.status_downloading)) }
             try {
                 val err = withContext(Dispatchers.IO) {
-                    NextWallpaperApplicator.applyPrevious(
+                    NextWallpaperApplicator.applyPreviousSuspending(
                         getApplication(),
                         orderModeOverride = s.orderMode,
                         wallpaperTargetOverride = s.wallpaperTarget,

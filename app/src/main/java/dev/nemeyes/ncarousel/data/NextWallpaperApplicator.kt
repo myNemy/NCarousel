@@ -13,7 +13,9 @@ import kotlinx.coroutines.runBlocking
  * Applies the next / previous wallpaper like the in-app actions, for use from
  * [android.service.quicksettings.TileService] (no ViewModel / UI).
  *
- * Call from a background thread. All network/Room access runs inside one [runBlocking] (IO).
+ * Prefer [applyNextSuspending] / [applyPreviousSuspending] from coroutines (workers, Glance).
+ * The blocking [applyNext] / [applyPrevious] wrappers are for plain background threads only
+ * (QS tiles) — never call them from a coroutine already on [Dispatchers.IO] (deadlock risk).
  *
  * @param orderModeOverride if non-null, used instead of [CarouselPreferences.orderMode] (unsaved UI state).
  * @param wallpaperTargetOverride if non-null, used instead of [CarouselPreferences.wallpaperTarget].
@@ -27,7 +29,7 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride: WallpaperTarget? = null,
     ): String? =
         runBlocking(Dispatchers.IO) {
-            applyNextImpl(context.applicationContext, orderModeOverride, wallpaperTargetOverride)
+            applyNextSuspending(context, orderModeOverride, wallpaperTargetOverride)
         }
 
     fun applyPrevious(
@@ -36,8 +38,28 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride: WallpaperTarget? = null,
     ): String? =
         runBlocking(Dispatchers.IO) {
-            applyPreviousImpl(context.applicationContext, orderModeOverride, wallpaperTargetOverride)
+            applyPreviousSuspending(context, orderModeOverride, wallpaperTargetOverride)
         }
+
+    suspend fun applyNextSuspending(
+        context: Context,
+        orderModeOverride: OrderMode? = null,
+        wallpaperTargetOverride: WallpaperTarget? = null,
+    ): String? = applyNextImpl(
+        context.applicationContext,
+        orderModeOverride,
+        wallpaperTargetOverride,
+    )
+
+    suspend fun applyPreviousSuspending(
+        context: Context,
+        orderModeOverride: OrderMode? = null,
+        wallpaperTargetOverride: WallpaperTarget? = null,
+    ): String? = applyPreviousImpl(
+        context.applicationContext,
+        orderModeOverride,
+        wallpaperTargetOverride,
+    )
 
     /**
      * Applies a specific wallpaper [href].
