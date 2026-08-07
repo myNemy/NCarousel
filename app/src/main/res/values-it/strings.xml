@@ -82,6 +82,7 @@
     <string name="msg_refresh_list_first">Aggiorna prima l\'elenco immagini.</string>
     <string name="status_downloading">Download in corso…</string>
     <string name="msg_wallpaper_updated">Sfondo aggiornato.</string>
+    <string name="msg_wallpaper_updated_advanced">Sfondo aggiornato; il carousel continua da qui.</string>
     <string name="msg_active_account_changed">Account attivo aggiornato.</string>
     <string name="msg_account_removed">Account rimosso.</string>
 
@@ -196,6 +197,8 @@
     <string name="nc_library_current_wallpaper_short">Attuale</string>
     <string name="nc_library_preview">Anteprima</string>
     <string name="nc_library_preview_apply">Imposta come sfondo</string>
+    <string name="nc_library_preview_apply_only">Solo imposta sfondo</string>
+    <string name="nc_library_preview_apply_advance">Imposta e avanza carousel</string>
     <string name="nc_library_preview_close">Chiudi</string>
     <string name="nc_library_preview_current">Sfondo corrente</string>
     <string name="nc_library_filters_expand">Mostra ricerca e filtri</string>

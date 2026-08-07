@@ -15,6 +15,7 @@ data class ImageHrefWithMeta(
     val href: String,
     val fileId: Long?,
     val lastModified: String?,
+    val contentLengthBytes: Long?,
 )
 
 @Dao
@@ -26,7 +27,7 @@ interface ImageEntryDao {
     suspend fun listImageHrefsWithFileId(accountId: String): List<ImageHrefWithFileId>
 
     @Query(
-        "SELECT href, fileId, lastModified FROM image_entries " +
+        "SELECT href, fileId, lastModified, contentLengthBytes FROM image_entries " +
             "WHERE accountId = :accountId AND isCollection = 0 ORDER BY href ASC",
     )
     suspend fun listImageHrefsWithMeta(accountId: String): List<ImageHrefWithMeta>

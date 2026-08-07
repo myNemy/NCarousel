@@ -28,11 +28,10 @@ object NextWallpaperApplicator {
         }
 
     /**
-     * Applies a specific wallpaper [href] without advancing the carousel order state.
+     * Applies a specific wallpaper [href].
      *
-     * This is intended for “pick from library” UI: it downloads (or reuses cache) and sets the wallpaper,
-     * updates the "last applied" label and optional notification, but does not call [WallpaperPick.commitSuccess].
-     *
+     * @param advanceCarousel when true, updates [WallpaperOrderEngine] so the next automatic
+     * pick continues after [href] (sequential / shuffle / no-repeat / smart-recent).
      * @return `null` on success, or a short user-facing error message.
      */
     suspend fun applyHref(
@@ -40,7 +39,16 @@ object NextWallpaperApplicator {
         href: String,
         hrefsForProgress: List<String>,
         wallpaperTargetOverride: WallpaperTarget? = null,
-    ): String? = applyHrefImpl(context.applicationContext, href, hrefsForProgress, wallpaperTargetOverride)
+        orderModeOverride: OrderMode? = null,
+        advanceCarousel: Boolean = false,
+    ): String? = applyHrefImpl(
+        context.applicationContext,
+        href,
+        hrefsForProgress,
+        wallpaperTargetOverride,
+        orderModeOverride,
+        advanceCarousel,
+    )
 
     private suspend fun applyNextImpl(
         app: Context,
@@ -106,11 +114,14 @@ object NextWallpaperApplicator {
         href: String,
         hrefsForProgress: List<String>,
         wallpaperTargetOverride: WallpaperTarget?,
+        orderModeOverride: OrderMode?,
+        advanceCarousel: Boolean,
     ): String? {
         val active = NextcloudAccountStore(app).getActiveAccount()
             ?: return app.getString(R.string.qs_tile_err_no_account)
         val carousel = CarouselPreferences(app)
         val wallpaperTarget = wallpaperTargetOverride ?: carousel.wallpaperTarget
+        val mode = orderModeOverride ?: carousel.orderMode
 
         val http = HttpClientProvider.create(app)
         val client = NextcloudWebDavClient(
@@ -130,12 +141,20 @@ object NextWallpaperApplicator {
             b
         }
 
-        val sorted = hrefsForProgress.sorted()
+        val excluded = ExcludedHrefStore(app, active.id).read()
+        val activeHrefs = ExcludedHrefStore.filterActive(hrefsForProgress, excluded)
+        val progressHrefs = activeHrefs.ifEmpty { hrefsForProgress }
+        val sorted = progressHrefs.sorted()
         val idx0 = sorted.indexOf(href).takeIf { it >= 0 } ?: 0
-        val progress = PickProgress(current = (idx0 + 1).coerceAtLeast(1), total = sorted.size.coerceAtLeast(1))
+        var progress = PickProgress(current = (idx0 + 1).coerceAtLeast(1), total = sorted.size.coerceAtLeast(1))
 
         return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
             onSuccess = {
+                if (advanceCarousel && href in activeHrefs.toHashSet()) {
+                    WallpaperOrderEngine(app, active.id).advancePast(activeHrefs, mode, href)?.let {
+                        progress = it
+                    }
+                }
                 LastAppliedWallpaperStore.setHref(app, active.id, href)
                 val place = runCatching { ImageExifPlaceLabel.fromImageBytes(app, bytes, carousel).trim() }
                     .getOrNull()

@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Nejprve obnovte seznam obrázků.</string>
     <string name="status_downloading">Stahování…</string>
     <string name="msg_wallpaper_updated">Tapeta aktualizována.</string>
+    <string name="msg_wallpaper_updated_advanced">Tapeta aktualizována; karusel pokračuje odtud.</string>
     <string name="msg_active_account_changed">Aktivní účet aktualizován.</string>
     <string name="msg_account_removed">Účet odebrán.</string>
     <string name="exif_err_cannot_open">Nelze přečíst metadata EXIF z těchto dat.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Aktuální</string>
     <string name="nc_library_preview">Náhled</string>
     <string name="nc_library_preview_apply">Nastavit jako tapetu</string>
+    <string name="nc_library_preview_apply_only">Pouze nastavit tapetu</string>
+    <string name="nc_library_preview_apply_advance">Nastavit a posunout karusel</string>
     <string name="nc_library_preview_close">Zavřít</string>
     <string name="nc_library_preview_current">Aktuální tapeta</string>
     <string name="nc_library_filters_expand">Zobrazit hledání a filtry</string>

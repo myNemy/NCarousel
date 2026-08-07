@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Először frissítse a képlistát.</string>
     <string name="status_downloading">Letöltés…</string>
     <string name="msg_wallpaper_updated">Háttérkép frissítve.</string>
+    <string name="msg_wallpaper_updated_advanced">Háttérkép frissítve; a körforgás innen folytatódik.</string>
     <string name="msg_active_account_changed">Aktív fiók frissítve.</string>
     <string name="msg_account_removed">Fiók eltávolítva.</string>
     <string name="exif_err_cannot_open">Nem olvashatók az EXIF-metaadatok ezekből az adatokból.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Jelenlegi</string>
     <string name="nc_library_preview">Előnézet</string>
     <string name="nc_library_preview_apply">Beállítás háttérképként</string>
+    <string name="nc_library_preview_apply_only">Csak háttérkép beállítása</string>
+    <string name="nc_library_preview_apply_advance">Beállítás és körforgás léptetése</string>
     <string name="nc_library_preview_close">Bezárás</string>
     <string name="nc_library_preview_current">Jelenlegi háttérkép</string>
     <string name="nc_library_filters_expand">Keresés és szűrők megjelenítése</string>

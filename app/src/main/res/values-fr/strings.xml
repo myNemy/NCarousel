@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Actualisez d\'abord la liste d\'images.</string>
     <string name="status_downloading">Téléchargement…</string>
     <string name="msg_wallpaper_updated">Fond d\'écran mis à jour.</string>
+    <string name="msg_wallpaper_updated_advanced">Fond d’écran mis à jour ; le carrousel continue ici.</string>
     <string name="msg_active_account_changed">Compte actif mis à jour.</string>
     <string name="msg_account_removed">Compte supprimé.</string>
     <string name="exif_err_cannot_open">Impossible de lire les métadonnées EXIF à partir de ces données.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Actuel</string>
     <string name="nc_library_preview">Aperçu</string>
     <string name="nc_library_preview_apply">Définir comme fond d’écran</string>
+    <string name="nc_library_preview_apply_only">Définir le fond seulement</string>
+    <string name="nc_library_preview_apply_advance">Définir et avancer le carrousel</string>
     <string name="nc_library_preview_close">Fermer</string>
     <string name="nc_library_preview_current">Fond d’écran actuel</string>
     <string name="nc_library_filters_expand">Afficher recherche et filtres</string>

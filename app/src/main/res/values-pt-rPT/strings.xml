@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Atualize primeiro a lista de imagens.</string>
     <string name="status_downloading">A transferir…</string>
     <string name="msg_wallpaper_updated">Fundo do ecrã atualizado.</string>
+    <string name="msg_wallpaper_updated_advanced">Fundo atualizado; o carrossel continua daqui.</string>
     <string name="msg_active_account_changed">Conta ativa atualizada.</string>
     <string name="msg_account_removed">Conta removida.</string>
     <string name="exif_err_cannot_open">Não foi possível ler metadados EXIF destes dados.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Atual</string>
     <string name="nc_library_preview">Pré-visualização</string>
     <string name="nc_library_preview_apply">Definir como fundo</string>
+    <string name="nc_library_preview_apply_only">Apenas definir fundo</string>
+    <string name="nc_library_preview_apply_advance">Definir e avançar carrossel</string>
     <string name="nc_library_preview_close">Fechar</string>
     <string name="nc_library_preview_current">Fundo atual</string>
     <string name="nc_library_filters_expand">Mostrar pesquisa e filtros</string>

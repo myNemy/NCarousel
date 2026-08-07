@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Ανανεώστε πρώτα τη λίστα εικόνων.</string>
     <string name="status_downloading">Λήψη…</string>
     <string name="msg_wallpaper_updated">Η ταπετσαρία ενημερώθηκε.</string>
+    <string name="msg_wallpaper_updated_advanced">Η ταπετσαρία ενημερώθηκε· το καρουζέλ συνεχίζει από εδώ.</string>
     <string name="msg_active_account_changed">Ο ενεργός λογαριασμός ενημερώθηκε.</string>
     <string name="msg_account_removed">Ο λογαριασμός αφαιρέθηκε.</string>
     <string name="exif_err_cannot_open">Δεν ήταν δυνατή η ανάγνωση μεταδεδομένων EXIF από αυτά τα δεδομένα.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Τρέχουσα</string>
     <string name="nc_library_preview">Προεπισκόπηση</string>
     <string name="nc_library_preview_apply">Ορισμός ως ταπετσαρία</string>
+    <string name="nc_library_preview_apply_only">Μόνο ορισμός ταπετσαρίας</string>
+    <string name="nc_library_preview_apply_advance">Ορισμός και προώθηση καρουζέλ</string>
     <string name="nc_library_preview_close">Κλείσιμο</string>
     <string name="nc_library_preview_current">Τρέχουσα ταπετσαρία</string>
     <string name="nc_library_filters_expand">Εμφάνιση αναζήτησης και φίλτρων</string>

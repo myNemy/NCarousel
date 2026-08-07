@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel.data
 import android.content.Context
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccount
 import dev.nemeyes.ncarousel.data.db.ImageEntryEntity
+import dev.nemeyes.ncarousel.data.db.ImageHrefWithMeta
 import dev.nemeyes.ncarousel.data.db.NCarouselDb
 import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
@@ -27,11 +28,9 @@ class ImageSyncRepository(context: Context) {
             dao.listImageHrefsWithFileId(accountId).map { it.href to it.fileId }
         }
 
-    /** Cached list rows with WebDAV metadata used by Library sort (fileId, lastModified). */
-    suspend fun readCachedHrefsWithMeta(accountId: String): List<Triple<String, Long?, String?>> =
-        withContext(Dispatchers.IO) {
-            dao.listImageHrefsWithMeta(accountId).map { Triple(it.href, it.fileId, it.lastModified) }
-        }
+    /** Cached list rows with WebDAV metadata used by Library (fileId, lastModified, size). */
+    suspend fun readCachedHrefsWithMeta(accountId: String): List<ImageHrefWithMeta> =
+        withContext(Dispatchers.IO) { dao.listImageHrefsWithMeta(accountId) }
 
     suspend fun syncFromServer(
         http: okhttp3.OkHttpClient,

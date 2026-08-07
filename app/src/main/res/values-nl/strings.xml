@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Vernieuw eerst de afbeeldingslijst.</string>
     <string name="status_downloading">Downloaden…</string>
     <string name="msg_wallpaper_updated">Achtergrond bijgewerkt.</string>
+    <string name="msg_wallpaper_updated_advanced">Achtergrond bijgewerkt; carrousel gaat hier verder.</string>
     <string name="msg_active_account_changed">Actief account bijgewerkt.</string>
     <string name="msg_account_removed">Account verwijderd.</string>
     <string name="exif_err_cannot_open">Kon EXIF-metadata uit deze gegevens niet lezen.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Huidig</string>
     <string name="nc_library_preview">Voorbeeld</string>
     <string name="nc_library_preview_apply">Instellen als achtergrond</string>
+    <string name="nc_library_preview_apply_only">Alleen als achtergrond</string>
+    <string name="nc_library_preview_apply_advance">Instellen en carrousel doorzetten</string>
     <string name="nc_library_preview_close">Sluiten</string>
     <string name="nc_library_preview_current">Huidige achtergrond</string>
     <string name="nc_library_filters_expand">Zoeken en filters tonen</string>

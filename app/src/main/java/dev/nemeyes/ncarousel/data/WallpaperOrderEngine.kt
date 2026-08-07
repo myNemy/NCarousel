@@ -85,6 +85,80 @@ class WallpaperOrderEngine(context: Context, private val accountId: String) {
         }
     }
 
+    /**
+     * After a manual Library apply of [href], advance carousel state so the next automatic
+     * pick continues after that image (when the mode has a cursor / queue).
+     *
+     * @return progress for notifications, or null if [href] is not in [hrefs].
+     */
+    fun advancePast(hrefs: List<String>, mode: OrderMode, href: String): PickProgress? {
+        if (hrefs.isEmpty()) return null
+        val sorted = hrefs.sorted()
+        if (href !in sorted.toHashSet()) return null
+        return when (mode) {
+            OrderMode.SEQUENTIAL -> {
+                val i = sorted.indexOf(href)
+                if (i < 0) return null
+                prefs.edit().putInt(KEY_SEQ_INDEX, (i + 1) % sorted.size).apply()
+                PickProgress(current = i + 1, total = sorted.size)
+            }
+            OrderMode.SHUFFLE_ONCE -> {
+                val seed = prefs.getLong(KEY_SHUFFLE_SEED, Random.Default.nextLong()).also {
+                    if (!prefs.contains(KEY_SHUFFLE_SEED)) {
+                        prefs.edit().putLong(KEY_SHUFFLE_SEED, it).apply()
+                    }
+                }
+                val order = sorted.shuffled(Random(seed))
+                val i = order.indexOf(href)
+                if (i < 0) return null
+                prefs.edit().putInt(KEY_SHUFFLE_WALK, (i + 1) % order.size).apply()
+                PickProgress(current = i + 1, total = order.size)
+            }
+            OrderMode.RANDOM -> {
+                val i = sorted.indexOf(href)
+                PickProgress(current = (i + 1).coerceAtLeast(1), total = sorted.size)
+            }
+            OrderMode.SMART_RANDOM -> {
+                val lines = (listOf(href) + readLines(smartRecentFile)).distinct().take(SMART_WINDOW)
+                smartRecentFile.writeText(lines.joinToString("\n"), Charsets.UTF_8)
+                val i = sorted.indexOf(href)
+                PickProgress(current = (i + 1).coerceAtLeast(1), total = sorted.size)
+            }
+            OrderMode.NO_REPEAT_SHUFFLE -> advancePastNoRepeat(sorted, href)
+        }
+    }
+
+    private fun advancePastNoRepeat(sorted: List<String>, href: String): PickProgress? {
+        val sortedSet = sorted.toHashSet()
+        if (href !in sortedSet) return null
+        var remaining = readLines(noRepeatFile).filter { it in sortedSet }
+        var consumed = readLines(noRepeatConsumedFile).filter { it in sortedSet }
+        if (remaining.isEmpty() && consumed.isEmpty()) {
+            remaining = sorted.shuffled(Random.Default)
+            writeLines(noRepeatFile, remaining)
+            noRepeatConsumedFile.delete()
+            consumed = emptyList()
+        }
+        val full = (consumed + remaining).distinct().filter { it in sortedSet }
+        val i = full.indexOf(href)
+        if (i >= 0) {
+            consumed = full.take(i + 1)
+            remaining = full.drop(i + 1)
+        } else {
+            remaining = remaining.filter { it != href }
+            if (href !in consumed) consumed = consumed + href
+        }
+        writeLines(noRepeatConsumedFile, consumed)
+        if (remaining.isEmpty()) {
+            noRepeatFile.delete()
+        } else {
+            writeLines(noRepeatFile, remaining)
+        }
+        val total = full.size.coerceAtLeast(sorted.size).coerceAtLeast(1)
+        val current = if (i >= 0) i + 1 else consumed.size.coerceIn(1, total)
+        return PickProgress(current = current, total = total)
+    }
+
     private fun randomPick(sorted: List<String>): WallpaperPick {
         val href = sorted[Random.Default.nextInt(sorted.size)]
         val pos = sorted.binarySearch(href) + 1

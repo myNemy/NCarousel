@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Uppdatera bildlistan först.</string>
     <string name="status_downloading">Laddar ner…</string>
     <string name="msg_wallpaper_updated">Bakgrund uppdaterad.</string>
+    <string name="msg_wallpaper_updated_advanced">Bakgrund uppdaterad; karusellen fortsätter härifrån.</string>
     <string name="msg_active_account_changed">Aktivt konto uppdaterat.</string>
     <string name="msg_account_removed">Konto borttaget.</string>
     <string name="exif_err_cannot_open">Kunde inte läsa EXIF-metadata från dessa data.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Aktuell</string>
     <string name="nc_library_preview">Förhandsvisa</string>
     <string name="nc_library_preview_apply">Ange som bakgrund</string>
+    <string name="nc_library_preview_apply_only">Ange bara bakgrund</string>
+    <string name="nc_library_preview_apply_advance">Ange och flytta fram karusellen</string>
     <string name="nc_library_preview_close">Stäng</string>
     <string name="nc_library_preview_current">Aktuell bakgrund</string>
     <string name="nc_library_filters_expand">Visa sökning och filter</string>

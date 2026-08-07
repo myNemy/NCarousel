@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Najpierw odśwież listę obrazów.</string>
     <string name="status_downloading">Pobieranie…</string>
     <string name="msg_wallpaper_updated">Tapeta zaktualizowana.</string>
+    <string name="msg_wallpaper_updated_advanced">Tapeta zaktualizowana; karuzela kontynuuje stąd.</string>
     <string name="msg_active_account_changed">Aktywne konto zaktualizowane.</string>
     <string name="msg_account_removed">Konto usunięte.</string>
     <string name="exif_err_cannot_open">Nie można odczytać metadanych EXIF z tych danych.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Bieżąca</string>
     <string name="nc_library_preview">Podgląd</string>
     <string name="nc_library_preview_apply">Ustaw jako tapetę</string>
+    <string name="nc_library_preview_apply_only">Tylko ustaw tapetę</string>
+    <string name="nc_library_preview_apply_advance">Ustaw i przewiń karuzelę</string>
     <string name="nc_library_preview_close">Zamknij</string>
     <string name="nc_library_preview_current">Aktualna tapeta</string>
     <string name="nc_library_filters_expand">Pokaż wyszukiwanie i filtry</string>

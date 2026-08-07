@@ -86,6 +86,7 @@
     <string name="msg_refresh_list_first">Refresh the image list first.</string>
     <string name="status_downloading">Downloading…</string>
     <string name="msg_wallpaper_updated">Wallpaper updated.</string>
+    <string name="msg_wallpaper_updated_advanced">Wallpaper updated; carousel continues from here.</string>
     <string name="msg_active_account_changed">Active account updated.</string>
     <string name="msg_account_removed">Account removed.</string>
 
@@ -202,6 +203,8 @@
     <string name="nc_library_current_wallpaper_short">Current</string>
     <string name="nc_library_preview">Preview</string>
     <string name="nc_library_preview_apply">Set as wallpaper</string>
+    <string name="nc_library_preview_apply_only">Set wallpaper only</string>
+    <string name="nc_library_preview_apply_advance">Set and advance carousel</string>
     <string name="nc_library_preview_close">Close</string>
     <string name="nc_library_preview_current">Current wallpaper</string>
     <string name="nc_library_filters_expand">Show search and filters</string>

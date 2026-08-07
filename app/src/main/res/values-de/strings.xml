@@ -76,6 +76,7 @@
     <string name="msg_refresh_list_first">Zuerst die Bildliste aktualisieren.</string>
     <string name="status_downloading">Wird heruntergeladen…</string>
     <string name="msg_wallpaper_updated">Hintergrundbild aktualisiert.</string>
+    <string name="msg_wallpaper_updated_advanced">Hintergrundbild aktualisiert; Karussell macht hier weiter.</string>
     <string name="msg_active_account_changed">Aktives Konto aktualisiert.</string>
     <string name="msg_account_removed">Konto entfernt.</string>
     <string name="exif_err_cannot_open">EXIF-Metadaten aus diesen Daten konnten nicht gelesen werden.</string>
@@ -187,6 +188,8 @@
     <string name="nc_library_current_wallpaper_short">Aktuell</string>
     <string name="nc_library_preview">Vorschau</string>
     <string name="nc_library_preview_apply">Als Hintergrundbild festlegen</string>
+    <string name="nc_library_preview_apply_only">Nur als Hintergrund setzen</string>
+    <string name="nc_library_preview_apply_advance">Setzen und Karussell fortsetzen</string>
     <string name="nc_library_preview_close">Schließen</string>
     <string name="nc_library_preview_current">Aktuelles Hintergrundbild</string>
     <string name="nc_library_filters_expand">Suche und Filter anzeigen</string>

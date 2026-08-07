@@ -154,6 +154,36 @@ private fun previewUrl(serverBaseUrl: String, fileId: Long, sizePx: Int): String
 
 private fun clamp01(v: Float): Float = v.coerceIn(0f, 1f)
 
+/** Date / size / cached place for Library rows (empty parts omitted). */
+private fun libraryMetaParts(
+    context: android.content.Context,
+    epochMs: Long?,
+    sizeBytes: Long?,
+    placeLabel: String?,
+): List<String> {
+    val parts = ArrayList<String>(3)
+    if (epochMs != null && epochMs > 0L) {
+        parts += java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
+            .format(java.util.Date(epochMs))
+    }
+    if (sizeBytes != null && sizeBytes > 0L) {
+        parts += android.text.format.Formatter.formatShortFileSize(context, sizeBytes)
+    }
+    placeLabel?.trim()?.takeIf { it.isNotEmpty() }?.let { parts += it }
+    return parts
+}
+
+private fun librarySupportingLine(
+    context: android.content.Context,
+    folderOrStatus: String,
+    epochMs: Long?,
+    sizeBytes: Long?,
+    placeLabel: String?,
+): String {
+    val meta = libraryMetaParts(context, epochMs, sizeBytes, placeLabel)
+    return if (meta.isEmpty()) folderOrStatus else "$folderOrStatus · ${meta.joinToString(" · ")}"
+}
+
 /** Distinct folder paths under the remote folder, including ancestors; "" = files in remote root. */
 private fun libraryFolderOptions(rows: List<LibraryRow>): List<String> {
     val set = linkedSetOf<String>()
@@ -189,6 +219,7 @@ fun LibraryScreen(
     state: MainUiState,
     onRefreshList: () -> Unit,
     onApplyHref: (String) -> Unit,
+    onApplyHrefAndAdvance: (String) -> Unit,
     onToggleExclude: (String) -> Unit,
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
@@ -408,10 +439,15 @@ fun LibraryScreen(
                 target = target,
                 rootFolderLabel = rootFolderLabel,
                 onDismiss = { previewTarget = null },
-                onApply = {
+                onApplyOnly = {
                     val href = target.href
                     previewTarget = null
                     onApplyHref(href)
+                },
+                onApplyAndAdvance = {
+                    val href = target.href
+                    previewTarget = null
+                    onApplyHrefAndAdvance(href)
                 },
                 onToggleExclude = {
                     onToggleExclude(target.href)
@@ -691,18 +727,25 @@ fun LibraryScreen(
                                     },
                                     supportingContent = {
                                         val folder = row.folderPath.ifBlank { rootFolderLabel }
+                                        val status = when {
+                                            isExcluded && isCurrent ->
+                                                stringResource(R.string.nc_library_excluded_badge) + " · " +
+                                                    stringResource(R.string.nc_library_preview_current)
+                                            isExcluded -> stringResource(R.string.nc_library_excluded_badge)
+                                            isCurrent ->
+                                                stringResource(R.string.nc_library_current_in_folder, folder)
+                                            else -> folder
+                                        }
+                                        val place = state.lastWallpaperPlaceLabel?.takeIf { isCurrent }
                                         Text(
-                                            text = when {
-                                                isExcluded && isCurrent ->
-                                                    stringResource(R.string.nc_library_excluded_badge) + " · " +
-                                                        stringResource(R.string.nc_library_preview_current)
-                                                isExcluded ->
-                                                    stringResource(R.string.nc_library_excluded_badge) + " · " + folder
-                                                isCurrent ->
-                                                    stringResource(R.string.nc_library_current_in_folder, folder)
-                                                else -> folder
-                                            },
-                                            maxLines = 1,
+                                            text = librarySupportingLine(
+                                                context = ctx,
+                                                folderOrStatus = status,
+                                                epochMs = state.imageLastModifiedEpochMs[row.href],
+                                                sizeBytes = state.imageContentLengthBytes[row.href],
+                                                placeLabel = place,
+                                            ),
+                                            maxLines = 2,
                                             overflow = TextOverflow.Ellipsis,
                                             color = when {
                                                 isExcluded -> MaterialTheme.colorScheme.error
@@ -845,7 +888,8 @@ private fun LibraryFullscreenPreview(
     target: LibraryPreviewTarget,
     rootFolderLabel: String,
     onDismiss: () -> Unit,
-    onApply: () -> Unit,
+    onApplyOnly: () -> Unit,
+    onApplyAndAdvance: () -> Unit,
     onToggleExclude: () -> Unit,
 ) {
     val ctx = LocalContext.current
@@ -906,6 +950,21 @@ private fun LibraryFullscreenPreview(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        val metaLine = libraryMetaParts(
+                            context = ctx,
+                            epochMs = state.imageLastModifiedEpochMs[target.href],
+                            sizeBytes = state.imageContentLengthBytes[target.href],
+                            placeLabel = state.lastWallpaperPlaceLabel?.takeIf { isCurrent },
+                        ).joinToString(" · ")
+                        if (metaLine.isNotEmpty()) {
+                            Text(
+                                text = metaLine,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.6f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                     IconButton(onClick = onDismiss) {
                         Icon(
@@ -951,12 +1010,19 @@ private fun LibraryFullscreenPreview(
                             ),
                         )
                     }
-                    Button(
-                        onClick = onApply,
+                    OutlinedButton(
+                        onClick = onApplyOnly,
                         enabled = !state.busy,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(stringResource(R.string.nc_library_preview_apply))
+                        Text(stringResource(R.string.nc_library_preview_apply_only))
+                    }
+                    Button(
+                        onClick = onApplyAndAdvance,
+                        enabled = !state.busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.nc_library_preview_apply_advance))
                     }
                 }
             }
@@ -1100,6 +1166,21 @@ private fun LibraryGridCell(
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
+            val metaLine = libraryMetaParts(
+                context = ctx,
+                epochMs = state.imageLastModifiedEpochMs[row.href],
+                sizeBytes = state.imageContentLengthBytes[row.href],
+                placeLabel = state.lastWallpaperPlaceLabel?.takeIf { isCurrent },
+            ).joinToString(" · ")
+            if (metaLine.isNotEmpty()) {
+                Text(
+                    text = metaLine,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Row(
             modifier = Modifier

@@ -632,7 +632,8 @@ private fun AuthenticatedShell(
                                 modifier = Modifier.padding(inner),
                                 state = state,
                                 onRefreshList = viewModel::refreshImageList,
-                                onApplyHref = viewModel::applyWallpaperByHref,
+                                onApplyHref = { viewModel.applyWallpaperByHref(it, advanceCarousel = false) },
+                                onApplyHrefAndAdvance = { viewModel.applyWallpaperByHref(it, advanceCarousel = true) },
                                 onToggleExclude = viewModel::toggleExcludedFromCarousel,
                             )
                         }
