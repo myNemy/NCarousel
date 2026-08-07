@@ -13,8 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Re-applies [WallpaperTarget.HOME_ONLY] from the on-disk cache of the last NCarousel wallpaper.
- * Used after unlock and after a home+lock apply when launchers override the system wallpaper.
+ * Re-applies home **and** lock from the on-disk cache of the last NCarousel wallpaper when the
+ * user chose [WallpaperTarget.HOME_AND_LOCK].
+ *
+ * Used after unlock and after a successful home+lock apply when launchers/OEMs override or clear
+ * one of the surfaces. Does not schedule another resync (no loop).
  */
 class HomeWallpaperResyncWorker(
     context: Context,
@@ -27,15 +30,26 @@ class HomeWallpaperResyncWorker(
         if (carousel.wallpaperTarget != WallpaperTarget.HOME_AND_LOCK) {
             return@withContext Result.success()
         }
-        val account = NextcloudAccountStore(app).getActiveAccount()
+
+        val accounts = NextcloudAccountStore(app)
+        val accountId = inputData.getString(HomeWallpaperResync.KEY_ACCOUNT_ID)
+            ?.takeIf { it.isNotBlank() }
+            ?: accounts.getActiveAccount()?.id
             ?: return@withContext Result.success()
-        val href = LastAppliedWallpaperStore.getHref(app, account.id)
+        val account = accounts.getAccounts().firstOrNull { it.id == accountId }
+            ?: accounts.getActiveAccount()
             ?: return@withContext Result.success()
+
+        val href = inputData.getString(HomeWallpaperResync.KEY_HREF)
+            ?.takeIf { it.isNotBlank() }
+            ?: LastAppliedWallpaperStore.getHref(app, account.id)
+            ?: return@withContext Result.success()
+
         val bytes = WallpaperDiskCache(app, account.id, carousel.maxWallpaperDiskCacheMb).get(href)
             ?: return@withContext Result.success()
 
-        WallpaperRepository(app).setWallpaperFromImageBytes(bytes, WallpaperTarget.HOME_ONLY)
-        // Best-effort: launchers may still win; do not fail/retry aggressively.
+        // Re-apply both surfaces (not home-only): home-only rewrite clears/desyncs lock on some OEMs.
+        WallpaperRepository(app).setWallpaperFromImageBytes(bytes, WallpaperTarget.HOME_AND_LOCK)
         Result.success()
     }
 }

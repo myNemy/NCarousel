@@ -3,6 +3,7 @@ package dev.nemeyes.ncarousel.data
 import android.content.Context
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
+import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
@@ -99,6 +100,9 @@ object NextWallpaperApplicator {
                     .getOrNull()
                     ?.takeIf { it.isNotEmpty() }
                 LastAppliedWallpaperStore.setPlaceLabel(app, active.id, place)
+                if (wallpaperTarget == WallpaperTarget.HOME_AND_LOCK) {
+                    HomeWallpaperResync.schedule(app, active.id, href)
+                }
                 CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, pick.progress, placeLabel = place)
                 null
             },
@@ -160,6 +164,9 @@ object NextWallpaperApplicator {
                     .getOrNull()
                     ?.takeIf { it.isNotEmpty() }
                 LastAppliedWallpaperStore.setPlaceLabel(app, active.id, place)
+                if (wallpaperTarget == WallpaperTarget.HOME_AND_LOCK) {
+                    HomeWallpaperResync.schedule(app, active.id, href)
+                }
                 CarouselStatusNotifications.maybeShowWallpaperApplied(app, carousel, progress, placeLabel = place)
                 null
             },

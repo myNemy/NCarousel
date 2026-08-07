@@ -9,8 +9,9 @@ import android.os.Build
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 
 /**
- * Re-applies the home wallpaper after unlock when the user chose home + lock, so launchers that
- * override [android.app.WallpaperManager.FLAG_SYSTEM] do not leave lock and home out of sync.
+ * Re-applies home + lock wallpaper after unlock when the user chose home + lock, so launchers/OEMs
+ * that override [android.app.WallpaperManager.FLAG_SYSTEM] or clear lock do not leave surfaces
+ * out of sync.
  */
 class NCarouselApp : Application() {
 
@@ -22,6 +23,7 @@ class NCarouselApp : Application() {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 if (intent?.action != Intent.ACTION_USER_PRESENT) return
+                // Uses LastApplied store; delayed inside HomeWallpaperResync.
                 HomeWallpaperResync.schedule(context)
             }
         }

@@ -5,8 +5,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.graphics.Point
+import android.graphics.Rect
+import android.os.Build
+import android.view.WindowManager
 import androidx.exifinterface.media.ExifInterface
-import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import java.io.ByteArrayInputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -14,19 +17,25 @@ import kotlin.math.roundToInt
 /**
  * Applies a bitmap as system wallpaper using [WallpaperManager] (see
  * [WallpaperManager reference](https://developer.android.com/reference/android/app/WallpaperManager)).
+ *
+ * Sizing uses the physical display (not the launcher’s often 2× [desiredMinimumWidth] parallax
+ * canvas) so home and lock share the same framing across OEMs. Callers that use
+ * [WallpaperTarget.HOME_AND_LOCK] should schedule [dev.nemeyes.ncarousel.work.HomeWallpaperResync]
+ * *after* persisting the last-applied href.
  */
 class WallpaperRepository(private val context: Context) {
 
+    private val app = context.applicationContext
     private val wallpaperManager: WallpaperManager =
-        WallpaperManager.getInstance(context)
+        WallpaperManager.getInstance(app)
 
     fun isSupported(): Boolean = wallpaperManager.isWallpaperSupported
 
     fun isSetAllowed(): Boolean = wallpaperManager.isSetWallpaperAllowed
 
     /**
-     * Decodes [bytes] to a bitmap scaled toward the launcher-reported desired wallpaper size,
-     * applies JPEG/EXIF orientation when present, then sets wallpaper per [target] (home / lock / both).
+     * Decodes [bytes] to a bitmap scaled to the display size, applies JPEG/EXIF orientation when
+     * present, then sets wallpaper per [target] (home / lock / both).
      */
     fun setWallpaperFromImageBytes(
         bytes: ByteArray,
@@ -35,8 +44,7 @@ class WallpaperRepository(private val context: Context) {
         if (!isSupported()) error("Wallpaper not supported on this device")
         if (!isSetAllowed()) error("App is not allowed to set wallpaper (check device policy)")
 
-        val targetW = max(1, wallpaperManager.desiredMinimumWidth)
-        val targetH = max(1, wallpaperManager.desiredMinimumHeight)
+        val (targetW, targetH) = resolveTargetBitmapSize()
 
         val exifOrientation = readExifOrientation(bytes)
 
@@ -63,21 +71,85 @@ class WallpaperRepository(private val context: Context) {
         val cropped = centerCropToSize(upright, targetW, targetH)
         if (cropped != upright) upright.recycle()
 
-        val which = target.toWallpaperSetFlags()
+        try {
+            applyBitmapToTargets(cropped, target)
+        } finally {
+            cropped.recycle()
+        }
+    }
+
+    /**
+     * Prefer physical display size so home and lock match. [WallpaperManager.desiredMinimumWidth]
+     * is often ~2× screen width for scrolling wallpapers; using it alone misaligns lock on many
+     * OEMs. If desired is unset (≤0), platform docs also say to use the display size—never 1×1.
+     */
+    private fun resolveTargetBitmapSize(): Pair<Int, Int> {
+        val (sw, sh) = screenSizePx()
+        // Always cover the physical panel; do not expand to the parallax virtual canvas.
+        return max(1, sw) to max(1, sh)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun screenSizePx(): Pair<Int, Int> {
+        val wm = app.getSystemService(WindowManager::class.java) ?: return 1080 to 1920
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = wm.maximumWindowMetrics.bounds
+            max(1, bounds.width()) to max(1, bounds.height())
+        } else {
+            val size = Point()
+            wm.defaultDisplay.getRealSize(size)
+            max(1, size.x) to max(1, size.y)
+        }
+    }
+
+    private fun applyBitmapToTargets(cropped: Bitmap, target: WallpaperTarget) {
+        // Full-frame hint: OEMs otherwise invent different crops for home vs lock.
+        val hint = Rect(0, 0, cropped.width, cropped.height)
         when (target) {
             WallpaperTarget.HOME_AND_LOCK -> {
-                // Some launchers/OEM builds apply FLAG_SYSTEM and FLAG_LOCK inconsistently when
-                // combined; set home and lock in separate calls for a reliable match.
-                wallpaperManager.setBitmap(cropped, null, true, WallpaperManager.FLAG_SYSTEM)
-                wallpaperManager.setBitmap(cropped, null, true, WallpaperManager.FLAG_LOCK)
+                // Separate calls: combined FLAG_SYSTEM|FLAG_LOCK is unreliable on several OEMs.
+                // Home first, then lock last so a SYSTEM write cannot leave lock empty.
+                var homeOk = setWallpaperChecked(cropped, hint, WallpaperManager.FLAG_SYSTEM)
+                var lockOk = setWallpaperChecked(cropped, hint, WallpaperManager.FLAG_LOCK)
+                if (!homeOk) {
+                    homeOk = setWallpaperChecked(cropped, hint, WallpaperManager.FLAG_SYSTEM)
+                }
+                if (!lockOk) {
+                    lockOk = setWallpaperChecked(cropped, hint, WallpaperManager.FLAG_LOCK)
+                }
+                if (!lockOk || !homeOk) {
+                    // Last resort: combined flags (helps devices that only honor the pair).
+                    val both = setWallpaperChecked(
+                        cropped,
+                        hint,
+                        WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK,
+                    )
+                    if (!both && !homeOk && !lockOk) {
+                        error("Failed to set home and lock wallpaper")
+                    }
+                    if (!homeOk && !both) error("Failed to set home wallpaper")
+                    if (!lockOk && !both) error("Failed to set lock wallpaper")
+                }
             }
-            else -> wallpaperManager.setBitmap(cropped, null, true, which)
+            else -> {
+                val which = target.toWallpaperSetFlags()
+                if (!setWallpaperChecked(cropped, hint, which)) {
+                    if (!setWallpaperChecked(cropped, hint, which)) {
+                        error("Failed to set wallpaper")
+                    }
+                }
+            }
         }
-        if (target == WallpaperTarget.HOME_AND_LOCK) {
-            HomeWallpaperResync.schedule(context)
-        }
-        cropped.recycle()
     }
+
+    /**
+     * [WallpaperManager.setBitmap] return meaning varies by API/OEM (wallpaper id vs flag mask).
+     * Treat `0` as failure; any non-zero as success.
+     */
+    private fun setWallpaperChecked(bitmap: Bitmap, visibleCropHint: Rect, which: Int): Boolean =
+        runCatching {
+            wallpaperManager.setBitmap(bitmap, visibleCropHint, /* allowBackup = */ true, which) != 0
+        }.getOrDefault(false)
 
     private fun readExifOrientation(bytes: ByteArray): Int =
         runCatching {

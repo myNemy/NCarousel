@@ -15,6 +15,7 @@ import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperRepository
+import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -93,6 +94,10 @@ class ImageWallpaperWorker(
                         ImageExifPlaceLabel.fromImageBytes(applicationContext, bytes, carousel).trim()
                     }.getOrNull()?.takeIf { it.isNotEmpty() }
                     LastAppliedWallpaperStore.setPlaceLabel(applicationContext, active.id, place)
+                    if (target == WallpaperTarget.HOME_AND_LOCK) {
+                        // Pass href explicitly so resync cannot race an older LastApplied value.
+                        HomeWallpaperResync.schedule(applicationContext, active.id, href)
+                    }
                     CarouselStatusNotifications.maybeShowWallpaperApplied(
                         applicationContext,
                         carousel,
