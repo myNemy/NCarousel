@@ -179,6 +179,13 @@
     <string name="nc_library_search_placeholder">Map of bestandsnaam</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Huidige achtergrond</string>
+    <string name="nc_library_view_grid">Rasterweergave</string>
+    <string name="nc_library_view_list">Lijstweergave</string>
+    <string name="nc_library_current_wallpaper_short">Huidig</string>
+    <string name="nc_library_preview">Voorbeeld</string>
+    <string name="nc_library_preview_apply">Instellen als achtergrond</string>
+    <string name="nc_library_preview_close">Sluiten</string>
+    <string name="nc_library_preview_current">Huidige achtergrond</string>
     <string name="nc_about_title">Over</string>
     <string name="nc_about_version">Versie %1$s (%2$d)</string>
     <string name="nc_about_summary">Wisselende achtergronden van Nextcloud (WebDAV), met opties voor netwerk/batterij en handmatige keuze uit de Bibliotheek.</string>

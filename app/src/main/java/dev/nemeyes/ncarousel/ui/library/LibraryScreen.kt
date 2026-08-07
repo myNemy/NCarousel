@@ -1,16 +1,20 @@
 package dev.nemeyes.ncarousel.ui.library
 
 import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +24,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +36,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +48,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -56,11 +69,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
@@ -69,6 +87,16 @@ import kotlinx.coroutines.launch
 import okhttp3.Credentials
 
 private enum class LibrarySortMode { NAME, FOLDERS, DATE, INDEX }
+
+private enum class LibraryViewMode { LIST, GRID }
+
+private data class LibraryPreviewTarget(
+    val href: String,
+    val fileName: String,
+    val folderPath: String,
+    val carouselIndex: Int,
+    val fileId: Long?,
+)
 
 private data class LibraryRow(
     val href: String,
@@ -141,7 +169,7 @@ private fun matchesFolderFilter(row: LibraryRow, folderFilter: String?): Boolean
     return row.folderPath == folderFilter || row.folderPath.startsWith("$folderFilter/")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
     modifier: Modifier = Modifier,
@@ -152,14 +180,27 @@ fun LibraryScreen(
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
     var sortAscending by remember { mutableStateOf(true) }
+    var viewMode by remember { mutableStateOf(LibraryViewMode.LIST) }
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
     var folderMenuExpanded by remember { mutableStateOf(false) }
+    var previewTarget by remember { mutableStateOf<LibraryPreviewTarget?>(null) }
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
     val rootFolderLabel = stringResource(R.string.nc_library_root_folder)
     val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
+
+    fun openPreview(row: LibraryRow, carouselIndex: Int, fileId: Long?) {
+        previewTarget = LibraryPreviewTarget(
+            href = row.href,
+            fileName = row.fileName,
+            folderPath = row.folderPath,
+            carouselIndex = carouselIndex,
+            fileId = fileId,
+        )
+    }
 
     if (state.imageHrefs.isEmpty()) {
         PullToRefreshBox(
@@ -275,15 +316,26 @@ fun LibraryScreen(
     val showFastScroll = itemCount >= 80
     var dragActive by remember { mutableStateOf(false) }
     var fastScrollVisible by remember { mutableStateOf(false) }
-    val isListScrolling by remember { derivedStateOf { listState.isScrollInProgress } }
-    val progress01 by remember(itemCount) {
+    val isContentScrolling by remember {
         derivedStateOf {
-            if (itemCount <= 1) 0f else listState.firstVisibleItemIndex.toFloat() / (itemCount - 1).toFloat()
+            when (viewMode) {
+                LibraryViewMode.LIST -> listState.isScrollInProgress
+                LibraryViewMode.GRID -> gridState.isScrollInProgress
+            }
+        }
+    }
+    val progress01 by remember(itemCount, viewMode) {
+        derivedStateOf {
+            val index = when (viewMode) {
+                LibraryViewMode.LIST -> listState.firstVisibleItemIndex
+                LibraryViewMode.GRID -> gridState.firstVisibleItemIndex
+            }
+            if (itemCount <= 1) 0f else index.toFloat() / (itemCount - 1).toFloat()
         }
     }
 
-    LaunchedEffect(isListScrolling) {
-        if (isListScrolling) {
+    LaunchedEffect(isContentScrolling) {
+        if (isContentScrolling) {
             fastScrollVisible = true
         } else {
             kotlinx.coroutines.delay(900)
@@ -298,6 +350,19 @@ fun LibraryScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
+        previewTarget?.let { target ->
+            LibraryFullscreenPreview(
+                state = state,
+                target = target,
+                rootFolderLabel = rootFolderLabel,
+                onDismiss = { previewTarget = null },
+                onApply = {
+                    val href = target.href
+                    previewTarget = null
+                    onApplyHref(href)
+                },
+            )
+        }
         Surface(
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 2.dp,
@@ -309,11 +374,38 @@ fun LibraryScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.nc_library_count, itemCount),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.nc_library_count, itemCount),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = {
+                            viewMode = when (viewMode) {
+                                LibraryViewMode.LIST -> LibraryViewMode.GRID
+                                LibraryViewMode.GRID -> LibraryViewMode.LIST
+                            }
+                        },
+                    ) {
+                        when (viewMode) {
+                            LibraryViewMode.LIST ->
+                                Icon(
+                                    imageVector = Icons.Outlined.GridView,
+                                    contentDescription = stringResource(R.string.nc_library_view_grid),
+                                )
+                            LibraryViewMode.GRID ->
+                                Icon(
+                                    imageVector = Icons.Outlined.ViewList,
+                                    contentDescription = stringResource(R.string.nc_library_view_list),
+                                )
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -452,122 +544,402 @@ fun LibraryScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = listState,
-                ) {
-                itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
-                    val ctx = LocalContext.current
-                    val fileId = state.imageFileIds[row.href]
-                    val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
-                    val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
-                    val rowShape = RoundedCornerShape(12.dp)
-                    ListItem(
-                        leadingContent = {
-                            if (fileId != null && state.serverUrl.isNotBlank() && state.loginName.isNotBlank() && state.password.isNotBlank()) {
-                                val url = remember(state.serverUrl, fileId) { previewUrl(state.serverUrl, fileId, 192) }
-                                val model = remember(url, state.loginName, state.password) {
-                                    ImageRequest.Builder(ctx)
-                                        .data(url)
-                                        .addHeader("Authorization", Credentials.basic(state.loginName, state.password))
-                                        .build()
-                                }
-                                AsyncImage(
-                                    model = model,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .then(
-                                            if (isCurrent) {
-                                                Modifier
-                                                    .border(
-                                                        width = 2.dp,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        shape = RoundedCornerShape(8.dp),
-                                                    )
-                                                    .padding(2.dp)
-                                                    .clip(RoundedCornerShape(6.dp))
+                when (viewMode) {
+                    LibraryViewMode.LIST -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            state = listState,
+                        ) {
+                            itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
+                                val ctx = LocalContext.current
+                                val fileId = state.imageFileIds[row.href]
+                                val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
+                                val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
+                                val rowShape = RoundedCornerShape(12.dp)
+                                ListItem(
+                                    leadingContent = {
+                                        LibraryThumbnail(
+                                            ctx = ctx,
+                                            serverUrl = state.serverUrl,
+                                            loginName = state.loginName,
+                                            password = state.password,
+                                            fileId = fileId,
+                                            sizePx = 192,
+                                            modifier = Modifier.size(48.dp),
+                                            isCurrent = isCurrent,
+                                        )
+                                    },
+                                    headlineContent = {
+                                        Text(
+                                            text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            text = if (isCurrent) {
+                                                stringResource(
+                                                    R.string.nc_library_current_in_folder,
+                                                    row.folderPath.ifBlank { rootFolderLabel },
+                                                )
                                             } else {
-                                                Modifier.clip(RoundedCornerShape(8.dp))
+                                                row.folderPath.ifBlank { rootFolderLabel }
                                             },
-                                        ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = if (isCurrent) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                        )
+                                    },
+                                    trailingContent = {
+                                        IconButton(
+                                            onClick = { openPreview(row, carouselIndex, fileId) },
+                                            enabled = !state.busy,
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Visibility,
+                                                contentDescription = stringResource(R.string.nc_library_preview),
+                                            )
+                                        }
+                                    },
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = if (isCurrent) {
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        },
+                                    ),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                            .clip(rowShape)
+                                            .then(
+                                                if (isCurrent) {
+                                                    Modifier.border(
+                                                        width = 1.dp,
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                                                        shape = rowShape,
+                                                    )
+                                                } else {
+                                                    Modifier
+                                                },
+                                            )
+                                            .combinedClickable(
+                                                enabled = !state.busy,
+                                                onClick = { onApplyHref(row.href) },
+                                                onLongClick = { openPreview(row, carouselIndex, fileId) },
+                                            ),
                                 )
                             }
-                        },
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                text = if (isCurrent) {
-                                    stringResource(
-                                        R.string.nc_library_current_in_folder,
-                                        row.folderPath.ifBlank { rootFolderLabel },
-                                    )
-                                } else {
-                                    row.folderPath.ifBlank { rootFolderLabel }
-                                },
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = if (isCurrent) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                        },
-                        colors = ListItemDefaults.colors(
-                            containerColor = if (isCurrent) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            },
-                        ),
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                        }
+                    }
+                    LibraryViewMode.GRID -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 148.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            state = gridState,
+                            contentPadding = PaddingValues(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            gridItemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
+                                val ctx = LocalContext.current
+                                val fileId = state.imageFileIds[row.href]
+                                val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
+                                val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
+                                LibraryGridCell(
+                                    ctx = ctx,
+                                    state = state,
+                                    row = row,
+                                    fileId = fileId,
+                                    carouselIndex = carouselIndex,
+                                    isCurrent = isCurrent,
+                                    rootFolderLabel = rootFolderLabel,
+                                    enabled = !state.busy,
+                                    onClick = { onApplyHref(row.href) },
+                                    onLongClick = { openPreview(row, carouselIndex, fileId) },
+                                    onPreviewClick = { openPreview(row, carouselIndex, fileId) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (showFastScroll && (fastScrollVisible || dragActive)) {
+                    FastScroller(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                                .clip(rowShape)
-                                .then(
-                                    if (isCurrent) {
-                                        Modifier.border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
-                                            shape = rowShape,
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                                .clickable(enabled = !state.busy) { onApplyHref(row.href) },
+                                .fillMaxHeight()
+                                .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
+                                .align(Alignment.CenterEnd),
+                        progress01 = progress01,
+                        onJumpToProgress = { p ->
+                            val i = (clamp01(p) * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
+                            scope.launch {
+                                when (viewMode) {
+                                    LibraryViewMode.LIST -> listState.scrollToItem(i)
+                                    LibraryViewMode.GRID -> gridState.scrollToItem(i)
+                                }
+                            }
+                        },
+                        onDragActiveChange = { active ->
+                            dragActive = active
+                            if (active) fastScrollVisible = true
+                        },
                     )
                 }
-                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
+        }
+    }
+}
 
-            if (showFastScroll && (fastScrollVisible || dragActive)) {
-                FastScroller(
-                    modifier =
-                        Modifier
-                            .fillMaxHeight()
-                            .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
-                            .align(Alignment.CenterEnd),
-                    progress01 = progress01,
-                    onJumpToProgress = { p ->
-                        val i = (clamp01(p) * (itemCount - 1)).toInt().coerceIn(0, itemCount - 1)
-                        scope.launch { listState.scrollToItem(i) }
-                    },
-                    onDragActiveChange = { active ->
-                        dragActive = active
-                        if (active) fastScrollVisible = true
-                    },
-                )
+@Composable
+private fun LibraryFullscreenPreview(
+    state: MainUiState,
+    target: LibraryPreviewTarget,
+    rootFolderLabel: String,
+    onDismiss: () -> Unit,
+    onApply: () -> Unit,
+) {
+    val ctx = LocalContext.current
+    val isCurrent = state.lastWallpaperHref != null && target.href == state.lastWallpaperHref
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Black,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(
+                            text = stringResource(
+                                R.string.nc_library_indexed_name,
+                                target.carouselIndex,
+                                target.fileName,
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = if (isCurrent) {
+                                stringResource(R.string.nc_library_preview_current)
+                            } else {
+                                target.folderPath.ifBlank { rootFolderLabel }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.75f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(R.string.nc_library_preview_close),
+                            tint = Color.White,
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LibraryThumbnail(
+                        ctx = ctx,
+                        serverUrl = state.serverUrl,
+                        loginName = state.loginName,
+                        password = state.password,
+                        fileId = target.fileId,
+                        sizePx = 2048,
+                        modifier = Modifier.fillMaxSize(),
+                        isCurrent = false,
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                Button(
+                    onClick = onApply,
+                    enabled = !state.busy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                ) {
+                    Text(stringResource(R.string.nc_library_preview_apply))
+                }
             }
-            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryThumbnail(
+    ctx: android.content.Context,
+    serverUrl: String,
+    loginName: String,
+    password: String,
+    fileId: Long?,
+    sizePx: Int,
+    modifier: Modifier,
+    isCurrent: Boolean,
+    contentScale: ContentScale = ContentScale.Crop,
+) {
+    if (fileId == null || serverUrl.isBlank() || loginName.isBlank() || password.isBlank()) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        )
+        return
+    }
+    val url = remember(serverUrl, fileId, sizePx) { previewUrl(serverUrl, fileId, sizePx) }
+    val model = remember(url, loginName, password) {
+        ImageRequest.Builder(ctx)
+            .data(url)
+            .addHeader("Authorization", Credentials.basic(loginName, password))
+            .build()
+    }
+    AsyncImage(
+        model = model,
+        contentDescription = null,
+        contentScale = contentScale,
+        modifier = modifier.then(
+            if (isCurrent) {
+                Modifier
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                    .padding(2.dp)
+                    .clip(RoundedCornerShape(6.dp))
+            } else {
+                Modifier.clip(RoundedCornerShape(8.dp))
+            },
+        ),
+    )
+}
+
+@Composable
+private fun LibraryGridCell(
+    ctx: android.content.Context,
+    state: MainUiState,
+    row: LibraryRow,
+    fileId: Long?,
+    carouselIndex: Int,
+    isCurrent: Boolean,
+    rootFolderLabel: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onPreviewClick: () -> Unit,
+) {
+    val cellShape = RoundedCornerShape(12.dp)
+    Box(
+        modifier = Modifier
+            .clip(cellShape)
+            .then(
+                if (isCurrent) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = cellShape,
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .background(
+                if (isCurrent) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                },
+            )
+            .combinedClickable(
+                enabled = enabled,
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+    ) {
+        Column(
+            modifier = Modifier.padding(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            LibraryThumbnail(
+                ctx = ctx,
+                serverUrl = state.serverUrl,
+                loginName = state.loginName,
+                password = state.password,
+                fileId = fileId,
+                sizePx = 512,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+                isCurrent = false,
+            )
+            Text(
+                text = stringResource(R.string.nc_library_indexed_name, carouselIndex, row.fileName),
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start,
+            )
+            Text(
+                text = if (isCurrent) {
+                    stringResource(R.string.nc_library_current_wallpaper_short)
+                } else {
+                    row.folderPath.ifBlank { rootFolderLabel }
+                },
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (isCurrent) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        IconButton(
+            onClick = onPreviewClick,
+            enabled = enabled,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(2.dp)
+                .size(36.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Visibility,
+                contentDescription = stringResource(R.string.nc_library_preview),
+                tint = Color.White,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                    .padding(6.dp)
+                    .size(18.dp),
+            )
         }
     }
 }

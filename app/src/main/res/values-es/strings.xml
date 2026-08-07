@@ -179,6 +179,13 @@
     <string name="nc_library_search_placeholder">Carpeta o nombre de archivo</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
     <string name="nc_library_current_in_folder">%1$s · Fondo actual</string>
+    <string name="nc_library_view_grid">Ver como cuadrícula</string>
+    <string name="nc_library_view_list">Ver como lista</string>
+    <string name="nc_library_current_wallpaper_short">Actual</string>
+    <string name="nc_library_preview">Vista previa</string>
+    <string name="nc_library_preview_apply">Establecer como fondo</string>
+    <string name="nc_library_preview_close">Cerrar</string>
+    <string name="nc_library_preview_current">Fondo actual</string>
     <string name="nc_about_title">Acerca de</string>
     <string name="nc_about_version">Versión %1$s (%2$d)</string>
     <string name="nc_about_summary">Fondos rotativos desde Nextcloud (WebDAV), con opciones de red/batería y elección manual desde la Biblioteca.</string>
