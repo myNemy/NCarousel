@@ -1,0 +1,44 @@
+---
+description: Annotate completed work in PRIVATE_TODO after each change
+alwaysApply: true
+---
+
+# Annotate session changes (`PRIVATE_TODO.md`)
+
+`PRIVATE_TODO.md` is **gitignored** (local only). Keep it current whenever you finish a meaningful app/UI/workflow change in this session—do not wait for the user to ask.
+
+## When to update
+
+After completing (or explicitly cancelling) a task that affects the product or the local todo list:
+
+- Library / UI features and UX fixes
+- Persistenza preferenze, worker, sync, exclude, etc.
+- Store/F-Droid prep steps done on `dev` (icon, screenshots, …)
+- Mark items `[x]` or add short new bullets if the user asked for something not listed
+
+Skip trivial typo-only or pure refactor with no user-visible / process impact unless the user asked to track it.
+
+## What to write
+
+1. **Checkboxes:** set `- [x]` on finished items; leave remaining as `- [ ]`.
+2. **Summary line** under “Libreria” / relevant section (“Oggi: …”): refresh so it reflects current capabilities (do not leave stale descriptions).
+3. **New work:** if the user requests something new, add a bullet before or while implementing.
+4. **Fixes mid-feature** (e.g. “remember grid”, “preview button insets”): either tick a related item or add a short `- [x] **…**` under the right section so the session log stays accurate.
+5. **Language:** Italian is fine in this file (user-facing local notes).
+
+## What not to do
+
+- Do **not** commit `PRIVATE_TODO.md` (it stays gitignored).
+- Do **not** replace Fastlane/`versionCode` changelogs: those still follow `.cursor/rules/45-changelog-fdroid.mdc` on **publish** only.
+- Do **not** invent long essays; one clear line per change is enough.
+
+## Example
+
+After shipping “persist library grid + compact preview actions”:
+
+```markdown
+- [x] **Vista griglia** … (persistenza lista/griglia in prefs).
+- [x] **Anteprima fullscreen** …; azioni compatte sopra system insets.
+```
+
+And refresh the “Oggi: …” blurb so it mentions grid persistence / preview actions if those are now part of the baseline.
