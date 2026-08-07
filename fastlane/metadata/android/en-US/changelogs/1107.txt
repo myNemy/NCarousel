@@ -1,0 +1,5 @@
+- Add: Library grid/list, fullscreen preview, exclude from carousel, sort/filter, and apply-and-advance.
+- Add: F-Droid store icon and feature graphic.
+- Add: Wallpaper image fit modes — Fill (crop), Fit (letterbox), Center (no upscale).
+- Fix: More reliable home and lock wallpaper apply across OEMs (display-sized crop, retries, delayed resync).
+- Fix: Avoid black flash after apply when OEM resync is not needed.
