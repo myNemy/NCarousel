@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Establecer como fondo</string>
     <string name="nc_library_preview_close">Cerrar</string>
     <string name="nc_library_preview_current">Fondo actual</string>
+    <string name="nc_library_filters_expand">Mostrar búsqueda y filtros</string>
+    <string name="nc_library_filters_collapse">Ocultar búsqueda y filtros</string>
     <string name="nc_about_title">Acerca de</string>
     <string name="nc_about_version">Versión %1$s (%2$d)</string>
     <string name="nc_about_summary">Fondos rotativos desde Nextcloud (WebDAV), con opciones de red/batería y elección manual desde la Biblioteca.</string>

@@ -1,9 +1,15 @@
 package dev.nemeyes.ncarousel.ui.library
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -37,6 +43,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Visibility
@@ -186,6 +194,7 @@ fun LibraryScreen(
     var folderFilter by remember { mutableStateOf<String?>(null) }
     var folderMenuExpanded by remember { mutableStateOf(false) }
     var previewTarget by remember { mutableStateOf<LibraryPreviewTarget?>(null) }
+    var filtersExpanded by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
@@ -324,6 +333,16 @@ fun LibraryScreen(
             }
         }
     }
+    val scrolledAwayFromTop by remember {
+        derivedStateOf {
+            when (viewMode) {
+                LibraryViewMode.LIST ->
+                    listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 48
+                LibraryViewMode.GRID ->
+                    gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 48
+            }
+        }
+    }
     val progress01 by remember(itemCount, viewMode) {
         derivedStateOf {
             val index = when (viewMode) {
@@ -343,10 +362,36 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(scrolledAwayFromTop, isContentScrolling) {
+        if (scrolledAwayFromTop && isContentScrolling && filtersExpanded) {
+            filtersExpanded = false
+            folderMenuExpanded = false
+        }
+    }
+
     val folderFilterDisplay = when (val selected = folderFilter) {
         null -> allFoldersLabel
         "" -> rootFolderLabel
         else -> selected
+    }
+    val sortLabel = when (sortMode) {
+        LibrarySortMode.FOLDERS -> stringResource(R.string.nc_library_sort_folders)
+        LibrarySortMode.NAME -> stringResource(R.string.nc_library_sort_name)
+        LibrarySortMode.DATE -> stringResource(R.string.nc_library_sort_date)
+        LibrarySortMode.INDEX -> stringResource(R.string.nc_library_sort_index)
+    }
+    val filtersSummary = buildString {
+        append(sortLabel)
+        append(if (sortAscending) " ↑" else " ↓")
+        if (folderFilter != null) {
+            append(" · ")
+            append(folderFilterDisplay)
+        }
+        val q = query.trim()
+        if (q.isNotEmpty()) {
+            append(" · ")
+            append(q)
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -371,19 +416,60 @@ fun LibraryScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (!filtersExpanded) {
+                                Modifier.clickable {
+                                    filtersExpanded = true
+                                }
+                            } else {
+                                Modifier
+                            },
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = stringResource(R.string.nc_library_count, itemCount),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.nc_library_count, itemCount),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (!filtersExpanded) {
+                            Text(
+                                text = filtersSummary,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            filtersExpanded = !filtersExpanded
+                            if (!filtersExpanded) folderMenuExpanded = false
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (filtersExpanded) {
+                                Icons.Outlined.ExpandLess
+                            } else {
+                                Icons.Outlined.ExpandMore
+                            },
+                            contentDescription = stringResource(
+                                if (filtersExpanded) {
+                                    R.string.nc_library_filters_collapse
+                                } else {
+                                    R.string.nc_library_filters_expand
+                                },
+                            ),
+                        )
+                    }
                     IconButton(
                         onClick = {
                             viewMode = when (viewMode) {
@@ -406,134 +492,142 @@ fun LibraryScreen(
                         }
                     }
                 }
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.busy,
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.nc_library_search_label)) },
-                    placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Search,
-                            contentDescription = null,
-                        )
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(),
-                )
-                if (showFolderFilter) {
-                    ExposedDropdownMenuBox(
-                        expanded = folderMenuExpanded,
-                        onExpandedChange = { folderMenuExpanded = it },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
+                AnimatedVisibility(
+                    visible = filtersExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(
-                                    type = MenuAnchorType.PrimaryNotEditable,
-                                    enabled = !state.busy,
-                                ),
-                            readOnly = true,
-                            value = folderFilterDisplay,
-                            onValueChange = {},
-                            label = { Text(stringResource(R.string.nc_library_folder_filter_label)) },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = folderMenuExpanded)
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier.fillMaxWidth(),
                             enabled = !state.busy,
                             singleLine = true,
-                        )
-                        ExposedDropdownMenu(
-                            expanded = folderMenuExpanded,
-                            onDismissRequest = { folderMenuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(allFoldersLabel) },
-                                onClick = {
-                                    folderFilter = null
-                                    folderMenuExpanded = false
-                                },
-                            )
-                            folderOptions.forEach { path ->
-                                val label = path.ifBlank { rootFolderLabel }
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = label,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    },
-                                    onClick = {
-                                        folderFilter = path
-                                        folderMenuExpanded = false
-                                    },
+                            label = { Text(stringResource(R.string.nc_library_search_label)) },
+                            placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Search,
+                                    contentDescription = null,
                                 )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(),
+                        )
+                        if (showFolderFilter) {
+                            ExposedDropdownMenuBox(
+                                expanded = folderMenuExpanded,
+                                onExpandedChange = { folderMenuExpanded = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                OutlinedTextField(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(
+                                            type = MenuAnchorType.PrimaryNotEditable,
+                                            enabled = !state.busy,
+                                        ),
+                                    readOnly = true,
+                                    value = folderFilterDisplay,
+                                    onValueChange = {},
+                                    label = { Text(stringResource(R.string.nc_library_folder_filter_label)) },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = folderMenuExpanded)
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                    enabled = !state.busy,
+                                    singleLine = true,
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = folderMenuExpanded,
+                                    onDismissRequest = { folderMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(allFoldersLabel) },
+                                        onClick = {
+                                            folderFilter = null
+                                            folderMenuExpanded = false
+                                        },
+                                    )
+                                    folderOptions.forEach { path ->
+                                        val label = path.ifBlank { rootFolderLabel }
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = label,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            },
+                                            onClick = {
+                                                folderFilter = path
+                                                folderMenuExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
                             }
                         }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            val directionIcon = if (sortAscending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.FOLDERS,
+                                onClick = { selectSortMode(LibrarySortMode.FOLDERS) },
+                                label = { Text(stringResource(R.string.nc_library_sort_folders)) },
+                                leadingIcon = if (sortMode == LibrarySortMode.FOLDERS) {
+                                    {
+                                        Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.NAME,
+                                onClick = { selectSortMode(LibrarySortMode.NAME) },
+                                label = { Text(stringResource(R.string.nc_library_sort_name)) },
+                                leadingIcon = if (sortMode == LibrarySortMode.NAME) {
+                                    {
+                                        Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.DATE,
+                                onClick = { selectSortMode(LibrarySortMode.DATE) },
+                                label = { Text(stringResource(R.string.nc_library_sort_date)) },
+                                leadingIcon = if (sortMode == LibrarySortMode.DATE) {
+                                    {
+                                        Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
+                            FilterChip(
+                                selected = sortMode == LibrarySortMode.INDEX,
+                                onClick = { selectSortMode(LibrarySortMode.INDEX) },
+                                label = { Text(stringResource(R.string.nc_library_sort_index)) },
+                                leadingIcon = if (sortMode == LibrarySortMode.INDEX) {
+                                    {
+                                        Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
+                        }
                     }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val directionIcon = if (sortAscending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.FOLDERS,
-                        onClick = { selectSortMode(LibrarySortMode.FOLDERS) },
-                        label = { Text(stringResource(R.string.nc_library_sort_folders)) },
-                        leadingIcon = if (sortMode == LibrarySortMode.FOLDERS) {
-                            {
-                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        } else {
-                            null
-                        },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.NAME,
-                        onClick = { selectSortMode(LibrarySortMode.NAME) },
-                        label = { Text(stringResource(R.string.nc_library_sort_name)) },
-                        leadingIcon = if (sortMode == LibrarySortMode.NAME) {
-                            {
-                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        } else {
-                            null
-                        },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.DATE,
-                        onClick = { selectSortMode(LibrarySortMode.DATE) },
-                        label = { Text(stringResource(R.string.nc_library_sort_date)) },
-                        leadingIcon = if (sortMode == LibrarySortMode.DATE) {
-                            {
-                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        } else {
-                            null
-                        },
-                    )
-                    FilterChip(
-                        selected = sortMode == LibrarySortMode.INDEX,
-                        onClick = { selectSortMode(LibrarySortMode.INDEX) },
-                        label = { Text(stringResource(R.string.nc_library_sort_index)) },
-                        leadingIcon = if (sortMode == LibrarySortMode.INDEX) {
-                            {
-                                Icon(directionIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        } else {
-                            null
-                        },
-                    )
                 }
             }
         }

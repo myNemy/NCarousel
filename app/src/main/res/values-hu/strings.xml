@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Beállítás háttérképként</string>
     <string name="nc_library_preview_close">Bezárás</string>
     <string name="nc_library_preview_current">Jelenlegi háttérkép</string>
+    <string name="nc_library_filters_expand">Keresés és szűrők megjelenítése</string>
+    <string name="nc_library_filters_collapse">Keresés és szűrők elrejtése</string>
     <string name="nc_about_title">Névjegy</string>
     <string name="nc_about_version">Verzió %1$s (%2$d)</string>
     <string name="nc_about_summary">Forgó háttérképek a Nextcloudból (WebDAV), hálózat/akkumulátor beállításokkal és kézi választással a Könyvtárból.</string>

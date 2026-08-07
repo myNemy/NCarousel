@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Instellen als achtergrond</string>
     <string name="nc_library_preview_close">Sluiten</string>
     <string name="nc_library_preview_current">Huidige achtergrond</string>
+    <string name="nc_library_filters_expand">Zoeken en filters tonen</string>
+    <string name="nc_library_filters_collapse">Zoeken en filters verbergen</string>
     <string name="nc_about_title">Over</string>
     <string name="nc_about_version">Versie %1$s (%2$d)</string>
     <string name="nc_about_summary">Wisselende achtergronden van Nextcloud (WebDAV), met opties voor netwerk/batterij en handmatige keuze uit de Bibliotheek.</string>

@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Ustaw jako tapetę</string>
     <string name="nc_library_preview_close">Zamknij</string>
     <string name="nc_library_preview_current">Aktualna tapeta</string>
+    <string name="nc_library_filters_expand">Pokaż wyszukiwanie i filtry</string>
+    <string name="nc_library_filters_collapse">Ukryj wyszukiwanie i filtry</string>
     <string name="nc_about_title">O aplikacji</string>
     <string name="nc_about_version">Wersja %1$s (%2$d)</string>
     <string name="nc_about_summary">Rotujące tapety z Nextcloud (WebDAV), z opcjami sieci/baterii i ręcznym wyborem z Biblioteki.</string>

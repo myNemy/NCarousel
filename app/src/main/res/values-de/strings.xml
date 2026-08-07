@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Als Hintergrundbild festlegen</string>
     <string name="nc_library_preview_close">Schließen</string>
     <string name="nc_library_preview_current">Aktuelles Hintergrundbild</string>
+    <string name="nc_library_filters_expand">Suche und Filter anzeigen</string>
+    <string name="nc_library_filters_collapse">Suche und Filter ausblenden</string>
     <string name="nc_about_title">Über</string>
     <string name="nc_about_version">Version %1$s (%2$d)</string>
     <string name="nc_about_summary">Wechselnde Hintergrundbilder aus Nextcloud (WebDAV), mit Optionen für Netzwerk/Akku und manueller Auswahl aus der Bibliothek.</string>

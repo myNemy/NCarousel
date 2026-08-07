@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Définir comme fond d’écran</string>
     <string name="nc_library_preview_close">Fermer</string>
     <string name="nc_library_preview_current">Fond d’écran actuel</string>
+    <string name="nc_library_filters_expand">Afficher recherche et filtres</string>
+    <string name="nc_library_filters_collapse">Masquer recherche et filtres</string>
     <string name="nc_about_title">À propos</string>
     <string name="nc_about_version">Version %1$s (%2$d)</string>
     <string name="nc_about_summary">Fonds d\'écran rotatifs depuis Nextcloud (WebDAV), avec options réseau/batterie et choix manuel depuis la Bibliothèque.</string>

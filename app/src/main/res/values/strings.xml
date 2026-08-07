@@ -201,6 +201,8 @@
     <string name="nc_library_preview_apply">Set as wallpaper</string>
     <string name="nc_library_preview_close">Close</string>
     <string name="nc_library_preview_current">Current wallpaper</string>
+    <string name="nc_library_filters_expand">Show search and filters</string>
+    <string name="nc_library_filters_collapse">Hide search and filters</string>
     <string name="nc_about_title">About</string>
     <string name="nc_about_version">Version %1$s (%2$d)</string>
     <string name="nc_about_summary">Rotating wallpapers from Nextcloud (WebDAV), with options for network/battery and manual pick from the Library.</string>

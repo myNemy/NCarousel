@@ -195,6 +195,8 @@
     <string name="nc_library_preview_apply">Imposta come sfondo</string>
     <string name="nc_library_preview_close">Chiudi</string>
     <string name="nc_library_preview_current">Sfondo corrente</string>
+    <string name="nc_library_filters_expand">Mostra ricerca e filtri</string>
+    <string name="nc_library_filters_collapse">Nascondi ricerca e filtri</string>
     <string name="nc_about_title">Informazioni</string>
     <string name="nc_about_version">Versione %1$s (%2$d)</string>
     <string name="nc_about_summary">Sfondo a rotazione da Nextcloud (WebDAV), con opzioni per rete/batteria e scelta manuale dalla Libreria.</string>

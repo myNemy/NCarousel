@@ -186,6 +186,8 @@
     <string name="nc_library_preview_apply">Ορισμός ως ταπετσαρία</string>
     <string name="nc_library_preview_close">Κλείσιμο</string>
     <string name="nc_library_preview_current">Τρέχουσα ταπετσαρία</string>
+    <string name="nc_library_filters_expand">Εμφάνιση αναζήτησης και φίλτρων</string>
+    <string name="nc_library_filters_collapse">Απόκρυψη αναζήτησης και φίλτρων</string>
     <string name="nc_about_title">Σχετικά</string>
     <string name="nc_about_version">Έκδοση %1$s (%2$d)</string>
     <string name="nc_about_summary">Περιστρεφόμενες ταπετσαρίες από Nextcloud (WebDAV), με επιλογές δικτύου/μπαταρίας και χειροκίνητη επιλογή από τη Βιβλιοθήκη.</string>
