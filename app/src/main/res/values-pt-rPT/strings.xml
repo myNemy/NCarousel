@@ -178,6 +178,7 @@
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
+    <string name="nc_library_current_in_folder">%1$s · Papel de parede atual</string>
     <string name="nc_about_title">Acerca</string>
     <string name="nc_about_version">Versão %1$s (%2$d)</string>
     <string name="nc_about_summary">Fundos rotativos do Nextcloud (WebDAV), com opções de rede/bateria e escolha manual na Biblioteca.</string>

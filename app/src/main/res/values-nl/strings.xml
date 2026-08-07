@@ -178,6 +178,7 @@
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
     <string name="nc_library_indexed_name">%1$d. %2$s</string>
+    <string name="nc_library_current_in_folder">%1$s · Huidige achtergrond</string>
     <string name="nc_about_title">Over</string>
     <string name="nc_about_version">Versie %1$s (%2$d)</string>
     <string name="nc_about_summary">Wisselende achtergronden van Nextcloud (WebDAV), met opties voor netwerk/batterij en handmatige keuze uit de Bibliotheek.</string>

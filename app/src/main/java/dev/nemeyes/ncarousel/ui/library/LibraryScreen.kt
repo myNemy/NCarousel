@@ -1,6 +1,7 @@
 package dev.nemeyes.ncarousel.ui.library
 
 import android.net.Uri
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +31,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -348,6 +352,8 @@ fun LibraryScreen(
                 val ctx = LocalContext.current
                 val fileId = state.imageFileIds[row.href]
                 val carouselIndex = state.imageCarouselIndexByHref[row.href] ?: (idx + 1)
+                val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
+                val rowShape = RoundedCornerShape(12.dp)
                 ListItem(
                     leadingContent = {
                         if (fileId != null && state.serverUrl.isNotBlank() && state.loginName.isNotBlank() && state.password.isNotBlank()) {
@@ -361,7 +367,22 @@ fun LibraryScreen(
                             AsyncImage(
                                 model = model,
                                 contentDescription = null,
-                                modifier = Modifier.size(48.dp),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .then(
+                                        if (isCurrent) {
+                                            Modifier
+                                                .border(
+                                                    width = 2.dp,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    shape = RoundedCornerShape(8.dp),
+                                                )
+                                                .padding(2.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                        } else {
+                                            Modifier.clip(RoundedCornerShape(8.dp))
+                                        },
+                                    ),
                             )
                         }
                     },
@@ -374,16 +395,47 @@ fun LibraryScreen(
                     },
                     supportingContent = {
                         Text(
-                            text = row.folderPath.ifBlank { rootFolderLabel },
+                            text = if (isCurrent) {
+                                stringResource(
+                                    R.string.nc_library_current_in_folder,
+                                    row.folderPath.ifBlank { rootFolderLabel },
+                                )
+                            } else {
+                                row.folderPath.ifBlank { rootFolderLabel }
+                            },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            color = if (isCurrent) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                         )
                     },
+                    colors = ListItemDefaults.colors(
+                        containerColor = if (isCurrent) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        },
+                    ),
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clickable(enabled = !state.busy) { onApplyHref(row.href) }
-                            .padding(horizontal = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .clip(rowShape)
+                            .then(
+                                if (isCurrent) {
+                                    Modifier.border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                                        shape = rowShape,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            )
+                            .clickable(enabled = !state.busy) { onApplyHref(row.href) },
                 )
             }
             item { Spacer(modifier.height(8.dp)) }

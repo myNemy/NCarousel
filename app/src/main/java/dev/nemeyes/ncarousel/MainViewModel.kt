@@ -88,6 +88,8 @@ data class MainUiState(
     val batteryOptimizationConsentVisible: Boolean = false,
     /** Nome file (path remoto) dell’ultimo sfondo applicato da NCarousel per l’account attivo. */
     val lastWallpaperFileLabel: String? = null,
+    /** Full WebDAV href of the last wallpaper applied by NCarousel (Library highlight). */
+    val lastWallpaperHref: String? = null,
     /**
      * Folder path (Nextcloud "Files" relative) of the last wallpaper applied by NCarousel.
      * Example: `Photos/mie/italia/altro/`
@@ -532,6 +534,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update {
                 it.copy(
                     lastWallpaperFileLabel = null,
+                    lastWallpaperHref = null,
                     lastWallpaperFolderPath = null,
                     lastWallpaperPlaceLabel = null,
                     wallpaperExifLines = emptyList(),
@@ -549,6 +552,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = null,
+                        lastWallpaperHref = null,
                         lastWallpaperFolderPath = null,
                         lastWallpaperPlaceLabel = null,
                         wallpaperExifLines = emptyList(),
@@ -567,6 +571,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     folderOnly.isEmpty() -> null
                     else -> "$folderOnly/"
                 }
+            }
+            // Publish href early so Library can highlight while EXIF bytes load.
+            _ui.update {
+                it.copy(
+                    lastWallpaperFileLabel = fileLabel,
+                    lastWallpaperHref = href,
+                    lastWallpaperFolderPath = folderPath,
+                    lastWallpaperPlaceLabel = place,
+                )
             }
             val app = getApplication<Application>()
             val bytes = withContext(Dispatchers.IO) {
@@ -587,6 +600,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         wallpaperExifLoading = false,
                         lastWallpaperFileLabel = fileLabel,
+                        lastWallpaperHref = href,
                         lastWallpaperFolderPath = folderPath,
                         lastWallpaperPlaceLabel = place,
                         wallpaperExifLines = emptyList(),
@@ -602,6 +616,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     wallpaperExifLoading = false,
                     lastWallpaperFileLabel = fileLabel,
+                    lastWallpaperHref = href,
                     lastWallpaperFolderPath = folderPath,
                     lastWallpaperPlaceLabel = place,
                     wallpaperExifLines = lines,
@@ -854,6 +869,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 imageFileIds = emptyMap(),
                 imageLastModifiedEpochMs = emptyMap(),
                 imageCarouselIndexByHref = emptyMap(),
+                lastWallpaperFileLabel = null,
+                lastWallpaperHref = null,
+                lastWallpaperFolderPath = null,
+                lastWallpaperPlaceLabel = null,
+                wallpaperExifLines = emptyList(),
+                wallpaperExifError = null,
                 statusMessage = appStr(R.string.msg_active_account_changed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
@@ -861,6 +882,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         loadCachedListIfAny()
         scheduleThemingRefresh()
+        refreshWallpaperExif()
     }
 
     fun deleteAccount(id: String) {
@@ -884,6 +906,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 imageFileIds = emptyMap(),
                 imageLastModifiedEpochMs = emptyMap(),
                 imageCarouselIndexByHref = emptyMap(),
+                lastWallpaperFileLabel = null,
+                lastWallpaperHref = null,
+                lastWallpaperFolderPath = null,
+                lastWallpaperPlaceLabel = null,
+                wallpaperExifLines = emptyList(),
+                wallpaperExifError = null,
                 statusMessage = appStr(R.string.msg_account_removed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },
@@ -891,5 +919,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         loadCachedListIfAny()
         scheduleThemingRefresh()
+        refreshWallpaperExif()
     }
 }
