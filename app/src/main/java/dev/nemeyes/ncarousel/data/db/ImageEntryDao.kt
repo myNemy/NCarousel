@@ -11,6 +11,12 @@ data class ImageHrefWithFileId(
     val fileId: Long?,
 )
 
+data class ImageHrefWithMeta(
+    val href: String,
+    val fileId: Long?,
+    val lastModified: String?,
+)
+
 @Dao
 interface ImageEntryDao {
     @Query("SELECT href FROM image_entries WHERE accountId = :accountId AND isCollection = 0 ORDER BY href ASC")
@@ -18,6 +24,12 @@ interface ImageEntryDao {
 
     @Query("SELECT href, fileId FROM image_entries WHERE accountId = :accountId AND isCollection = 0 ORDER BY href ASC")
     suspend fun listImageHrefsWithFileId(accountId: String): List<ImageHrefWithFileId>
+
+    @Query(
+        "SELECT href, fileId, lastModified FROM image_entries " +
+            "WHERE accountId = :accountId AND isCollection = 0 ORDER BY href ASC",
+    )
+    suspend fun listImageHrefsWithMeta(accountId: String): List<ImageHrefWithMeta>
 
     @Query("SELECT COUNT(*) FROM image_entries WHERE accountId = :accountId AND isCollection = 0")
     fun observeImageCount(accountId: String): Flow<Int>

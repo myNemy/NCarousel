@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Érintse meg az alkalmazáshoz</string>
     <string name="nc_library_sort_folders">Mappák</string>
     <string name="nc_library_sort_name">Név</string>
+    <string name="nc_library_sort_date">Dátum</string>
+    <string name="nc_library_sort_index">Körhinta</string>
     <string name="nc_library_root_folder">(gyökérmappa)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

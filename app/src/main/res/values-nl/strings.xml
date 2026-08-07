@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Tik om toe te passen</string>
     <string name="nc_library_sort_folders">Mappen</string>
     <string name="nc_library_sort_name">Naam</string>
+    <string name="nc_library_sort_date">Datum</string>
+    <string name="nc_library_sort_index">Carrousel</string>
     <string name="nc_library_root_folder">(hoofdmap)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

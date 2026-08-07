@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Tippen zum Anwenden</string>
     <string name="nc_library_sort_folders">Ordner</string>
     <string name="nc_library_sort_name">Name</string>
+    <string name="nc_library_sort_date">Datum</string>
+    <string name="nc_library_sort_index">Karussell</string>
     <string name="nc_library_root_folder">(Stammordner)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

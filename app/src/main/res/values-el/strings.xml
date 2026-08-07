@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Πατήστε για εφαρμογή</string>
     <string name="nc_library_sort_folders">Φάκελοι</string>
     <string name="nc_library_sort_name">Όνομα</string>
+    <string name="nc_library_sort_date">Ημερομηνία</string>
+    <string name="nc_library_sort_index">Καρουζέλ</string>
     <string name="nc_library_root_folder">(ρίζα φακέλου)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

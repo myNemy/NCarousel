@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Atingeți pentru a aplica</string>
     <string name="nc_library_sort_folders">Dosare</string>
     <string name="nc_library_sort_name">Nume</string>
+    <string name="nc_library_sort_date">Dată</string>
+    <string name="nc_library_sort_index">Carusel</string>
     <string name="nc_library_root_folder">(dosar rădăcină)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

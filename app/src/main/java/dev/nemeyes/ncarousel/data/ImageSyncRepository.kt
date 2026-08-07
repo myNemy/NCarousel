@@ -27,6 +27,12 @@ class ImageSyncRepository(context: Context) {
             dao.listImageHrefsWithFileId(accountId).map { it.href to it.fileId }
         }
 
+    /** Cached list rows with WebDAV metadata used by Library sort (fileId, lastModified). */
+    suspend fun readCachedHrefsWithMeta(accountId: String): List<Triple<String, Long?, String?>> =
+        withContext(Dispatchers.IO) {
+            dao.listImageHrefsWithMeta(accountId).map { Triple(it.href, it.fileId, it.lastModified) }
+        }
+
     suspend fun syncFromServer(
         http: okhttp3.OkHttpClient,
         account: NextcloudAccount,

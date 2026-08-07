@@ -22,6 +22,7 @@ import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperTarget
+import dev.nemeyes.ncarousel.data.parseDavLastModifiedEpochMs
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
@@ -71,6 +72,8 @@ data class MainUiState(
     val imageHrefs: List<String> = emptyList(),
     /** href -> Nextcloud fileId (for server-side previews), when available. */
     val imageFileIds: Map<String, Long> = emptyMap(),
+    /** href -> WebDAV getlastmodified as epoch ms (Library date sort), when parseable. */
+    val imageLastModifiedEpochMs: Map<String, Long> = emptyMap(),
     /** href -> 1-based carousel index ("Image X of Y") matching notifications. */
     val imageCarouselIndexByHref: Map<String, Int> = emptyMap(),
     /** OCS capabilities.theming.color (hex); drives [NCarouselTheme]. */
@@ -662,8 +665,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val result = syncRepo.syncFromServer(http, accountForSync, maxBytes)
                 result.fold(
                     onSuccess = { list ->
-                        val hrefsWithId = syncRepo.readCachedHrefsWithFileId(active.id)
-                        val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                        val meta = syncRepo.readCachedHrefsWithMeta(active.id)
+                        val fileIds = meta.mapNotNull { (href, id, _) -> id?.let { href to it } }.toMap()
+                        val lastModified = meta.mapNotNull { (href, _, raw) ->
+                            parseDavLastModifiedEpochMs(raw)?.let { href to it }
+                        }.toMap()
                         val fp = WallpaperOrderEngine.libraryFingerprint(list)
                         WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
                         ImageListCache(getApplication(), active.id).write(list)
@@ -672,6 +678,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             it.copy(
                                 imageHrefs = list,
                                 imageFileIds = fileIds,
+                                imageLastModifiedEpochMs = lastModified,
                                 imageCarouselIndexByHref = carouselIndices,
                                 remoteFolder = folder,
                                 statusMessage = appStr(R.string.msg_images_found, list.size),
@@ -687,6 +694,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             it.copy(
                                 imageHrefs = emptyList(),
                                 imageFileIds = emptyMap(),
+                                imageLastModifiedEpochMs = emptyMap(),
                                 imageCarouselIndexByHref = emptyMap(),
                                 statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
                             )
@@ -783,27 +791,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val orderMode = _ui.value.orderMode
             val loaded = withContext(Dispatchers.IO) {
+                data class CachedLibrary(
+                    val hrefs: List<String>,
+                    val fileIds: Map<String, Long>,
+                    val lastModified: Map<String, Long>,
+                    val carouselIndices: Map<String, Int>,
+                )
+                fun metaMaps(hrefs: List<String>): Pair<Map<String, Long>, Map<String, Long>> {
+                    val meta = syncRepo.readCachedHrefsWithMeta(accountId)
+                    val fileIds = meta.mapNotNull { (href, id, _) -> id?.let { href to it } }.toMap()
+                    val lastModified = meta.mapNotNull { (href, _, raw) ->
+                        parseDavLastModifiedEpochMs(raw)?.let { href to it }
+                    }.toMap()
+                    val hrefSet = hrefs.toHashSet()
+                    return fileIds.filterKeys { it in hrefSet } to lastModified.filterKeys { it in hrefSet }
+                }
                 val legacy = ImageListCache(getApplication(), accountId).read()
                 if (legacy.isNotEmpty()) {
-                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(accountId)
-                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                    val (fileIds, lastModified) = metaMaps(legacy)
                     val carouselIndices = computeCarouselIndicesForActiveAccount(legacy, orderMode)
-                    Triple(legacy, fileIds, carouselIndices)
+                    CachedLibrary(legacy, fileIds, lastModified, carouselIndices)
                 } else {
-                    val hrefsWithId = syncRepo.readCachedHrefsWithFileId(accountId)
-                    val cached = hrefsWithId.map { it.first }
+                    val meta = syncRepo.readCachedHrefsWithMeta(accountId)
+                    val cached = meta.map { it.first }
                     if (cached.isEmpty()) return@withContext null
-                    val fileIds = hrefsWithId.mapNotNull { (href, id) -> id?.let { href to it } }.toMap()
+                    val fileIds = meta.mapNotNull { (href, id, _) -> id?.let { href to it } }.toMap()
+                    val lastModified = meta.mapNotNull { (href, _, raw) ->
+                        parseDavLastModifiedEpochMs(raw)?.let { href to it }
+                    }.toMap()
                     val carouselIndices = computeCarouselIndicesForActiveAccount(cached, orderMode)
-                    Triple(cached, fileIds, carouselIndices)
+                    CachedLibrary(cached, fileIds, lastModified, carouselIndices)
                 }
             } ?: return@launch
             if (activeOrNull()?.id != accountId) return@launch
             _ui.update {
                 it.copy(
-                    imageHrefs = loaded.first,
-                    imageFileIds = loaded.second,
-                    imageCarouselIndexByHref = loaded.third,
+                    imageHrefs = loaded.hrefs,
+                    imageFileIds = loaded.fileIds,
+                    imageLastModifiedEpochMs = loaded.lastModified,
+                    imageCarouselIndexByHref = loaded.carouselIndices,
                 )
             }
         }
@@ -826,6 +852,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
+                imageLastModifiedEpochMs = emptyMap(),
                 imageCarouselIndexByHref = emptyMap(),
                 statusMessage = appStr(R.string.msg_active_account_changed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
@@ -855,6 +882,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 remoteFolder = a?.remoteFolder.orEmpty(),
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
+                imageLastModifiedEpochMs = emptyMap(),
+                imageCarouselIndexByHref = emptyMap(),
                 statusMessage = appStr(R.string.msg_account_removed),
                 instanceThemingPrimaryHex = a?.let { carousel.getThemingPrimaryHex(it.id) },
                 instanceThemingOnPrimaryHex = a?.let { carousel.getThemingOnPrimaryHex(it.id) },

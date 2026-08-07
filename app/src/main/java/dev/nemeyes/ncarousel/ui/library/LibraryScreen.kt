@@ -3,11 +3,12 @@ package dev.nemeyes.ncarousel.ui.library
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -37,7 +37,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -50,7 +49,7 @@ import dev.nemeyes.ncarousel.R
 import okhttp3.Credentials
 import kotlinx.coroutines.launch
 
-private enum class LibrarySortMode { NAME, FOLDERS }
+private enum class LibrarySortMode { NAME, FOLDERS, DATE, INDEX }
 
 private data class LibraryRow(
     val href: String,
@@ -130,12 +129,26 @@ fun LibraryScreen(
     val rows = remember(state.imageHrefs, state.remoteFolder) {
         state.imageHrefs.map { toLibraryRow(it, state.remoteFolder) }
     }
-    val sortedRows = remember(rows, sortMode) {
+    val sortedRows = remember(rows, sortMode, state.imageLastModifiedEpochMs, state.imageCarouselIndexByHref) {
         when (sortMode) {
             LibrarySortMode.NAME ->
-                rows.sortedWith(compareBy<LibraryRow> { it.fileName.lowercase() }.thenBy { it.folderPath.lowercase() })
+                rows.sortedWith(
+                    compareBy<LibraryRow> { it.fileName.lowercase() }.thenBy { it.folderPath.lowercase() },
+                )
             LibrarySortMode.FOLDERS ->
-                rows.sortedWith(compareBy<LibraryRow> { it.folderPath.lowercase() }.thenBy { it.fileName.lowercase() })
+                rows.sortedWith(
+                    compareBy<LibraryRow> { it.folderPath.lowercase() }.thenBy { it.fileName.lowercase() },
+                )
+            LibrarySortMode.DATE ->
+                rows.sortedWith(
+                    compareByDescending<LibraryRow> { state.imageLastModifiedEpochMs[it.href] ?: Long.MIN_VALUE }
+                        .thenBy { it.fileName.lowercase() },
+                )
+            LibrarySortMode.INDEX ->
+                rows.sortedWith(
+                    compareBy<LibraryRow> { state.imageCarouselIndexByHref[it.href] ?: Int.MAX_VALUE }
+                        .thenBy { it.fileName.lowercase() },
+                )
         }
     }
     val filteredRows = remember(sortedRows, query) {
@@ -194,9 +207,11 @@ fun LibraryScreen(
                     placeholder = { Text(stringResource(R.string.nc_library_search_placeholder)) },
                 )
                 Spacer(Modifier.height(8.dp))
-                Row(
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
                     FilterChip(
                         selected = sortMode == LibrarySortMode.FOLDERS,
@@ -208,8 +223,18 @@ fun LibraryScreen(
                         onClick = { sortMode = LibrarySortMode.NAME },
                         label = { Text(stringResource(R.string.nc_library_sort_name)) },
                     )
+                    FilterChip(
+                        selected = sortMode == LibrarySortMode.DATE,
+                        onClick = { sortMode = LibrarySortMode.DATE },
+                        label = { Text(stringResource(R.string.nc_library_sort_date)) },
+                    )
+                    FilterChip(
+                        selected = sortMode == LibrarySortMode.INDEX,
+                        onClick = { sortMode = LibrarySortMode.INDEX },
+                        label = { Text(stringResource(R.string.nc_library_sort_index)) },
+                    )
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier.height(8.dp))
             }
             itemsIndexed(filteredRows, key = { _, row -> row.href }) { idx, row ->
                 val ctx = LocalContext.current

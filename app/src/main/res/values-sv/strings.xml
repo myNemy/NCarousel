@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Tryck för att använda</string>
     <string name="nc_library_sort_folders">Mappar</string>
     <string name="nc_library_sort_name">Namn</string>
+    <string name="nc_library_sort_date">Datum</string>
+    <string name="nc_library_sort_index">Karusell</string>
     <string name="nc_library_root_folder">(rotmapp)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

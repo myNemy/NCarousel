@@ -185,6 +185,8 @@
     <string name="nc_library_tap_to_apply">Tap to apply</string>
     <string name="nc_library_sort_folders">Folders</string>
     <string name="nc_library_sort_name">Name</string>
+    <string name="nc_library_sort_date">Date</string>
+    <string name="nc_library_sort_index">Carousel</string>
     <string name="nc_library_root_folder">(root folder)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>

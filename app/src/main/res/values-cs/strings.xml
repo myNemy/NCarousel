@@ -170,6 +170,8 @@
     <string name="nc_library_tap_to_apply">Klepnutím použít</string>
     <string name="nc_library_sort_folders">Složky</string>
     <string name="nc_library_sort_name">Název</string>
+    <string name="nc_library_sort_date">Datum</string>
+    <string name="nc_library_sort_index">Kolotoč</string>
     <string name="nc_library_root_folder">(kořenová složka)</string>
     <string name="nc_library_search_label">Search</string>
     <string name="nc_library_search_placeholder">Folder or filename</string>
