@@ -246,23 +246,44 @@ class WallpaperRepository(private val context: Context) {
         return out
     }
 
-    /** Scales uniformly to fit inside [dstW]×[dstH]; letterboxes with black. */
+    /** Scales uniformly to fit inside [dstW]×[dstH]; fills letterbox with a blurred cover of [src]. */
     private fun fitCenterToSize(src: Bitmap, dstW: Int, dstH: Int): Bitmap {
         if (src.width <= 0 || src.height <= 0) return src
         val scale = min(dstW.toFloat() / src.width, dstH.toFloat() / src.height)
         val sw = max(1, (src.width * scale).roundToInt()).coerceAtMost(dstW)
         val sh = max(1, (src.height * scale).roundToInt()).coerceAtMost(dstH)
         val scaled = Bitmap.createScaledBitmap(src, sw, sh, true)
+
+        val coverBg = centerCropToSize(src, dstW, dstH)
+        val blurredBg = softBlurByDownsample(coverBg)
+        if (blurredBg != coverBg) coverBg.recycle()
+
         val out = Bitmap.createBitmap(dstW, dstH, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(out)
-        canvas.drawColor(Color.BLACK)
+        canvas.drawBitmap(blurredBg, 0f, 0f, null)
+        // Slight dim so the sharp foreground reads clearly on OEM zoomed lock/home.
+        canvas.drawColor(Color.argb(64, 0, 0, 0))
         canvas.drawBitmap(
             scaled,
             ((dstW - sw) / 2f),
             ((dstH - sh) / 2f),
             null,
         )
+        blurredBg.recycle()
         if (scaled != src) scaled.recycle()
+        return out
+    }
+
+    /**
+     * Cheap soft blur without RenderScript: downscale then upscale with filtering.
+     * Good enough for wallpaper letterbox edges on all API levels we support (min 26).
+     */
+    private fun softBlurByDownsample(src: Bitmap, factor: Int = 16): Bitmap {
+        val w = max(1, src.width / factor)
+        val h = max(1, src.height / factor)
+        val small = Bitmap.createScaledBitmap(src, w, h, true)
+        val out = Bitmap.createScaledBitmap(small, src.width, src.height, true)
+        if (small != src) small.recycle()
         return out
     }
 

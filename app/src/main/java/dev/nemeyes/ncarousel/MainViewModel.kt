@@ -14,6 +14,7 @@ import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifSummary
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
+import dev.nemeyes.ncarousel.data.AppliedWallpaperHistory
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
 import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
@@ -29,6 +30,7 @@ import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
+import dev.nemeyes.ncarousel.widget.NCarouselAppWidget
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +62,9 @@ data class MainUiState(
     val maxImageSizeMb: Int = 0,
     val maxWallpaperDiskCacheMb: Int = WallpaperDiskCache.DEFAULT_MAX_MB,
     val autoWallpaperEnabled: Boolean = false,
+    val autoWallpaperUnmeteredOnly: Boolean = false,
+    val autoWallpaperPaused: Boolean = false,
+    val advanceWallpaperOnUnlock: Boolean = false,
     val autoIntervalMinutes: Int = 30,
     val showStatusNotifications: Boolean = true,
     val notifyWallpaperApplied: Boolean = true,
@@ -170,6 +175,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 maxImageSizeMb = carousel.maxImageSizeMb,
                 maxWallpaperDiskCacheMb = carousel.maxWallpaperDiskCacheMb,
                 autoWallpaperEnabled = carousel.autoWallpaperEnabled,
+                autoWallpaperUnmeteredOnly = carousel.autoWallpaperUnmeteredOnly,
+                autoWallpaperPaused = carousel.autoWallpaperPaused,
+                advanceWallpaperOnUnlock = carousel.advanceWallpaperOnUnlock,
                 autoIntervalMinutes = carousel.autoIntervalMinutes,
                 showStatusNotifications = carousel.showStatusNotifications,
                 notifyWallpaperApplied = carousel.notifyWallpaperApplied,
@@ -325,6 +333,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ) ?: WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
         )
     }
+
+    fun updateAutoWallpaperUnmeteredOnly(value: Boolean) =
+        _ui.update { it.copy(autoWallpaperUnmeteredOnly = value) }
+
+    fun setAutoWallpaperPaused(paused: Boolean) {
+        carousel.autoWallpaperPaused = paused
+        _ui.update { it.copy(autoWallpaperPaused = paused) }
+        WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { NCarouselAppWidget.updateAll(getApplication()) }
+        }
+    }
+
+    fun updateAdvanceWallpaperOnUnlock(value: Boolean) =
+        _ui.update { it.copy(advanceWallpaperOnUnlock = value) }
 
     fun updateShowStatusNotifications(enabled: Boolean) {
         carousel.showStatusNotifications = enabled
@@ -503,6 +526,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         carousel.maxImageSizeMb = s.maxImageSizeMb
         carousel.maxWallpaperDiskCacheMb = s.maxWallpaperDiskCacheMb
         carousel.autoWallpaperEnabled = s.autoWallpaperEnabled
+        carousel.autoWallpaperUnmeteredOnly = s.autoWallpaperUnmeteredOnly
+        carousel.autoWallpaperPaused = s.autoWallpaperPaused
+        carousel.advanceWallpaperOnUnlock = s.advanceWallpaperOnUnlock
         carousel.autoIntervalMinutes = s.autoIntervalMinutes.coerceAtLeast(WallpaperWorkScheduler.MIN_INTERVAL_MINUTES)
         carousel.showStatusNotifications = s.showStatusNotifications
         carousel.notifyWallpaperApplied = s.notifyWallpaperApplied
@@ -814,6 +840,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun applyPreviousWallpaper() {
+        val s = _ui.value
+        if (activeOrNull() == null) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
+            return
+        }
+        viewModelScope.launch {
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_downloading)) }
+            try {
+                val err = withContext(Dispatchers.IO) {
+                    NextWallpaperApplicator.applyPrevious(
+                        getApplication(),
+                        orderModeOverride = s.orderMode,
+                        wallpaperTargetOverride = s.wallpaperTarget,
+                    )
+                }
+                _ui.update {
+                    it.copy(
+                        statusMessage = when {
+                            err == null -> appStr(R.string.msg_wallpaper_updated)
+                            else -> err
+                        },
+                    )
+                }
+                if (err == null) {
+                    refreshWallpaperExif()
+                }
+            } finally {
+                endBusy(token)
+            }
+        }
+    }
+
     fun applyWallpaperByHref(href: String, advanceCarousel: Boolean = false) {
         val s = _ui.value
         if (href.isBlank()) return
@@ -1001,6 +1061,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         clearBusyState()
         carousel.clearThemingForAccount(id)
         LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
+        AppliedWallpaperHistory.clear(getApplication(), id)
         ExcludedHrefStore(getApplication(), id).clear()
         ImageListCache(getApplication(), id).clear()
         accounts.delete(id)

@@ -494,6 +494,8 @@ private fun AuthenticatedShell(
                                 onTest = viewModel::testConnection,
                                 onRefreshList = viewModel::refreshImageList,
                                 onApplyNext = viewModel::applyNextWallpaper,
+                                onApplyPrevious = viewModel::applyPreviousWallpaper,
+                                onTogglePauseAuto = viewModel::setAutoWallpaperPaused,
                                 onRefreshWallpaperExif = viewModel::refreshWallpaperExif,
                             )
                         }
@@ -551,6 +553,9 @@ private fun AuthenticatedShell(
                                 onMaxDiskCacheMbChange = viewModel::updateMaxWallpaperDiskCacheMbText,
                                 onClearWallpaperDiskCache = viewModel::clearWallpaperDiskCache,
                                 onAutoChange = viewModel::updateAutoWallpaperEnabled,
+                                onAutoUnmeteredOnlyChange = viewModel::updateAutoWallpaperUnmeteredOnly,
+                                onAutoPausedChange = viewModel::setAutoWallpaperPaused,
+                                onAdvanceOnUnlockChange = viewModel::updateAdvanceWallpaperOnUnlock,
                                 onIntervalChange = viewModel::updateAutoIntervalMinutesText,
                                 onShowStatusNotificationsChange = onNotifyChange,
                                 onNotifyWallpaperAppliedChange = viewModel::updateNotifyWallpaperApplied,

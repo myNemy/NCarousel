@@ -7,11 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
+import dev.nemeyes.ncarousel.work.UnlockWallpaperAdvance
 
 /**
- * Re-applies home + lock wallpaper after unlock when the user chose home + lock, so launchers/OEMs
- * that override [android.app.WallpaperManager.FLAG_SYSTEM] or clear lock do not leave surfaces
- * out of sync.
+ * After unlock ([Intent.ACTION_USER_PRESENT]):
+ * - re-applies home+lock when needed (OEM/launcher drift),
+ * - optionally advances the carousel once (throttled) when the user enabled that setting.
  */
 class NCarouselApp : Application() {
 
@@ -23,8 +24,8 @@ class NCarouselApp : Application() {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 if (intent?.action != Intent.ACTION_USER_PRESENT) return
-                // Uses LastApplied store; delayed inside HomeWallpaperResync.
                 HomeWallpaperResync.schedule(context)
+                UnlockWallpaperAdvance.maybeSchedule(context)
             }
         }
         unlockReceiver = receiver

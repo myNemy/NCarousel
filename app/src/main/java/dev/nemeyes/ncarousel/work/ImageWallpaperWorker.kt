@@ -10,6 +10,7 @@ import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifPlaceLabel
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
+import dev.nemeyes.ncarousel.data.AppliedWallpaperHistory
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
@@ -17,6 +18,7 @@ import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperRepository
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
+import dev.nemeyes.ncarousel.widget.NCarouselAppWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -33,6 +35,7 @@ class ImageWallpaperWorker(
         try {
             val carousel = CarouselPreferences(applicationContext)
             if (!carousel.autoWallpaperEnabled) return@withContext Result.success()
+            if (carousel.autoWallpaperPaused) return@withContext Result.success()
 
             val accounts = NextcloudAccountStore(applicationContext)
             val active = accounts.getActiveAccount() ?: return@withContext Result.failure()
@@ -90,6 +93,7 @@ class ImageWallpaperWorker(
                 onSuccess = {
                     pick.commitSuccess()
                     LastAppliedWallpaperStore.setHref(applicationContext, active.id, href)
+                    AppliedWallpaperHistory.push(applicationContext, active.id, href)
                     val place = runCatching {
                         ImageExifPlaceLabel.fromImageBytes(applicationContext, bytes, carousel).trim()
                     }.getOrNull()?.takeIf { it.isNotEmpty() }
@@ -104,6 +108,9 @@ class ImageWallpaperWorker(
                         pick.progress,
                         placeLabel = place,
                     )
+                    runCatching {
+                        NCarouselAppWidget.updateAll(applicationContext)
+                    }
                     Result.success()
                 },
                 onFailure = { Result.failure() },
@@ -111,7 +118,7 @@ class ImageWallpaperWorker(
         } finally {
             val c = CarouselPreferences(applicationContext)
             val active = NextcloudAccountStore(applicationContext).getActiveAccount()
-            if (c.autoWallpaperEnabled && active != null) {
+            if (c.autoWallpaperEnabled && !c.autoWallpaperPaused && active != null) {
                 WallpaperWorkScheduler.scheduleNext(applicationContext)
             }
         }

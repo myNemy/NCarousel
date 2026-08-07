@@ -155,6 +155,10 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
+    // Home screen widget (Next / Previous / Pause)
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
     // Nextcloud Login Flow v2: open default browser / custom tabs
     implementation("androidx.browser:browser:1.8.0")
 

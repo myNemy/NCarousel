@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit
  * (minimum [MIN_INTERVAL_MINUTES]).
  *
  * [sync] uses [ExistingWorkPolicy.KEEP] by default so reopening the app does not reset the delay; pass
- * [ExistingWorkPolicy.REPLACE] after changing interval or account so the new schedule applies immediately.
+ * [ExistingWorkPolicy.REPLACE] after changing interval, network constraint, or account so the new
+ * schedule applies immediately.
  */
 object WallpaperWorkScheduler {
 
@@ -39,7 +40,7 @@ object WallpaperWorkScheduler {
         wm.cancelUniqueWork(LEGACY_PERIODIC_UNIQUE)
 
         val carousel = CarouselPreferences(app)
-        if (!carousel.autoWallpaperEnabled) {
+        if (!carousel.autoWallpaperEnabled || carousel.autoWallpaperPaused) {
             wm.cancelUniqueWork(UNIQUE_CHAIN)
             return
         }
@@ -55,14 +56,19 @@ object WallpaperWorkScheduler {
     ) {
         val app = context.applicationContext
         val carousel = CarouselPreferences(app)
-        if (!carousel.autoWallpaperEnabled) return
+        if (!carousel.autoWallpaperEnabled || carousel.autoWallpaperPaused) return
 
         val active = NextcloudAccountStore(app).getActiveAccount()
         if (active == null) return
 
         val minutes = carousel.autoIntervalMinutes.coerceAtLeast(MIN_INTERVAL_MINUTES).toLong()
+        val networkType = if (carousel.autoWallpaperUnmeteredOnly) {
+            NetworkType.UNMETERED
+        } else {
+            NetworkType.CONNECTED
+        }
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(networkType)
             .build()
         val request = OneTimeWorkRequestBuilder<ImageWallpaperWorker>()
             .setInitialDelay(minutes, TimeUnit.MINUTES)
