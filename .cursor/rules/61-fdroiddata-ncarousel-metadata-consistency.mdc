@@ -101,6 +101,6 @@ CurrentVersion: <ncarouselBaseVersionName>
 CurrentVersionCode: <ncarouselLocalVersionCode>
 ```
 
-**Current example:** `0.2.50` / `1104` / `790494dd05cbcd68faa77deb502fa947c4460bcd`.
+**Current example:** `0.2.53` / `1107` / `2e636a9434d160ee9406c40034821aa86790747f`.
 
 More detail: `docs/FDROID.md`, `docs/DEVELOPMENT.md`.
