@@ -37,8 +37,6 @@ fun MainHomeScreen(
     onTest: () -> Unit,
     onRefreshList: () -> Unit,
     onApplyNext: () -> Unit,
-    onApplyPrevious: () -> Unit,
-    onTogglePauseAuto: (Boolean) -> Unit,
     onRefreshWallpaperExif: () -> Unit,
 ) {
     Column(
@@ -103,30 +101,6 @@ fun MainHomeScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.main_apply_next_wallpaper))
-        }
-        OutlinedButton(
-            onClick = onApplyPrevious,
-            enabled = !state.busy && state.hasActiveAccount,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.main_apply_previous_wallpaper))
-        }
-        if (state.autoWallpaperEnabled) {
-            OutlinedButton(
-                onClick = { onTogglePauseAuto(!state.autoWallpaperPaused) },
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    stringResource(
-                        if (state.autoWallpaperPaused) {
-                            R.string.main_resume_auto_wallpaper
-                        } else {
-                            R.string.main_pause_auto_wallpaper
-                        },
-                    ),
-                )
-            }
         }
 
         OutlinedCard(

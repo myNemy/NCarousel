@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
  * Re-applies the last NCarousel wallpaper after OEMs/launchers override home or clear lock.
  *
  * Always pass [accountId] + [href] when scheduling right after an apply (avoids racing
- * [dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore]). Unlock may omit them and use the store.
+ * [dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore]). Callers may omit them and use the store.
  */
 object HomeWallpaperResync {
 

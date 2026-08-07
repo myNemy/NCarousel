@@ -40,7 +40,7 @@ object WallpaperWorkScheduler {
         wm.cancelUniqueWork(LEGACY_PERIODIC_UNIQUE)
 
         val carousel = CarouselPreferences(app)
-        if (!carousel.autoWallpaperEnabled || carousel.autoWallpaperPaused) {
+        if (!carousel.autoWallpaperEnabled) {
             wm.cancelUniqueWork(UNIQUE_CHAIN)
             return
         }
@@ -56,7 +56,7 @@ object WallpaperWorkScheduler {
     ) {
         val app = context.applicationContext
         val carousel = CarouselPreferences(app)
-        if (!carousel.autoWallpaperEnabled || carousel.autoWallpaperPaused) return
+        if (!carousel.autoWallpaperEnabled) return
 
         val active = NextcloudAccountStore(app).getActiveAccount()
         if (active == null) return

@@ -5,17 +5,16 @@ import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccount
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
-import dev.nemeyes.ncarousel.widget.NCarouselAppWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Applies the next / previous wallpaper like the in-app actions, for use from
+ * Applies the next wallpaper like the in-app action, for use from
  * [android.service.quicksettings.TileService] (no ViewModel / UI).
  *
- * Prefer [applyNextSuspending] / [applyPreviousSuspending] from coroutines (workers, Glance).
- * The blocking [applyNext] / [applyPrevious] wrappers are for plain background threads only
- * (QS tiles) — never call them from a coroutine already on [Dispatchers.IO] (deadlock risk).
+ * Prefer [applyNextSuspending] from coroutines (workers). The blocking [applyNext] wrapper
+ * is for plain background threads only (QS tiles) — never call it from a coroutine already
+ * on [Dispatchers.IO] (deadlock risk).
  *
  * @param orderModeOverride if non-null, used instead of [CarouselPreferences.orderMode] (unsaved UI state).
  * @param wallpaperTargetOverride if non-null, used instead of [CarouselPreferences.wallpaperTarget].
@@ -32,15 +31,6 @@ object NextWallpaperApplicator {
             applyNextSuspending(context, orderModeOverride, wallpaperTargetOverride)
         }
 
-    fun applyPrevious(
-        context: Context,
-        orderModeOverride: OrderMode? = null,
-        wallpaperTargetOverride: WallpaperTarget? = null,
-    ): String? =
-        runBlocking(Dispatchers.IO) {
-            applyPreviousSuspending(context, orderModeOverride, wallpaperTargetOverride)
-        }
-
     suspend fun applyNextSuspending(
         context: Context,
         orderModeOverride: OrderMode? = null,
@@ -51,22 +41,11 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride,
     )
 
-    suspend fun applyPreviousSuspending(
-        context: Context,
-        orderModeOverride: OrderMode? = null,
-        wallpaperTargetOverride: WallpaperTarget? = null,
-    ): String? = applyPreviousImpl(
-        context.applicationContext,
-        orderModeOverride,
-        wallpaperTargetOverride,
-    )
-
     /**
      * Applies a specific wallpaper [href].
      *
      * @param advanceCarousel when true, updates [WallpaperOrderEngine] so the next automatic
      * pick continues after [href] (sequential / shuffle / no-repeat / smart-recent).
-     * @param recordHistory when true, pushes [href] onto [AppliedWallpaperHistory].
      * @return `null` on success, or a short user-facing error message.
      */
     suspend fun applyHref(
@@ -76,7 +55,6 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride: WallpaperTarget? = null,
         orderModeOverride: OrderMode? = null,
         advanceCarousel: Boolean = false,
-        recordHistory: Boolean = true,
     ): String? = applyHrefImpl(
         context.applicationContext,
         href,
@@ -84,7 +62,6 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride,
         orderModeOverride,
         advanceCarousel,
-        recordHistory,
     )
 
     private suspend fun applyNextImpl(
@@ -117,53 +94,6 @@ object NextWallpaperApplicator {
             href = pick.href,
             progress = pick.progress,
             onSuccessExtra = { pick.commitSuccess() },
-            recordHistory = true,
-        )
-    }
-
-    private suspend fun applyPreviousImpl(
-        app: Context,
-        orderModeOverride: OrderMode?,
-        wallpaperTargetOverride: WallpaperTarget?,
-    ): String? {
-        val active = NextcloudAccountStore(app).getActiveAccount()
-            ?: return app.getString(R.string.qs_tile_err_no_account)
-
-        val hrefs = ImageListCache(app, active.id).read().ifEmpty {
-            ImageSyncRepository(app).readCachedHrefs(active.id)
-        }
-        if (hrefs.isEmpty()) return app.getString(R.string.qs_tile_err_no_list)
-
-        val prevHref = AppliedWallpaperHistory.peekPrevious(app, active.id)
-            ?: return app.getString(R.string.qs_tile_err_no_previous)
-
-        val carousel = CarouselPreferences(app)
-        val mode = orderModeOverride ?: carousel.orderMode
-        val wallpaperTarget = wallpaperTargetOverride ?: carousel.wallpaperTarget
-        val excluded = ExcludedHrefStore(app, active.id).read()
-        val activeHrefs = ExcludedHrefStore.filterActive(hrefs, excluded)
-        val progressHrefs = activeHrefs.ifEmpty { hrefs }
-        val sorted = progressHrefs.sorted()
-        val idx0 = sorted.indexOf(prevHref).takeIf { it >= 0 } ?: 0
-        var progress = PickProgress(current = (idx0 + 1).coerceAtLeast(1), total = sorted.size.coerceAtLeast(1))
-
-        return downloadAndSet(
-            app = app,
-            active = active,
-            carousel = carousel,
-            wallpaperTarget = wallpaperTarget,
-            href = prevHref,
-            progress = progress,
-            onSuccessExtra = {
-                AppliedWallpaperHistory.commitPrevious(app, active.id)
-                if (prevHref in activeHrefs.toHashSet()) {
-                    WallpaperOrderEngine(app, active.id).advancePast(activeHrefs, mode, prevHref)?.let {
-                        progress = it
-                    }
-                }
-            },
-            recordHistory = false,
-            progressProvider = { progress },
         )
     }
 
@@ -174,7 +104,6 @@ object NextWallpaperApplicator {
         wallpaperTargetOverride: WallpaperTarget?,
         orderModeOverride: OrderMode?,
         advanceCarousel: Boolean,
-        recordHistory: Boolean,
     ): String? {
         val active = NextcloudAccountStore(app).getActiveAccount()
             ?: return app.getString(R.string.qs_tile_err_no_account)
@@ -203,7 +132,6 @@ object NextWallpaperApplicator {
                     }
                 }
             },
-            recordHistory = recordHistory,
             progressProvider = { progress },
         )
     }
@@ -216,7 +144,6 @@ object NextWallpaperApplicator {
         href: String,
         progress: PickProgress,
         onSuccessExtra: () -> Unit,
-        recordHistory: Boolean,
         progressProvider: () -> PickProgress = { progress },
     ): String? {
         val http = HttpClientProvider.create(app)
@@ -241,9 +168,6 @@ object NextWallpaperApplicator {
             onSuccess = {
                 onSuccessExtra()
                 LastAppliedWallpaperStore.setHref(app, active.id, href)
-                if (recordHistory) {
-                    AppliedWallpaperHistory.push(app, active.id, href)
-                }
                 val place = runCatching { ImageExifPlaceLabel.fromImageBytes(app, bytes, carousel).trim() }
                     .getOrNull()
                     ?.takeIf { it.isNotEmpty() }
@@ -257,7 +181,6 @@ object NextWallpaperApplicator {
                     progressProvider(),
                     placeLabel = place,
                 )
-                runCatching { NCarouselAppWidget.updateAll(app) }
                 null
             },
             onFailure = { e ->

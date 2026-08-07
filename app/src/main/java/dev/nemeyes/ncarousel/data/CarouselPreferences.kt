@@ -59,27 +59,6 @@ class CarouselPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_AUTO_UNMETERED, false)
         set(value) { prefs.edit().putBoolean(KEY_AUTO_UNMETERED, value).apply() }
 
-    /**
-     * When true, automatic scheduling is suspended without turning [autoWallpaperEnabled] off.
-     * Manual next/previous still work.
-     */
-    var autoWallpaperPaused: Boolean
-        get() = prefs.getBoolean(KEY_AUTO_PAUSED, false)
-        set(value) { prefs.edit().putBoolean(KEY_AUTO_PAUSED, value).apply() }
-
-    /**
-     * When true (and automatic mode is on / not paused), unlocking the device may advance the
-     * carousel once, subject to [lastUnlockAdvanceEpochMs] throttle.
-     */
-    var advanceWallpaperOnUnlock: Boolean
-        get() = prefs.getBoolean(KEY_ADVANCE_ON_UNLOCK, false)
-        set(value) { prefs.edit().putBoolean(KEY_ADVANCE_ON_UNLOCK, value).apply() }
-
-    /** Epoch ms of the last successful unlock-triggered advance (0 = never). */
-    var lastUnlockAdvanceEpochMs: Long
-        get() = prefs.getLong(KEY_LAST_UNLOCK_ADVANCE_MS, 0L)
-        set(value) { prefs.edit().putLong(KEY_LAST_UNLOCK_ADVANCE_MS, value).apply() }
-
     /** Desired interval between automatic wallpaper runs (minimum 1 minute via chained one-shot work). */
     var autoIntervalMinutes: Int
         get() = prefs.getInt(KEY_INTERVAL_MIN, 30).coerceAtLeast(1)
@@ -177,9 +156,6 @@ class CarouselPreferences(context: Context) {
         private const val KEY_DISK_CACHE_MB = "max_wallpaper_disk_cache_mb"
         private const val KEY_AUTO = "auto_wallpaper"
         private const val KEY_AUTO_UNMETERED = "auto_wallpaper_unmetered_only"
-        private const val KEY_AUTO_PAUSED = "auto_wallpaper_paused"
-        private const val KEY_ADVANCE_ON_UNLOCK = "advance_wallpaper_on_unlock"
-        private const val KEY_LAST_UNLOCK_ADVANCE_MS = "last_unlock_advance_epoch_ms"
         private const val KEY_INTERVAL_MIN = "auto_interval_minutes"
         private const val KEY_NOTIFY_STATUS = "show_status_notifications"
         private const val KEY_NOTIFY_WALLPAPER = "notify_wallpaper_applied"

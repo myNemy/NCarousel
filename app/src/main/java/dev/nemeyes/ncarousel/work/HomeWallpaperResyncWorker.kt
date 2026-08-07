@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
  * Re-applies home **and** lock from the on-disk cache of the last NCarousel wallpaper when the
  * user chose [WallpaperTarget.HOME_AND_LOCK].
  *
- * Used after unlock and after a successful home+lock apply when launchers/OEMs override or clear
+ * Used after a successful home+lock apply when launchers/OEMs override or clear
  * one of the surfaces. Skips [WallpaperManager.setBitmap] when wallpaper IDs still match the last
  * apply (avoids a visible black flash). Does not schedule another resync (no loop).
  */

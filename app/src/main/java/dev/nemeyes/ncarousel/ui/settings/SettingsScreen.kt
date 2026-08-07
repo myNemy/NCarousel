@@ -58,7 +58,6 @@ import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 import dev.nemeyes.ncarousel.ui.components.SettingsInlineDivider
 import dev.nemeyes.ncarousel.ui.components.SettingsSwitchRow
 import dev.nemeyes.ncarousel.ui.components.orderModeLabel
-import dev.nemeyes.ncarousel.work.UnlockWallpaperAdvance
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,8 +82,6 @@ fun SettingsScreen(
     onClearWallpaperDiskCache: () -> Unit,
     onAutoChange: (Boolean) -> Unit,
     onAutoUnmeteredOnlyChange: (Boolean) -> Unit,
-    onAutoPausedChange: (Boolean) -> Unit,
-    onAdvanceOnUnlockChange: (Boolean) -> Unit,
     onIntervalChange: (String) -> Unit,
     onShowStatusNotificationsChange: (Boolean) -> Unit,
     onNotifyWallpaperAppliedChange: (Boolean) -> Unit,
@@ -377,23 +374,6 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.auto_wallpaper_wifi_only_subtitle),
                 checked = state.autoWallpaperUnmeteredOnly,
                 onCheckedChange = onAutoUnmeteredOnlyChange,
-                enabled = !state.busy && state.autoWallpaperEnabled,
-            )
-            SettingsSwitchRow(
-                title = stringResource(R.string.auto_wallpaper_pause_title),
-                subtitle = stringResource(R.string.auto_wallpaper_pause_subtitle),
-                checked = state.autoWallpaperPaused,
-                onCheckedChange = onAutoPausedChange,
-                enabled = !state.busy && state.autoWallpaperEnabled,
-            )
-            SettingsSwitchRow(
-                title = stringResource(R.string.auto_wallpaper_unlock_title),
-                subtitle = stringResource(
-                    R.string.auto_wallpaper_unlock_subtitle,
-                    UnlockWallpaperAdvance.MIN_THROTTLE_MINUTES,
-                ),
-                checked = state.advanceWallpaperOnUnlock,
-                onCheckedChange = onAdvanceOnUnlockChange,
                 enabled = !state.busy && state.autoWallpaperEnabled,
             )
             Text(
