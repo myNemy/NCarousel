@@ -229,6 +229,7 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     state: MainUiState,
     onRefreshList: () -> Unit,
+    onRefreshExif: () -> Unit,
     onApplyHref: (String) -> Unit,
     onApplyHrefAndAdvance: (String) -> Unit,
     onToggleExclude: (String) -> Unit,
@@ -268,8 +269,8 @@ fun LibraryScreen(
 
     if (state.imageHrefs.isEmpty()) {
         PullToRefreshBox(
-            isRefreshing = state.busy,
-            onRefresh = onRefreshList,
+            isRefreshing = state.wallpaperExifLoading,
+            onRefresh = onRefreshExif,
             modifier = modifier.fillMaxSize(),
         ) {
             Column(
@@ -697,8 +698,8 @@ fun LibraryScreen(
         }
 
         PullToRefreshBox(
-            isRefreshing = state.busy,
-            onRefresh = onRefreshList,
+            isRefreshing = state.wallpaperExifLoading,
+            onRefresh = onRefreshExif,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
