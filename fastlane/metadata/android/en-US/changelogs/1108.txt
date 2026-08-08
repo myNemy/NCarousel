@@ -1,0 +1,4 @@
+- Add: Optional Wi‑Fi-only (unmetered) network for automatic wallpaper downloads.
+- Change: Fit image mode fills letterbox edges with a soft blurred cover instead of black bars.
+- Change: Library pull-to-refresh reloads the current wallpaper EXIF highlight (full list sync stays on Home / empty-state button).
+- Fix: Quoted versionName literal for F-Droid Tags checkupdates (avoids versionName picking up the git tag “v…” prefix).

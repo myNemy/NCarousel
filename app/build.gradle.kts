@@ -6,7 +6,7 @@ plugins {
 }
 
 /** Semantic base; bump patch/minor when releasing meaningful changes. */
-val ncarouselBaseVersionName = "0.2.53"
+val ncarouselBaseVersionName = "0.2.54"
 
 /**
  * Monotonic [versionCode] is required to upgrade over an existing install without uninstalling.
@@ -15,7 +15,7 @@ val ncarouselBaseVersionName = "0.2.53"
  * - Override: Gradle property `ncarousel.versionCode` or env `NCAROUSEL_VERSION_CODE` (integer only).
  */
 /** Above historical CI debug codes (1000+GITHUB_RUN_NUMBER) so upgrades do not look like downgrades. */
-val ncarouselLocalVersionCode = 1107
+val ncarouselLocalVersionCode = 1108
 
 /** Set in CI for assembleRelease so the published APK matches F-Droid reproducible builds. */
 val ncarouselPublishReleaseApk = System.getenv("NCAROUSEL_PUBLISH_RELEASE_APK") == "true"
@@ -63,9 +63,9 @@ android {
         // Skips `//` comments but not KDoc. The next line of each pair wins at configuration time
         // (CI may use GITHUB_RUN_NUMBER, etc.). Without a quoted versionName literal, checkupdates
         // falls back to the git tag name (e.g. v0.2.53) and breaks fdroiddata AutoUpdate.
-        versionCode = 1107
+        versionCode = 1108
         versionCode = ncarouselVersionCode
-        versionName = "0.2.53"
+        versionName = "0.2.54"
         versionName = ncarouselVersionName
     }
 
