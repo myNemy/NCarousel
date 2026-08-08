@@ -7,7 +7,7 @@ alwaysApply: true
 
 This app is submitted to F-Droid with **`Binaries`** + **`AllowedAPKSigningKeys`** (upstream-signed reproducible APK). The agent **MUST** keep the repo compliant; do not remove or weaken these constraints without explicit user opt-out.
 
-Cross-rules: **`.cursor/rules/60-fdroiddata-scope-ncarousel.mdc`**, **`.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`**, **`docs/FDROID.md`**.
+Cross-rules: **`.cursor/rules/63-fdroid-authority-binding.mdc`** (F-Droid docs/master = binding), **`.cursor/rules/60-fdroiddata-scope-ncarousel.mdc`**, **`.cursor/rules/61-fdroiddata-ncarousel-metadata-consistency.mdc`**, **`docs/FDROID.md`**.
 
 ## 1. `app/build.gradle.kts` (non-negotiable)
 
@@ -25,7 +25,17 @@ dependenciesInfo {
 Also required (do not regress):
 
 - **`ncarouselLocalVersionCode`**: monotonic; bump on every release-ready publish.
-- **Literal `versionCode = <digits>`** in `defaultConfig` (F-Droid metadata regex); must match `ncarouselLocalVersionCode`.
+- **`ncarouselBaseVersionName`**: bump on every release-ready publish (at least patch).
+- **F-Droid `checkupdates` literals in `defaultConfig`** (fdroidserver regex only; does **not** run Gradle). Keep **both**, then the dynamic overrides:
+
+```kotlin
+versionCode = <ncarouselLocalVersionCode>   // digits only; must equal ncarouselLocalVersionCode
+versionCode = ncarouselVersionCode
+versionName = "<ncarouselBaseVersionName>"  // quoted string; must equal ncarouselBaseVersionName (no "v" prefix)
+versionName = ncarouselVersionName
+```
+
+  **On every version bump**, update **`ncarouselBaseVersionName`**, **`ncarouselLocalVersionCode`**, **and** these two literal lines in the **same** commit. If `versionName` has no quoted literal, Tags checkupdates falls back to the git tag name (`v0.2.x`) and bot MRs get a wrong `Builds.versionName` / `CurrentVersion`.
 - **`NCAROUSEL_PUBLISH_RELEASE_APK`**: stable `versionName` / `versionCode` on CI `assembleRelease` (see workflow).
 - **CI release signing** (`enableV1Signing` + v2/v3) when `NCAROUSEL_SIGNING_*` is set — required for sideload and must match `AllowedAPKSigningKeys`.
 
@@ -52,7 +62,7 @@ Verify: `git cat-file -t <hash>` → `commit`; `git ls-remote https://github.com
 
 | Step | Action |
 |------|--------|
-| 1 | Bump `ncarouselBaseVersionName` + `ncarouselLocalVersionCode` + Fastlane changelog |
+| 1 | Bump `ncarouselBaseVersionName` + `ncarouselLocalVersionCode` + **both** `defaultConfig` literals (`versionCode` / `versionName`) + Fastlane changelog |
 | 2 | Ensure `dependenciesInfo` remains disabled (section 1) |
 | 3 | Commit/push NCarousel → **forgejo** + **origin** |
 | 4 | Wait for green **Android CI**; confirm **`NCarousel-<version>.apk`** on GitHub Release |
@@ -65,6 +75,7 @@ Verify: `git cat-file -t <hash>` → `commit`; `git ls-remote https://github.com
 - `Builds.commit` = tag object hash or tag name string.
 - `Binaries` pointing at debug APK or wrong version URL.
 - `versionCode` only from `1000+GITHUB_RUN_NUMBER` on the **published release** APK.
+- Bumping `ncarouselBaseVersionName` / `ncarouselLocalVersionCode` **without** updating the matching `defaultConfig` literals (breaks checkupdates → tag used as `versionName`).
 - Updating rule examples or docs **without** syncing real `fdroiddata` when the app version for F-Droid changed.
 
 ## 6. Monitoring fdroiddata CI (optional)

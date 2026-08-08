@@ -58,11 +58,14 @@ android {
         applicationId = "dev.nemeyes.ncarousel"
         minSdk = 26
         targetSdk = 35
-        // F-Droid scans this file line-by-line with a regex that only matches `versionCode = <digits>`.
-        // It skips `//` comments but not KDoc; keep this literal equal to ncarouselLocalVersionCode.
-        // The next line wins at Gradle configuration time (CI may use GITHUB_RUN_NUMBER, etc.).
+        // F-Droid checkupdates (Tags) uses regex only — it does not run Gradle. Literals below must
+        // match ncarouselLocalVersionCode / ncarouselBaseVersionName; update them on every bump.
+        // Skips `//` comments but not KDoc. The next line of each pair wins at configuration time
+        // (CI may use GITHUB_RUN_NUMBER, etc.). Without a quoted versionName literal, checkupdates
+        // falls back to the git tag name (e.g. v0.2.53) and breaks fdroiddata AutoUpdate.
         versionCode = 1107
         versionCode = ncarouselVersionCode
+        versionName = "0.2.53"
         versionName = ncarouselVersionName
     }
 

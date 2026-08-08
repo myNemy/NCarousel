@@ -16,6 +16,7 @@ Daily try-outs on **`dev`** / **`feature/*`** do **not** require these bumps (se
 
 - **`ncarouselLocalVersionCode`**: +1 on every **`main`** publish that ships app changes.
 - **`ncarouselBaseVersionName`**: bump patch (or minor/major) so the public version string and git tag advance.
+- **Same commit:** update `defaultConfig` literals `versionCode = <digits>` and `versionName = "<name>"` to match those vals (F-Droid checkupdates; see rule `62-fdroid-binaries-requirements-ncarousel.mdc`).
 
 ## CI note
 

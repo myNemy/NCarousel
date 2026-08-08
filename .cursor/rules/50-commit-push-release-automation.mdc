@@ -22,6 +22,7 @@ Before **`git commit`** on **`main`** that includes **app-impacting** changes de
 1. Edit **`app/build.gradle.kts`**:
    - **`ncarouselLocalVersionCode`**: **+1**
    - **`ncarouselBaseVersionName`**: bump at least the **patch** segment
+   - **`defaultConfig` literals** in the same edit: `versionCode = <newCode>` and `versionName = "<newName>"` (must match the vals above; required for F-Droid checkupdates — rule `62`)
 2. Add **`fastlane/metadata/android/en-US/changelogs/<newVersionCode>.txt`** (English, 2–10 user-facing lines describing the shipped changes).
 
 Do this when the user asks to **publish** / **release** / **merge to main** / **promuovi** / **sync or update F-Droid** as a ship step (workflow **D** in rule 06).  

@@ -1,0 +1,30 @@
+---
+description: F-Droid official requirements are binding law for NCarousel — no invented workarounds
+alwaysApply: true
+---
+
+# F-Droid is binding (NCarousel)
+
+**F-Droid requirements are law** for this project. The agent MUST follow them without being argued into compliance.
+
+## Authority (in order)
+
+1. **[Build Metadata Reference](https://f-droid.org/docs/Build_Metadata_Reference/)** and other official F-Droid docs (`Inclusion Policy`, reproducible/`Binaries` guidance).
+2. **Accepted recipe on `fdroid/fdroiddata` `master`:** `metadata/dev.nemeyes.ncarousel.yml` (what already shipped / built successfully).
+3. **Explicit reviewer / maintainer instructions** on MRs or issues.
+4. Project rules `60-*` / `61-*` / `62-fdroid-*` and `docs/FDROID.md` — only as implementation of (1)–(3), never to override them.
+
+If unsure: match **master** + official docs, or ask the user / F-Droid reviewers. **Do not invent.**
+
+## Forbidden
+
+- Inventing metadata fields, `AutoUpdateMode` / `UpdateCheckMode` / `UpdateCheckData` changes, or Gradle “tricks” **not** required by (1)–(3).
+- Putting the git tag prefix into app version fields: tag is `v<ncarouselBaseVersionName>`; **`Builds.versionName`** and **`CurrentVersion`** are **`ncarouselBaseVersionName` without `v`** (e.g. tag `v0.2.53` → `versionName: 0.2.53`). Same for the Gradle literal `versionName = "…"`.
+- Treating `checkupdates-bot` output as correct without verifying against (1)–(2). If a bot MR writes `versionName: v…` or breaks `Binaries` (`v%v` → `vv…`), that is an error — align to the accepted recipe, do not redefine “what F-Droid wants.” Root cause is often a missing quoted `versionName` literal in `app/build.gradle.kts` (rule `62`).
+- Claiming a publish/F-Droid sync is done while metadata on the path to `fdroiddata` master disagrees with the accepted recipe.
+
+## Publish / sync obligation
+
+On an explicit **publish** / F-Droid ship: follow workflow **D** (rule `06`) and rules `61` / `62-fdroid-*`. After updating the fork, **verify** `versionName` / `CurrentVersion` / `commit` / `AutoUpdateMode` / `UpdateCheckMode` / `Binaries` match official docs and the last good master shape (same keys; only version fields + `commit` advance as needed).
+
+Cross-rules: `60-fdroiddata-scope-ncarousel.mdc`, `61-fdroiddata-ncarousel-metadata-consistency.mdc`, `62-fdroid-binaries-requirements-ncarousel.mdc`.
