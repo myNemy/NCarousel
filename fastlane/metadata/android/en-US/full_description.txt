@@ -10,7 +10,7 @@ Features:
 - Image fit: fill (crop), fit with soft blurred edges, or center
 - Optional Wi‑Fi-only mode for scheduled downloads (manual apply still works on any network)
 - Library: search, sort (name, date, folders, carousel index; tap again to invert), folder filter, grid or list, pin current wallpaper
-- Fullscreen preview; apply only or apply and advance; exclude images from the automatic carousel
+- Fullscreen preview; apply only or apply and advance; share image via Android share sheet; exclude images from the automatic carousel
 - Manage exclusions (filter in Library; export/import; optional save/load under .ncarousel on Nextcloud)
 - Optional on-device image cache; EXIF / place info for the last wallpaper applied by the app
 - Follows the system language when a translation is available

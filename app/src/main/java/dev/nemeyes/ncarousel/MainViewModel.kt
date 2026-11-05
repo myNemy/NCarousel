@@ -13,6 +13,7 @@ import dev.nemeyes.ncarousel.data.ExcludedHrefStore
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifSummary
 import dev.nemeyes.ncarousel.data.ImageListCache
+import dev.nemeyes.ncarousel.data.ImageShareHelper
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
@@ -120,6 +121,12 @@ data class AccountUi(
 sealed interface UiEvent {
     data class OpenUrl(val url: String) : UiEvent
     data object RequestIgnoreBatteryOptimizations : UiEvent
+    /** Content URI from [ImageShareHelper] for ACTION_SEND (no Nextcloud credentials). */
+    data class ShareImage(
+        val uri: android.net.Uri,
+        val mimeType: String,
+        val chooserTitle: String,
+    ) : UiEvent
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -931,6 +938,72 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     imageCarouselIndexByHref = loaded.carouselIndices,
                     excludedImageHrefs = loaded.excluded,
                 )
+            }
+        }
+    }
+
+    /**
+     * Downloads (or reuses disk cache) the image for [href] and emits [UiEvent.ShareImage]
+     * with a FileProvider URI. Never shares the WebDAV URL or credentials.
+     */
+    fun shareLibraryImage(href: String, displayName: String) {
+        val key = href.trim()
+        if (key.isEmpty()) return
+        val active = activeOrNull() ?: run {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
+            return
+        }
+        viewModelScope.launch {
+            val token = beginBusy()
+            try {
+                _ui.update { it.copy(statusMessage = appStr(R.string.status_preparing_share)) }
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val disk = WallpaperDiskCache(
+                            getApplication(),
+                            active.id,
+                            carousel.maxWallpaperDiskCacheMb,
+                        )
+                        val bytes = disk.get(key) ?: run {
+                            val client = webDavClientFor(active)
+                            val downloaded = client.downloadFile(key).getOrThrow()
+                            disk.put(key, downloaded)
+                            downloaded
+                        }
+                        val file = ImageShareHelper.writeShareFile(
+                            getApplication(),
+                            displayName.ifBlank { key.substringAfterLast('/') },
+                            bytes,
+                        )
+                        val uri = ImageShareHelper.contentUri(getApplication(), file)
+                        val mime = ImageShareHelper.mimeTypeForFileName(file.name)
+                        Triple(uri, mime, file.name)
+                    }
+                }
+                result.fold(
+                    onSuccess = { (uri, mime, _) ->
+                        _ui.update { it.copy(statusMessage = null) }
+                        _events.tryEmit(
+                            UiEvent.ShareImage(
+                                uri = uri,
+                                mimeType = mime,
+                                chooserTitle = appStr(R.string.nc_library_share_chooser),
+                            ),
+                        )
+                    },
+                    onFailure = { e ->
+                        _ui.update {
+                            it.copy(
+                                statusMessage = appStr(
+                                    R.string.msg_share_failed,
+                                    e.message ?: e.javaClass.simpleName,
+                                ),
+                            )
+                        }
+                    },
+                )
+            } finally {
+                endBusy(token)
             }
         }
     }

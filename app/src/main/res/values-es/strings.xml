@@ -222,6 +222,10 @@
     <string name="nc_library_preview_apply_only">Solo establecer fondo</string>
     <string name="nc_library_preview_apply_advance">Establecer y avanzar carrusel</string>
     <string name="nc_library_preview_close">Cerrar</string>
+    <string name="nc_library_share">Compartir imagen</string>
+    <string name="nc_library_share_chooser">Compartir imagen</string>
+    <string name="status_preparing_share">Preparando imagen para compartir…</string>
+    <string name="msg_share_failed">No se pudo compartir la imagen: %1$s</string>
     <string name="nc_library_preview_current">Fondo actual</string>
     <string name="nc_library_filters_expand">Mostrar búsqueda y filtros</string>
     <string name="nc_library_filters_collapse">Ocultar búsqueda y filtros</string>

@@ -222,6 +222,10 @@
     <string name="nc_library_preview_apply_only">Doar setează fundalul</string>
     <string name="nc_library_preview_apply_advance">Setează și avansează caruselul</string>
     <string name="nc_library_preview_close">Închide</string>
+    <string name="nc_library_share">Partajează imaginea</string>
+    <string name="nc_library_share_chooser">Partajează imaginea</string>
+    <string name="status_preparing_share">Se pregătește imaginea pentru partajare…</string>
+    <string name="msg_share_failed">Nu s-a putut partaja imaginea: %1$s</string>
     <string name="nc_library_preview_current">Fundal curent</string>
     <string name="nc_library_filters_expand">Afișează căutare și filtre</string>
     <string name="nc_library_filters_collapse">Ascunde căutare și filtre</string>

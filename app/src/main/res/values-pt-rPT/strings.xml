@@ -222,6 +222,10 @@
     <string name="nc_library_preview_apply_only">Apenas definir fundo</string>
     <string name="nc_library_preview_apply_advance">Definir e avançar carrossel</string>
     <string name="nc_library_preview_close">Fechar</string>
+    <string name="nc_library_share">Partilhar imagem</string>
+    <string name="nc_library_share_chooser">Partilhar imagem</string>
+    <string name="status_preparing_share">A preparar imagem para partilhar…</string>
+    <string name="msg_share_failed">Não foi possível partilhar a imagem: %1$s</string>
     <string name="nc_library_preview_current">Fundo atual</string>
     <string name="nc_library_filters_expand">Mostrar pesquisa e filtros</string>
     <string name="nc_library_filters_collapse">Ocultar pesquisa e filtros</string>

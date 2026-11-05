@@ -1,6 +1,7 @@
 package dev.nemeyes.ncarousel.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -162,6 +163,19 @@ fun HomeScreen(viewModel: MainViewModel) {
                 UiEvent.RequestIgnoreBatteryOptimizations -> {
                     BatteryOptimizationHelper.startExemptionRequest(context)
                     viewModel.refreshBatteryOptimizationStatus()
+                }
+                is UiEvent.ShareImage -> {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = ev.mimeType
+                        putExtra(Intent.EXTRA_STREAM, ev.uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        clipData = android.content.ClipData.newUri(
+                            context.contentResolver,
+                            "image",
+                            ev.uri,
+                        )
+                    }
+                    context.startActivity(Intent.createChooser(send, ev.chooserTitle))
                 }
             }
         }
@@ -644,6 +658,7 @@ private fun AuthenticatedShell(
                                 onApplyHref = { viewModel.applyWallpaperByHref(it, advanceCarousel = false) },
                                 onApplyHrefAndAdvance = { viewModel.applyWallpaperByHref(it, advanceCarousel = true) },
                                 onToggleExclude = viewModel::toggleExcludedFromCarousel,
+                                onShareHref = viewModel::shareLibraryImage,
                             )
                         }
                     }

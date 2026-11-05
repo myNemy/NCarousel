@@ -222,6 +222,10 @@
     <string name="nc_library_preview_apply_only">Nur als Hintergrund setzen</string>
     <string name="nc_library_preview_apply_advance">Setzen und Karussell fortsetzen</string>
     <string name="nc_library_preview_close">Schließen</string>
+    <string name="nc_library_share">Bild teilen</string>
+    <string name="nc_library_share_chooser">Bild teilen</string>
+    <string name="status_preparing_share">Bild zum Teilen wird vorbereitet…</string>
+    <string name="msg_share_failed">Bild konnte nicht geteilt werden: %1$s</string>
     <string name="nc_library_preview_current">Aktuelles Hintergrundbild</string>
     <string name="nc_library_filters_expand">Suche und Filter anzeigen</string>
     <string name="nc_library_filters_collapse">Suche und Filter ausblenden</string>

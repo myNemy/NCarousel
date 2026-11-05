@@ -53,6 +53,7 @@ import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material3.Button
@@ -233,6 +234,7 @@ fun LibraryScreen(
     onApplyHref: (String) -> Unit,
     onApplyHrefAndAdvance: (String) -> Unit,
     onToggleExclude: (String) -> Unit,
+    onShareHref: (href: String, fileName: String) -> Unit,
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
@@ -482,6 +484,9 @@ fun LibraryScreen(
                 },
                 onToggleExclude = {
                     onToggleExclude(target.href)
+                },
+                onShare = {
+                    onShareHref(target.href, target.fileName)
                 },
             )
         }
@@ -968,6 +973,7 @@ private fun LibraryFullscreenPreview(
     onApplyOnly: () -> Unit,
     onApplyAndAdvance: () -> Unit,
     onToggleExclude: () -> Unit,
+    onShare: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val isCurrent = state.lastWallpaperHref != null && target.href == state.lastWallpaperHref
@@ -1058,6 +1064,16 @@ private fun LibraryFullscreenPreview(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                    }
+                    IconButton(
+                        onClick = onShare,
+                        enabled = !state.busy,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = stringResource(R.string.nc_library_share),
+                            tint = Color.White,
+                        )
                     }
                     IconButton(onClick = onDismiss) {
                         Icon(

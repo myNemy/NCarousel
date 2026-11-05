@@ -231,6 +231,10 @@
     <string name="nc_library_preview_apply_only">Solo imposta sfondo</string>
     <string name="nc_library_preview_apply_advance">Imposta e avanza carousel</string>
     <string name="nc_library_preview_close">Chiudi</string>
+    <string name="nc_library_share">Condividi immagine</string>
+    <string name="nc_library_share_chooser">Condividi immagine</string>
+    <string name="status_preparing_share">Preparazione immagine da condividere…</string>
+    <string name="msg_share_failed">Impossibile condividere l’immagine: %1$s</string>
     <string name="nc_library_preview_current">Sfondo corrente</string>
     <string name="nc_library_filters_expand">Mostra ricerca e filtri</string>
     <string name="nc_library_filters_collapse">Nascondi ricerca e filtri</string>

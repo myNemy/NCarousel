@@ -222,6 +222,10 @@
     <string name="nc_library_preview_apply_only">Alleen als achtergrond</string>
     <string name="nc_library_preview_apply_advance">Instellen en carrousel doorzetten</string>
     <string name="nc_library_preview_close">Sluiten</string>
+    <string name="nc_library_share">Afbeelding delen</string>
+    <string name="nc_library_share_chooser">Afbeelding delen</string>
+    <string name="status_preparing_share">Afbeelding voorbereiden om te delen…</string>
+    <string name="msg_share_failed">Kon afbeelding niet delen: %1$s</string>
     <string name="nc_library_preview_current">Huidige achtergrond</string>
     <string name="nc_library_filters_expand">Zoeken en filters tonen</string>
     <string name="nc_library_filters_collapse">Zoeken en filters verbergen</string>
