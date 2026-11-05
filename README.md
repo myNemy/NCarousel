@@ -4,7 +4,7 @@
 
 Nextcloud wallpaper carousel (WebDAV).
 
-Android app that downloads images from a folder on your **Nextcloud** server and sets them as the device **wallpaper**, using official Android APIs.
+Android app that downloads images from a folder on your **Nextcloud** server and sets them as the device **wallpaper**.
 
 ## Download
 
@@ -42,5 +42,3 @@ Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0
 - **GitHub**: [github.com/myNemy/NCarousel](https://github.com/myNemy/NCarousel)
 - **Forgejo** (mirror): [forgejo.it/Nemeyes/NCarousel](https://forgejo.it/Nemeyes/NCarousel)
 - Issues: [github.com/myNemy/NCarousel/issues](https://github.com/myNemy/NCarousel/issues)
-
-Store listing text for F-Droid lives under `fastlane/metadata/android/en-US/` (`short_description.txt`, `full_description.txt`). Keep the README **Features** / **Privacy** sections in sync with `full_description.txt` (see `.cursor/rules/16-readme-fdroid-description-sync.mdc`).
