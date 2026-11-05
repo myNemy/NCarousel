@@ -1,0 +1,3 @@
+- Add: Manage excluded images — Library “Excluded” filter; export/import via file; clear list in Settings.
+- Add: Optional manual save/load of the excluded list to Nextcloud under .ncarousel/excluded-hrefs.txt (no auto-sync).
+- Change: README and F-Droid full description aligned with current features.
