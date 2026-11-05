@@ -89,9 +89,16 @@
     <string name="msg_excluded_import_empty">Nessun percorso immagine valido nel file.</string>
     <string name="msg_excluded_export_failed">Impossibile esportare la lista esclusi.</string>
     <string name="msg_excluded_import_failed">Impossibile importare la lista esclusi.</string>
+    <string name="msg_excluded_saved_nextcloud">Lista esclusi salvata su Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Impossibile salvare la lista esclusi su Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Impossibile caricare la lista esclusi da Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Nessuna lista esclusi su Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d escluse dal carousel</string>
     <string name="settings_excluded_export">Esporta lista esclusi</string>
     <string name="settings_excluded_import">Importa lista esclusi</string>
+    <string name="settings_excluded_save_nextcloud">Salva lista esclusi su Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Carica lista esclusi da Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Salvata nella cartella remota come .ncarousel/excluded-hrefs.txt (sync manuale tra dispositivi).</string>
     <string name="settings_excluded_clear">Svuota lista esclusi</string>
     <string name="settings_excluded_import_confirm_title">Sostituire la lista esclusi?</string>
     <string name="settings_excluded_import_confirm_body">Sostituire l’elenco attuale con %1$d voci dal file?</string>

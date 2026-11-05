@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Aucun chemin d’image valide dans le fichier.</string>
     <string name="msg_excluded_export_failed">Impossible d’exporter la liste des exclusions.</string>
     <string name="msg_excluded_import_failed">Impossible d’importer la liste des exclusions.</string>
+    <string name="msg_excluded_saved_nextcloud">Liste des exclusions enregistrée sur Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Impossible d’enregistrer la liste des exclusions sur Nextcloud : %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Impossible de charger la liste des exclusions depuis Nextcloud : %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Aucune liste d’exclusions sur Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d exclues du carrousel</string>
     <string name="settings_excluded_export">Exporter la liste des exclusions</string>
     <string name="settings_excluded_import">Importer la liste des exclusions</string>
+    <string name="settings_excluded_save_nextcloud">Enregistrer la liste sur Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Charger la liste depuis Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Enregistrée dans le dossier distant comme .ncarousel/excluded-hrefs.txt (sync manuel entre appareils).</string>
     <string name="settings_excluded_clear">Vider la liste des exclusions</string>
     <string name="settings_excluded_import_confirm_title">Remplacer la liste des exclusions ?</string>
     <string name="settings_excluded_import_confirm_body">Remplacer la liste actuelle par %1$d entrées du fichier ?</string>

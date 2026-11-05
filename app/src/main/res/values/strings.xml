@@ -93,9 +93,16 @@
     <string name="msg_excluded_import_empty">No valid image paths in that file.</string>
     <string name="msg_excluded_export_failed">Could not export excluded list.</string>
     <string name="msg_excluded_import_failed">Could not import excluded list.</string>
+    <string name="msg_excluded_saved_nextcloud">Excluded list saved to Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Could not save excluded list to Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Could not load excluded list from Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">No excluded list found on Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d excluded from carousel</string>
     <string name="settings_excluded_export">Export excluded list</string>
     <string name="settings_excluded_import">Import excluded list</string>
+    <string name="settings_excluded_save_nextcloud">Save excluded list to Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Load excluded list from Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Stored under your remote folder as .ncarousel/excluded-hrefs.txt (manual sync between devices).</string>
     <string name="settings_excluded_clear">Clear excluded list</string>
     <string name="settings_excluded_import_confirm_title">Replace excluded list?</string>
     <string name="settings_excluded_import_confirm_body">Replace the current excluded list with %1$d entries from the file?</string>

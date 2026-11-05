@@ -25,6 +25,7 @@ import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.data.parseDavLastModifiedEpochMs
+import dev.nemeyes.ncarousel.data.accounts.NextcloudAccount
 import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
@@ -1031,6 +1032,113 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setStatusMessage(message: String) {
         _ui.update { it.copy(statusMessage = message) }
+    }
+
+    private fun activeRemoteFolder(): String {
+        val s = _ui.value
+        val active = activeOrNull()
+        return s.remoteFolder.trim().trim('/').ifBlank {
+            active?.remoteFolder.orEmpty().trim().trim('/').ifBlank { "Photos" }
+        }
+    }
+
+    private fun webDavClientFor(active: NextcloudAccount): NextcloudWebDavClient =
+        NextcloudWebDavClient(
+            http,
+            active.serverBaseUrl,
+            active.userId,
+            active.loginName,
+            active.appPassword,
+        )
+
+    /** Uploads the local excluded list to `{remoteFolder}/.ncarousel/excluded-hrefs.txt`. */
+    fun saveExcludedHrefsToNextcloud() {
+        val active = activeOrNull() ?: run {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
+            return
+        }
+        viewModelScope.launch {
+            val token = beginBusy()
+            try {
+                val folder = activeRemoteFolder()
+                val text = ExcludedHrefStore.serialize(
+                    ExcludedHrefStore(getApplication(), active.id).read(),
+                )
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val client = webDavClientFor(active)
+                        client.ensureFolder(ExcludedHrefStore.remoteDirPath(folder)).getOrThrow()
+                        client.putFile(
+                            ExcludedHrefStore.remoteFilePath(folder),
+                            text.toByteArray(Charsets.UTF_8),
+                        ).getOrThrow()
+                    }
+                }
+                _ui.update {
+                    it.copy(
+                        statusMessage = result.fold(
+                            onSuccess = { appStr(R.string.msg_excluded_saved_nextcloud) },
+                            onFailure = { e ->
+                                appStr(
+                                    R.string.msg_excluded_save_nextcloud_failed,
+                                    e.message ?: e.javaClass.simpleName,
+                                )
+                            },
+                        ),
+                    )
+                }
+            } finally {
+                endBusy(token)
+            }
+        }
+    }
+
+    /**
+     * Downloads the excluded list from Nextcloud and returns its text for the import confirm UI.
+     * Does not apply the list until [importExcludedHrefs] runs.
+     */
+    fun fetchExcludedHrefsFromNextcloud(onResult: (Result<String>) -> Unit) {
+        val active = activeOrNull() ?: run {
+            onResult(Result.failure(IllegalStateException(appStr(R.string.msg_add_account))))
+            return
+        }
+        viewModelScope.launch {
+            val token = beginBusy()
+            try {
+                val folder = activeRemoteFolder()
+                val result = withContext(Dispatchers.IO) {
+                    val client = webDavClientFor(active)
+                    val download = client.downloadRelativeFile(ExcludedHrefStore.remoteFilePath(folder))
+                    download.fold(
+                        onSuccess = { bytes ->
+                            val text = bytes.toString(Charsets.UTF_8)
+                            if (ExcludedHrefStore.parse(text).isEmpty()) {
+                                Result.failure(IllegalArgumentException(appStr(R.string.msg_excluded_import_empty)))
+                            } else {
+                                Result.success(text)
+                            }
+                        },
+                        onFailure = { e ->
+                            if (e is NoSuchElementException) {
+                                Result.failure(IllegalStateException(appStr(R.string.msg_excluded_nextcloud_missing)))
+                            } else {
+                                Result.failure(
+                                    IllegalStateException(
+                                        appStr(
+                                            R.string.msg_excluded_load_nextcloud_failed,
+                                            e.message ?: e.javaClass.simpleName,
+                                        ),
+                                    ),
+                                )
+                            }
+                        },
+                    )
+                }
+                onResult(result)
+            } finally {
+                endBusy(token)
+            }
+        }
     }
 
     fun setActiveAccount(id: String) {

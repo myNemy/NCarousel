@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Nicio cale de imagine validă în fișier.</string>
     <string name="msg_excluded_export_failed">Nu s-a putut exporta lista de excluse.</string>
     <string name="msg_excluded_import_failed">Nu s-a putut importa lista de excluse.</string>
+    <string name="msg_excluded_saved_nextcloud">Lista de excluse a fost salvată pe Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Nu s-a putut salva lista de excluse pe Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Nu s-a putut încărca lista de excluse de pe Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Nu există listă de excluse pe Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d excluse din carusel</string>
     <string name="settings_excluded_export">Exportă lista de excluse</string>
     <string name="settings_excluded_import">Importă lista de excluse</string>
+    <string name="settings_excluded_save_nextcloud">Salvează lista de excluse pe Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Încarcă lista de excluse din Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Salvată în folderul remote ca .ncarousel/excluded-hrefs.txt (sincronizare manuală între dispozitive).</string>
     <string name="settings_excluded_clear">Golește lista de excluse</string>
     <string name="settings_excluded_import_confirm_title">Înlocuiești lista de excluse?</string>
     <string name="settings_excluded_import_confirm_body">Înlocuiești lista actuală cu %1$d intrări din fișier?</string>

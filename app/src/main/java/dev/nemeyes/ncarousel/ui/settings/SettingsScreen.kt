@@ -101,6 +101,8 @@ fun SettingsScreen(
     onImportExcludedText: (String) -> Result<Int>,
     onClearExcluded: () -> Unit,
     onExcludedIoMessage: (String) -> Unit,
+    onSaveExcludedToNextcloud: () -> Unit,
+    onFetchExcludedFromNextcloud: ((Result<String>) -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
     var orderExpanded by remember { mutableStateOf(false) }
@@ -515,6 +517,47 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.settings_excluded_import))
             }
+            OutlinedButton(
+                onClick = onSaveExcludedToNextcloud,
+                enabled = excludedActionsEnabled && excludedCount > 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_excluded_save_nextcloud))
+            }
+            OutlinedButton(
+                onClick = {
+                    onFetchExcludedFromNextcloud { result ->
+                        result.fold(
+                            onSuccess = { text ->
+                                val count = ExcludedHrefStore.parse(text).size
+                                if (count == 0) {
+                                    onExcludedIoMessage(
+                                        context.getString(R.string.msg_excluded_import_empty),
+                                    )
+                                } else {
+                                    pendingImportText = text
+                                    pendingImportCount = count
+                                }
+                            },
+                            onFailure = { err ->
+                                onExcludedIoMessage(
+                                    err.message
+                                        ?: context.getString(R.string.msg_excluded_load_nextcloud_failed, ""),
+                                )
+                            },
+                        )
+                    }
+                },
+                enabled = excludedActionsEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_excluded_load_nextcloud))
+            }
+            Text(
+                text = stringResource(R.string.settings_excluded_nextcloud_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             TextButton(
                 onClick = { showClearExcludedConfirm = true },
                 enabled = excludedActionsEnabled && excludedCount > 0,

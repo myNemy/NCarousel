@@ -566,6 +566,8 @@ private fun AuthenticatedShell(
                                 onImportExcludedText = viewModel::importExcludedHrefs,
                                 onClearExcluded = viewModel::clearExcludedHrefs,
                                 onExcludedIoMessage = viewModel::setStatusMessage,
+                                onSaveExcludedToNextcloud = viewModel::saveExcludedHrefsToNextcloud,
+                                onFetchExcludedFromNextcloud = viewModel::fetchExcludedHrefsFromNextcloud,
                             )
                         }
                     }

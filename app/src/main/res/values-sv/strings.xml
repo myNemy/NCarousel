@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Inga giltiga bildsökvägar i filen.</string>
     <string name="msg_excluded_export_failed">Kunde inte exportera uteslutningslistan.</string>
     <string name="msg_excluded_import_failed">Kunde inte importera uteslutningslistan.</string>
+    <string name="msg_excluded_saved_nextcloud">Uteslutningslistan sparades till Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Kunde inte spara uteslutningslistan till Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Kunde inte läsa uteslutningslistan från Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Ingen uteslutningslista hittades på Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d uteslutna från karusellen</string>
     <string name="settings_excluded_export">Exportera uteslutningslista</string>
     <string name="settings_excluded_import">Importera uteslutningslista</string>
+    <string name="settings_excluded_save_nextcloud">Spara uteslutningslista till Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Läs uteslutningslista från Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Sparas i din fjärrkatalog som .ncarousel/excluded-hrefs.txt (manuell synk mellan enheter).</string>
     <string name="settings_excluded_clear">Rensa uteslutningslista</string>
     <string name="settings_excluded_import_confirm_title">Ersätt uteslutningslistan?</string>
     <string name="settings_excluded_import_confirm_body">Ersätt den aktuella listan med %1$d poster från filen?</string>

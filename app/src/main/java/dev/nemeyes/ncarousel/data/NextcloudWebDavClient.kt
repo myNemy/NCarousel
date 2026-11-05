@@ -170,6 +170,78 @@ class NextcloudWebDavClient(
         }
     }
 
+    /**
+     * Downloads a file under the user’s DAV root by relative path
+     * (e.g. `Photos/.ncarousel/excluded-hrefs.txt`).
+     * [NoSuchElementException] when the server returns 404.
+     */
+    suspend fun downloadRelativeFile(relativePath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+        runCatching {
+            val url = filesDavUrl(davUserId, relativePath.trim().trim('/'))
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", authHeader)
+                .get()
+                .build()
+            davHttp.newCall(request).execute().use { response ->
+                when {
+                    response.code == 404 -> throw NoSuchElementException("HTTP 404")
+                    !response.isSuccessful -> error("GET failed: HTTP ${response.code}")
+                    else -> response.body?.bytes() ?: error("Empty body")
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a collection at [relativeFolder] (MKCOL).
+     * Treats “already exists” responses as success (405 / 409 / 301).
+     */
+    suspend fun ensureFolder(relativeFolder: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val path = relativeFolder.trim().trim('/')
+            if (path.isEmpty()) return@runCatching
+            val url = filesDavUrl(davUserId, path)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", authHeader)
+                .method("MKCOL", null)
+                .build()
+            davHttp.newCall(request).execute().use { response ->
+                when (response.code) {
+                    201, 200, 204 -> Unit
+                    // Folder already present (or redirect to existing).
+                    405, 409, 301, 302 -> Unit
+                    else -> error("MKCOL failed: HTTP ${response.code}")
+                }
+            }
+        }
+    }
+
+    /** Creates or overwrites a file under the user’s DAV root (PUT). */
+    suspend fun putFile(
+        relativePath: String,
+        bytes: ByteArray,
+        contentType: String = "text/plain; charset=utf-8",
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val path = relativePath.trim().trim('/')
+            require(path.isNotEmpty()) { "Empty DAV path" }
+            val url = filesDavUrl(davUserId, path)
+            val body = bytes.toRequestBody(contentType.toMediaType())
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", authHeader)
+                .put(body)
+                .build()
+            davHttp.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    error("PUT failed: HTTP ${response.code}")
+                }
+            }
+        }
+    }
+
     private fun propfindDepthOne(folder: String): List<DavEntry> {
         val url = filesDavUrl(davUserId, folder)
         val request = Request.Builder()

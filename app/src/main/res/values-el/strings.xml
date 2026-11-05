@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Δεν υπάρχουν έγκυρες διαδρομές εικόνων στο αρχείο.</string>
     <string name="msg_excluded_export_failed">Αδυναμία εξαγωγής της λίστας εξαιρέσεων.</string>
     <string name="msg_excluded_import_failed">Αδυναμία εισαγωγής της λίστας εξαιρέσεων.</string>
+    <string name="msg_excluded_saved_nextcloud">Η λίστα εξαιρέσεων αποθηκεύτηκε στο Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Αδυναμία αποθήκευσης της λίστας εξαιρέσεων στο Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Αδυναμία φόρτωσης της λίστας εξαιρέσεων από το Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Δεν βρέθηκε λίστα εξαιρέσεων στο Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d εξαιρούνται από το καρουζέλ</string>
     <string name="settings_excluded_export">Εξαγωγή λίστας εξαιρέσεων</string>
     <string name="settings_excluded_import">Εισαγωγή λίστας εξαιρέσεων</string>
+    <string name="settings_excluded_save_nextcloud">Αποθήκευση λίστας εξαιρέσεων στο Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Φόρτωση λίστας εξαιρέσεων από το Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Αποθηκεύεται στον απομακρυσμένο φάκελο ως .ncarousel/excluded-hrefs.txt (χειροκίνητος συγχρονισμός μεταξύ συσκευών).</string>
     <string name="settings_excluded_clear">Εκκαθάριση λίστας εξαιρέσεων</string>
     <string name="settings_excluded_import_confirm_title">Αντικατάσταση λίστας εξαιρέσεων;</string>
     <string name="settings_excluded_import_confirm_body">Αντικατάσταση της τρέχουσας λίστας με %1$d καταχωρήσεις από το αρχείο;</string>

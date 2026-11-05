@@ -50,6 +50,9 @@ class ExcludedHrefStore(context: Context, private val accountId: String) {
 
     companion object {
         const val EXPORT_HEADER = "# NCarousel excluded hrefs"
+        /** Hidden app folder under the account remote folder (Nextcloud). */
+        const val REMOTE_DIR_NAME = ".ncarousel"
+        const val REMOTE_FILE_NAME = "excluded-hrefs.txt"
 
         fun filterActive(hrefs: List<String>, excluded: Set<String>): List<String> =
             if (excluded.isEmpty()) hrefs else hrefs.filter { it !in excluded }
@@ -71,6 +74,21 @@ class ExcludedHrefStore(context: Context, private val accountId: String) {
                     append('\n')
                 }
             }
+        }
+
+        /** Relative DAV path for the excluded list under [remoteFolder]. */
+        fun remoteFilePath(remoteFolder: String): String {
+            val root = remoteFolder.trim().trim('/')
+            return if (root.isEmpty()) {
+                "$REMOTE_DIR_NAME/$REMOTE_FILE_NAME"
+            } else {
+                "$root/$REMOTE_DIR_NAME/$REMOTE_FILE_NAME"
+            }
+        }
+
+        fun remoteDirPath(remoteFolder: String): String {
+            val root = remoteFolder.trim().trim('/')
+            return if (root.isEmpty()) REMOTE_DIR_NAME else "$root/$REMOTE_DIR_NAME"
         }
     }
 }

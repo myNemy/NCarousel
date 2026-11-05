@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Nincs érvényes képelérési út a fájlban.</string>
     <string name="msg_excluded_export_failed">A kizárási lista exportálása nem sikerült.</string>
     <string name="msg_excluded_import_failed">A kizárási lista importálása nem sikerült.</string>
+    <string name="msg_excluded_saved_nextcloud">Kizárási lista mentve a Nextcloudra (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">A kizárási lista mentése a Nextcloudra nem sikerült: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">A kizárási lista betöltése a Nextcloudról nem sikerült: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Nincs kizárási lista a Nextcloudon (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d kizárva a körforgásból</string>
     <string name="settings_excluded_export">Kizárási lista exportálása</string>
     <string name="settings_excluded_import">Kizárási lista importálása</string>
+    <string name="settings_excluded_save_nextcloud">Kizárási lista mentése Nextcloudra</string>
+    <string name="settings_excluded_load_nextcloud">Kizárási lista betöltése Nextcloudról</string>
+    <string name="settings_excluded_nextcloud_hint">A távoli mappába kerül .ncarousel/excluded-hrefs.txt néven (kézi szinkron eszközök között).</string>
     <string name="settings_excluded_clear">Kizárási lista törlése</string>
     <string name="settings_excluded_import_confirm_title">Kizárási lista cseréje?</string>
     <string name="settings_excluded_import_confirm_body">Lecseréli a jelenlegi listát a fájl %1$d elemére?</string>

@@ -83,9 +83,16 @@
     <string name="msg_excluded_import_empty">Brak prawidłowych ścieżek obrazów w pliku.</string>
     <string name="msg_excluded_export_failed">Nie udało się wyeksportować listy wykluczeń.</string>
     <string name="msg_excluded_import_failed">Nie udało się zaimportować listy wykluczeń.</string>
+    <string name="msg_excluded_saved_nextcloud">Zapisano listę wykluczeń w Nextcloud (.ncarousel).</string>
+    <string name="msg_excluded_save_nextcloud_failed">Nie udało się zapisać listy wykluczeń w Nextcloud: %1$s</string>
+    <string name="msg_excluded_load_nextcloud_failed">Nie udało się wczytać listy wykluczeń z Nextcloud: %1$s</string>
+    <string name="msg_excluded_nextcloud_missing">Brak listy wykluczeń w Nextcloud (.ncarousel/excluded-hrefs.txt).</string>
     <string name="settings_excluded_count">%1$d wykluczonych z karuzeli</string>
     <string name="settings_excluded_export">Eksportuj listę wykluczeń</string>
     <string name="settings_excluded_import">Importuj listę wykluczeń</string>
+    <string name="settings_excluded_save_nextcloud">Zapisz listę wykluczeń w Nextcloud</string>
+    <string name="settings_excluded_load_nextcloud">Wczytaj listę wykluczeń z Nextcloud</string>
+    <string name="settings_excluded_nextcloud_hint">Zapisywana w folderze zdalnym jako .ncarousel/excluded-hrefs.txt (ręczna synchronizacja między urządzeniami).</string>
     <string name="settings_excluded_clear">Wyczyść listę wykluczeń</string>
     <string name="settings_excluded_import_confirm_title">Zastąpić listę wykluczeń?</string>
     <string name="settings_excluded_import_confirm_body">Zastąpić bieżącą listę %1$d wpisami z pliku?</string>

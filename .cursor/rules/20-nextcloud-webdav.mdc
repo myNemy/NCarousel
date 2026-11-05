@@ -11,12 +11,13 @@ alwaysApply: false
 - Usare endpoint WebDAV Nextcloud (`/remote.php/dav/files/{USERNAME}/...`).
 - Autenticazione: Basic Auth con app password (quando possibile).
 
-## PROPFIND
+## PROPFIND / GET / PUT
 
 - Richiedere solo proprietà necessarie (es. `href`, `getcontenttype`, `getcontentlength`) per ridurre payload.
 - Usare `Depth` coerente:
   - `Depth: 0` per test connessione/metadata cartella
   - `Depth: 1` per listing e ricorsione gestita dall’app
+- Scritture app (es. lista esclusi): `MKCOL` per cartelle nascoste (es. `.ncarousel/`) poi `PUT`; trattare “già esiste” su MKCOL come successo.
 
 ## Parsing
 
