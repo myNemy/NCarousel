@@ -52,9 +52,11 @@ This repo includes Fastlane-style metadata files:
 - `fastlane/metadata/android/en-US/full_description.txt`
 - `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
 
+**`full_description.txt` is the source of truth** for the public feature list. Keep **`README.md` Features / Privacy** in sync (Cursor rule `.cursor/rules/16-readme-fdroid-description-sync.mdc`). Agents must update both when user-facing capabilities change.
+
 What you should do for each release:
 
-- Update descriptions if needed
+- Update descriptions if the shipped feature set changed (and mirror into `README.md`)
 - Add a new changelog file named after the **new** `versionCode`
 - (Recommended) add screenshots under:
   - `fastlane/metadata/android/en-US/images/phoneScreenshots/`

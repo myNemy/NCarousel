@@ -1,22 +1,46 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 
-## NCarousel
+# NCarousel
 
-Android app that downloads images from your **Nextcloud** server (WebDAV) and sets them as the device **wallpaper**, using official Android APIs.
+Nextcloud wallpaper carousel (WebDAV).
 
-The app follows the system locale when translations are available (default English, plus several European languages).
+Android app that downloads images from a folder on your **Nextcloud** server and sets them as the device **wallpaper**, using official Android APIs.
 
 ## Download
 
+- **[F-Droid](https://f-droid.org/packages/dev.nemeyes.ncarousel/)** (recommended)
 - **[GitHub Releases](https://github.com/myNemy/NCarousel/releases)**
+
+## Features
+
+- Sign in to your own Nextcloud (browser login or username / app password); multiple accounts
+- Choose a remote folder and sync the image list
+- Automatic wallpaper rotation (minimum interval 1 minute; WorkManager may delay in Doze)
+- Order modes: sequential, random, shuffle once, smart random, no-repeat
+- Manual “next” from the app and an optional Quick Settings tile
+- Apply to home, lock screen, or both
+- Image fit: fill (crop), fit with soft blurred edges, or center
+- Optional Wi‑Fi-only mode for scheduled downloads (manual apply still works on any network)
+- Library: search, sort (name, date, folders, carousel index; tap again to invert), folder filter, grid or list, pin current wallpaper
+- Fullscreen preview; apply only or apply and advance; exclude images from the automatic carousel
+- Manage exclusions (filter in Library; export/import; optional save/load under `.ncarousel` on Nextcloud)
+- Optional on-device image cache; EXIF / place info for the last wallpaper applied by the app
+- Follows the system language when a translation is available (default English, plus several European languages)
+
+## Privacy
+
+- No trackers
+- Credentials are stored encrypted on-device (AndroidX Security)
+- Network connections only go to the Nextcloud server you configure
 
 ## License
 
 Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See `LICENSE`.
 
-## Repositories
+## Source
 
-Source and issue tracking:
+- **GitHub**: [github.com/myNemy/NCarousel](https://github.com/myNemy/NCarousel)
+- **Forgejo** (mirror): [forgejo.it/Nemeyes/NCarousel](https://forgejo.it/Nemeyes/NCarousel)
+- Issues: [github.com/myNemy/NCarousel/issues](https://github.com/myNemy/NCarousel/issues)
 
-- **Forgejo**: [forgejo.it/Nemeyes/NCarousel](https://forgejo.it/Nemeyes/NCarousel)
-- **GitHub** (mirror): [github.com/myNemy/NCarousel](https://github.com/myNemy/NCarousel)
+Store listing text for F-Droid lives under `fastlane/metadata/android/en-US/` (`short_description.txt`, `full_description.txt`). Keep the README **Features** / **Privacy** sections in sync with `full_description.txt` (see `.cursor/rules/16-readme-fdroid-description-sync.mdc`).

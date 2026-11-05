@@ -1,0 +1,41 @@
+---
+description: Keep README Features/Privacy in sync with Fastlane F-Droid full_description
+alwaysApply: true
+---
+
+# README ↔ F-Droid description sync
+
+## Source of truth
+
+For **user-facing** product copy shown on the store and on GitHub:
+
+1. **`fastlane/metadata/android/en-US/full_description.txt`** — canonical feature list + privacy (what F-Droid displays).
+2. **`fastlane/metadata/android/en-US/short_description.txt`** — one-line summary (≤80 chars typical for F-Droid).
+3. **`README.md`** — must mirror the same **Features** and **Privacy** bullets (and stay consistent with the short summary). Download links, license, and source remotes belong in the README only.
+
+Do **not** invent README features that are missing from `full_description.txt`. Do **not** leave `full_description.txt` stale after shipping a visible capability.
+
+## Agent obligation (automatic)
+
+Whenever you **add, remove, or meaningfully change** a **user-visible** capability (UI, Settings toggle, Library behaviour, wallpaper apply modes, network constraint the user can choose, etc.), in the **same** change set / session you **MUST**:
+
+1. Update **`fastlane/metadata/android/en-US/full_description.txt`** (and `short_description.txt` if the one-liner should change).
+2. Update **`README.md`** Features / Privacy so they match `full_description.txt` (same bullets; README may keep extra sections: Download, License, Source).
+3. If the change ships in a **`main` publish**, also add/update the Fastlane changelog for the new `versionCode` (existing rules `45` / `50`). Updating description text alone on **`dev`** does **not** require a version bump.
+
+## What does **not** require a description update
+
+- Pure refactors, CI, docs-only maintainer notes (`.cursor/**`, `docs/DEVELOPMENT.md`, `docs/FDROID.md`).
+- Bug fixes that do not change the advertised capability set.
+- Internal / debug-only behaviour.
+
+When in doubt for a user-visible change, **update both files**.
+
+## Branch workflow
+
+Land description updates on **`dev`** with the feature (trial). They reach F-Droid’s website on the next **publish** to `main` (workflow **D** in `.cursor/rules/06-git-branch-workflow.mdc`). Mentioning “F-Droid” while editing copy is **not** by itself a publish request.
+
+## Style
+
+- English, short bullets, user-facing (no WorkManager internals unless already present for honesty about Doze delays).
+- Keep `full_description.txt` plain text (no Markdown headings); README may use Markdown headings and bold.
