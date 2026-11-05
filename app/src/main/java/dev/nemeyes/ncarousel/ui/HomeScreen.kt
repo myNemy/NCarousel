@@ -562,6 +562,10 @@ private fun AuthenticatedShell(
                                 onGeocoderPlatformChange = viewModel::updateGeocoderPlatformEnabled,
                                 onGeocoderPhotonChange = viewModel::updateGeocoderPhotonEnabled,
                                 onRequestBatteryOptimizationFromBanner = viewModel::openBatteryOptimizationConsentFromSettings,
+                                onExportExcludedText = viewModel::exportExcludedHrefsText,
+                                onImportExcludedText = viewModel::importExcludedHrefs,
+                                onClearExcluded = viewModel::clearExcludedHrefs,
+                                onExcludedIoMessage = viewModel::setStatusMessage,
                             )
                         }
                     }

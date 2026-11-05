@@ -247,6 +247,7 @@ fun LibraryScreen(
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
+    var showExcludedOnly by remember { mutableStateOf(false) }
     var folderMenuExpanded by remember { mutableStateOf(false) }
     var previewTarget by remember { mutableStateOf<LibraryPreviewTarget?>(null) }
     var filtersExpanded by remember { mutableStateOf(true) }
@@ -358,10 +359,18 @@ fun LibraryScreen(
             else -> base.asReversed()
         }
     }
-    val filteredRows = remember(sortedRows, query, folderFilter, state.lastWallpaperHref) {
+    val filteredRows = remember(
+        sortedRows,
+        query,
+        folderFilter,
+        showExcludedOnly,
+        state.excludedImageHrefs,
+        state.lastWallpaperHref,
+    ) {
         val q = query.trim().lowercase()
         val matched = sortedRows.filter { r ->
             matchesFolderFilter(r, folderFilter) &&
+                (!showExcludedOnly || r.href in state.excludedImageHrefs) &&
                 (
                     q.isEmpty() ||
                         r.fileName.lowercase().contains(q) ||
@@ -442,6 +451,10 @@ fun LibraryScreen(
         if (folderFilter != null) {
             append(" · ")
             append(folderFilterDisplay)
+        }
+        if (showExcludedOnly) {
+            append(" · ")
+            append(stringResource(R.string.nc_library_filter_excluded))
         }
         val q = query.trim()
         if (q.isNotEmpty()) {
@@ -691,6 +704,18 @@ fun LibraryScreen(
                                     null
                                 },
                             )
+                            FilterChip(
+                                selected = showExcludedOnly,
+                                onClick = { showExcludedOnly = !showExcludedOnly },
+                                label = { Text(stringResource(R.string.nc_library_filter_excluded)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Block,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                },
+                            )
                         }
                     }
                 }
@@ -703,7 +728,40 @@ fun LibraryScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                when (viewMode) {
+                if (filteredRows.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (showExcludedOnly) {
+                                    R.string.nc_library_empty_excluded_title
+                                } else {
+                                    R.string.nc_library_empty_title
+                                },
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(
+                                if (showExcludedOnly) {
+                                    R.string.nc_library_empty_excluded_body
+                                } else {
+                                    R.string.nc_library_empty_body
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                } else when (viewMode) {
                     LibraryViewMode.LIST -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -873,7 +931,7 @@ fun LibraryScreen(
                     }
                 }
 
-                if (showFastScroll && (fastScrollVisible || dragActive)) {
+                if (filteredRows.isNotEmpty() && showFastScroll && (fastScrollVisible || dragActive)) {
                     FastScroller(
                         modifier =
                             Modifier

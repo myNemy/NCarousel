@@ -16,10 +16,7 @@ class ExcludedHrefStore(context: Context, private val accountId: String) {
 
     fun read(): Set<String> {
         if (!file.exists()) return emptySet()
-        return file.readLines(Charsets.UTF_8)
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
+        return parse(file.readText(Charsets.UTF_8))
     }
 
     fun write(hrefs: Set<String>) {
@@ -28,7 +25,7 @@ class ExcludedHrefStore(context: Context, private val accountId: String) {
             clear()
             return
         }
-        file.writeText(hrefs.sorted().joinToString("\n"), Charsets.UTF_8)
+        file.writeText(serialize(hrefs), Charsets.UTF_8)
     }
 
     /** @return true if [href] is excluded after the toggle. */
@@ -52,7 +49,28 @@ class ExcludedHrefStore(context: Context, private val accountId: String) {
     }
 
     companion object {
+        const val EXPORT_HEADER = "# NCarousel excluded hrefs"
+
         fun filterActive(hrefs: List<String>, excluded: Set<String>): List<String> =
             if (excluded.isEmpty()) hrefs else hrefs.filter { it !in excluded }
+
+        /** One href per line; optional `#` comment header/lines; blank lines ignored. */
+        fun parse(text: String): Set<String> =
+            text.lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .toSet()
+
+        fun serialize(hrefs: Set<String>): String {
+            if (hrefs.isEmpty()) return "$EXPORT_HEADER\n"
+            return buildString {
+                append(EXPORT_HEADER)
+                append('\n')
+                hrefs.sorted().forEach { href ->
+                    append(href)
+                    append('\n')
+                }
+            }
+        }
     }
 }

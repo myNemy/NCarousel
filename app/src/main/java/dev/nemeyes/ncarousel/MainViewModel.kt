@@ -965,6 +965,74 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Serialized excluded-href list for the active account (export). */
+    fun exportExcludedHrefsText(): String? {
+        val active = activeOrNull() ?: return null
+        return ExcludedHrefStore.serialize(ExcludedHrefStore(getApplication(), active.id).read())
+    }
+
+    /**
+     * Replaces the active account blacklist with hrefs parsed from [text].
+     * @return number of hrefs imported, or failure if no account / no valid hrefs.
+     */
+    fun importExcludedHrefs(text: String): Result<Int> {
+        val active = activeOrNull()
+            ?: return Result.failure(IllegalStateException(appStr(R.string.msg_add_account)))
+        val parsed = ExcludedHrefStore.parse(text)
+        if (parsed.isEmpty()) {
+            return Result.failure(IllegalArgumentException(appStr(R.string.msg_excluded_import_empty)))
+        }
+        viewModelScope.launch {
+            val (excluded, indices) = withContext(Dispatchers.IO) {
+                val store = ExcludedHrefStore(getApplication(), active.id)
+                store.write(parsed)
+                val excluded = store.read()
+                val indices = computeCarouselIndicesForActiveAccount(
+                    _ui.value.imageHrefs,
+                    _ui.value.orderMode,
+                    excluded,
+                )
+                excluded to indices
+            }
+            _ui.update {
+                it.copy(
+                    excludedImageHrefs = excluded,
+                    imageCarouselIndexByHref = indices,
+                    statusMessage = appStr(R.string.msg_excluded_imported, excluded.size),
+                )
+            }
+        }
+        return Result.success(parsed.size)
+    }
+
+    fun clearExcludedHrefs() {
+        val active = activeOrNull() ?: run {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
+            return
+        }
+        viewModelScope.launch {
+            val indices = withContext(Dispatchers.IO) {
+                ExcludedHrefStore(getApplication(), active.id).clear()
+                computeCarouselIndicesForActiveAccount(
+                    _ui.value.imageHrefs,
+                    _ui.value.orderMode,
+                    emptySet(),
+                )
+            }
+            _ui.update {
+                it.copy(
+                    excludedImageHrefs = emptySet(),
+                    imageCarouselIndexByHref = indices,
+                    statusMessage = appStr(R.string.msg_excluded_cleared),
+                )
+            }
+        }
+    }
+
+    fun setStatusMessage(message: String) {
+        _ui.update { it.copy(statusMessage = message) }
+    }
+
     fun setActiveAccount(id: String) {
         loginJob?.cancel()
         clearBusyState()

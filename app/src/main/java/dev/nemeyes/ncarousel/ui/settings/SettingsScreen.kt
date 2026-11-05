@@ -1,5 +1,11 @@
 package dev.nemeyes.ncarousel.ui.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -25,6 +32,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,18 +50,15 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
+import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
+import dev.nemeyes.ncarousel.data.ExcludedHrefStore
 import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperCropMode
-import dev.nemeyes.ncarousel.data.WallpaperTarget
-import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
+import dev.nemeyes.ncarousel.data.WallpaperTarget
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 import dev.nemeyes.ncarousel.ui.components.SettingsInlineDivider
 import dev.nemeyes.ncarousel.ui.components.SettingsSwitchRow
@@ -92,6 +97,10 @@ fun SettingsScreen(
     onGeocoderPlatformChange: (Boolean) -> Unit,
     onGeocoderPhotonChange: (Boolean) -> Unit,
     onRequestBatteryOptimizationFromBanner: () -> Unit,
+    onExportExcludedText: () -> String?,
+    onImportExcludedText: (String) -> Result<Int>,
+    onClearExcluded: () -> Unit,
+    onExcludedIoMessage: (String) -> Unit,
 ) {
     val context = LocalContext.current
     var orderExpanded by remember { mutableStateOf(false) }
@@ -99,6 +108,114 @@ fun SettingsScreen(
     var wallpaperCropExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
     var geocoderOrderExpanded by remember { mutableStateOf(false) }
+    var pendingImportText by remember { mutableStateOf<String?>(null) }
+    var pendingImportCount by remember { mutableStateOf(0) }
+    var showClearExcludedConfirm by remember { mutableStateOf(false) }
+    val excludedCount = state.excludedImageHrefs.size
+    val excludedActionsEnabled = !state.busy && state.activeAccountId != null
+
+    val exportExcludedLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val text = onExportExcludedText()
+        if (text == null) {
+            onExcludedIoMessage(context.getString(R.string.msg_add_account))
+            return@rememberLauncherForActivityResult
+        }
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { out ->
+                out.write(text.toByteArray(Charsets.UTF_8))
+            } ?: error("openOutputStream")
+        }.onFailure {
+            onExcludedIoMessage(context.getString(R.string.msg_excluded_export_failed))
+        }
+    }
+
+    val importExcludedLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val text = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                input.readBytes().toString(Charsets.UTF_8)
+            } ?: error("openInputStream")
+        }.getOrElse {
+            onExcludedIoMessage(context.getString(R.string.msg_excluded_import_failed))
+            return@rememberLauncherForActivityResult
+        }
+        val count = ExcludedHrefStore.parse(text).size
+        if (count == 0) {
+            onExcludedIoMessage(context.getString(R.string.msg_excluded_import_empty))
+            return@rememberLauncherForActivityResult
+        }
+        pendingImportText = text
+        pendingImportCount = count
+    }
+
+    if (pendingImportText != null) {
+        AlertDialog(
+            onDismissRequest = {
+                pendingImportText = null
+                pendingImportCount = 0
+            },
+            title = { Text(stringResource(R.string.settings_excluded_import_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.settings_excluded_import_confirm_body, pendingImportCount))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val payload = pendingImportText
+                        pendingImportText = null
+                        pendingImportCount = 0
+                        if (payload != null) {
+                            onImportExcludedText(payload).onFailure { err ->
+                                onExcludedIoMessage(
+                                    err.message ?: context.getString(R.string.msg_excluded_import_failed),
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_excluded_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendingImportText = null
+                        pendingImportCount = 0
+                    },
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showClearExcludedConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearExcludedConfirm = false },
+            title = { Text(stringResource(R.string.settings_excluded_clear_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_excluded_clear_confirm_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearExcludedConfirm = false
+                        onClearExcluded()
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_excluded_clear_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearExcludedConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
 
     Column(
         modifier = modifier
@@ -376,6 +493,35 @@ fun SettingsScreen(
                 onCheckedChange = onAutoUnmeteredOnlyChange,
                 enabled = !state.busy && state.autoWallpaperEnabled,
             )
+            SettingsInlineDivider()
+            Text(
+                text = stringResource(R.string.settings_excluded_count, excludedCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = { exportExcludedLauncher.launch("ncarousel-excluded.txt") },
+                enabled = excludedActionsEnabled && excludedCount > 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_excluded_export))
+            }
+            OutlinedButton(
+                onClick = {
+                    importExcludedLauncher.launch(arrayOf("text/plain", "text/*", "*/*"))
+                },
+                enabled = excludedActionsEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_excluded_import))
+            }
+            TextButton(
+                onClick = { showClearExcludedConfirm = true },
+                enabled = excludedActionsEnabled && excludedCount > 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_excluded_clear))
+            }
             Text(
                 text = stringResource(R.string.main_intro_body, WallpaperWorkScheduler.MIN_INTERVAL_MINUTES),
                 style = MaterialTheme.typography.bodySmall,
