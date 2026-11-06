@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -1031,6 +1032,7 @@ fun LibraryScreen(
  * - Fit: pinch-to-zoom + pan for inspect (no framing).
  * Double-tap: if zoomed, reset zoom; else if framing, reset crop offset to center.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ZoomablePreviewPane(
     resetKey: Any?,
