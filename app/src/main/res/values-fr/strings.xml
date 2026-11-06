@@ -228,6 +228,7 @@
     <string name="nc_library_preview_apply_only">Définir le fond seulement</string>
     <string name="nc_library_preview_apply_advance">Définir et avancer le carrousel</string>
     <string name="nc_library_preview_close">Fermer</string>
+    <string name="nc_library_preview_frame_hint">Faites glisser pour cadrer · double tap pour centrer · pincez pour inspecter</string>
     <string name="nc_library_share">Partager l’image</string>
     <string name="nc_library_share_chooser">Partager l’image</string>
     <string name="status_preparing_share">Préparation de l’image à partager…</string>

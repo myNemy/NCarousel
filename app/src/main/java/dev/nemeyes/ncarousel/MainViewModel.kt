@@ -9,6 +9,8 @@ import androidx.work.ExistingWorkPolicy
 import dev.nemeyes.ncarousel.data.BatteryOptimizationHelper
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CarouselStatusNotifications
+import dev.nemeyes.ncarousel.data.CropOffset
+import dev.nemeyes.ncarousel.data.CropOffsetStore
 import dev.nemeyes.ncarousel.data.ExcludedHrefStore
 import dev.nemeyes.ncarousel.data.HttpClientProvider
 import dev.nemeyes.ncarousel.data.ImageExifSummary
@@ -1039,6 +1041,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Framing bias for Cover / Center; centered when unset. Safe to call from UI. */
+    fun cropOffsetFor(href: String): CropOffset {
+        val active = activeOrNull() ?: return CropOffset.CENTER
+        val key = href.trim()
+        if (key.isEmpty()) return CropOffset.CENTER
+        return CropOffsetStore(getApplication(), active.id).get(key)
+    }
+
+    /** Persists framing for [href] (clears entry when centered). Used by Library preview. */
+    fun setCropOffset(href: String, offset: CropOffset) {
+        val key = href.trim()
+        if (key.isEmpty()) return
+        val active = activeOrNull() ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            CropOffsetStore(getApplication(), active.id).set(key, offset)
+        }
+    }
+
     /** Serialized excluded-href list for the active account (export). */
     fun exportExcludedHrefsText(): String? {
         val active = activeOrNull() ?: return null
@@ -1257,6 +1277,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         carousel.clearThemingForAccount(id)
         LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
         ExcludedHrefStore(getApplication(), id).clear()
+        CropOffsetStore(getApplication(), id).clear()
         ImageListCache(getApplication(), id).clear()
         accounts.delete(id)
         val a = accounts.getActiveAccount()

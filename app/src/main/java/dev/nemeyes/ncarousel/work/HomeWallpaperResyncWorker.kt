@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.nemeyes.ncarousel.data.CarouselPreferences
+import dev.nemeyes.ncarousel.data.CropOffsetStore
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperRepository
@@ -55,7 +56,12 @@ class HomeWallpaperResyncWorker(
             ?: return@withContext Result.success()
 
         // Re-apply both surfaces (not home-only): home-only rewrite clears/desyncs lock on some OEMs.
-        WallpaperRepository(app).setWallpaperFromImageBytes(bytes, WallpaperTarget.HOME_AND_LOCK)
+        val cropOffset = CropOffsetStore(app, account.id).get(href)
+        WallpaperRepository(app).setWallpaperFromImageBytes(
+            bytes,
+            WallpaperTarget.HOME_AND_LOCK,
+            cropOffset = cropOffset,
+        )
         Result.success()
     }
 }

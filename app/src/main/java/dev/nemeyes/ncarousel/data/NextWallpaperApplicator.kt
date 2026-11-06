@@ -164,7 +164,12 @@ object NextWallpaperApplicator {
             b
         }
 
-        return WallpaperRepository(app).setWallpaperFromImageBytes(bytes, wallpaperTarget).fold(
+        val cropOffset = CropOffsetStore(app, active.id).get(href)
+        return WallpaperRepository(app).setWallpaperFromImageBytes(
+            bytes,
+            wallpaperTarget,
+            cropOffset = cropOffset,
+        ).fold(
             onSuccess = {
                 onSuccessExtra()
                 LastAppliedWallpaperStore.setHref(app, active.id, href)

@@ -659,6 +659,8 @@ private fun AuthenticatedShell(
                                 onApplyHrefAndAdvance = { viewModel.applyWallpaperByHref(it, advanceCarousel = true) },
                                 onToggleExclude = viewModel::toggleExcludedFromCarousel,
                                 onShareHref = viewModel::shareLibraryImage,
+                                cropOffsetFor = viewModel::cropOffsetFor,
+                                onCropOffsetChange = viewModel::setCropOffset,
                             )
                         }
                     }

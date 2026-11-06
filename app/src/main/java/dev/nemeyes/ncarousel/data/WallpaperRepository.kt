@@ -39,17 +39,20 @@ class WallpaperRepository(private val context: Context) {
     /**
      * Decodes [bytes] to a bitmap scaled to the display size, applies JPEG/EXIF orientation when
      * present, then sets wallpaper per [target] (home / lock / both) using [cropMode]
-     * (or [CarouselPreferences.wallpaperCropMode] when null).
+     * (or [CarouselPreferences.wallpaperCropMode] when null) and optional [cropOffset] framing
+     * for Cover / Center (ignored for Fit).
      */
     fun setWallpaperFromImageBytes(
         bytes: ByteArray,
         target: WallpaperTarget = WallpaperTarget.HOME_AND_LOCK,
         cropMode: WallpaperCropMode? = null,
+        cropOffset: CropOffset = CropOffset.CENTER,
     ): Result<Unit> = runCatching {
         if (!isSupported()) error("Wallpaper not supported on this device")
         if (!isSetAllowed()) error("App is not allowed to set wallpaper (check device policy)")
 
         val mode = cropMode ?: CarouselPreferences(app).wallpaperCropMode
+        val offset = cropOffset.coerced()
         val (targetW, targetH) = resolveTargetBitmapSize()
 
         val exifOrientation = readExifOrientation(bytes)
@@ -74,7 +77,7 @@ class WallpaperRepository(private val context: Context) {
             ?: error("Unsupported or corrupt image")
 
         val upright = applyExifOrientation(decoded, exifOrientation)
-        val framed = layoutToSize(upright, targetW, targetH, mode)
+        val framed = layoutToSize(upright, targetW, targetH, mode, offset)
         if (framed != upright) upright.recycle()
 
         try {
@@ -224,23 +227,29 @@ class WallpaperRepository(private val context: Context) {
         dstW: Int,
         dstH: Int,
         mode: WallpaperCropMode,
+        offset: CropOffset,
     ): Bitmap = when (mode) {
-        WallpaperCropMode.COVER -> centerCropToSize(src, dstW, dstH)
+        WallpaperCropMode.COVER -> centerCropToSize(src, dstW, dstH, offset)
         WallpaperCropMode.FIT -> fitCenterToSize(src, dstW, dstH)
-        WallpaperCropMode.CENTER -> centerNoUpscaleToSize(src, dstW, dstH)
+        WallpaperCropMode.CENTER -> centerNoUpscaleToSize(src, dstW, dstH, offset)
     }
 
-    /** Scales uniformly to cover [dstW]×[dstH] then crops the center (similar to “crop” fill). */
-    private fun centerCropToSize(src: Bitmap, dstW: Int, dstH: Int): Bitmap {
+    /** Scales uniformly to cover [dstW]×[dstH] then crops using [offset] bias (0 = center). */
+    private fun centerCropToSize(
+        src: Bitmap,
+        dstW: Int,
+        dstH: Int,
+        offset: CropOffset = CropOffset.CENTER,
+    ): Bitmap {
         if (src.width <= 0 || src.height <= 0) return src
         val scale = max(dstW.toFloat() / src.width, dstH.toFloat() / src.height)
         val sw = max(1, (src.width * scale).roundToInt())
         val sh = max(1, (src.height * scale).roundToInt())
         val scaled = Bitmap.createScaledBitmap(src, sw, sh, true)
-        val x = ((sw - dstW) / 2f).roundToInt().coerceIn(0, max(0, sw - dstW))
-        val y = ((sh - dstH) / 2f).roundToInt().coerceIn(0, max(0, sh - dstH))
         val cw = dstW.coerceAtMost(sw)
         val ch = dstH.coerceAtMost(sh)
+        val x = cropOrigin(sw, cw, offset.x)
+        val y = cropOrigin(sh, ch, offset.y)
         val out = Bitmap.createBitmap(scaled, x, y, cw, ch)
         if (scaled != src) scaled.recycle()
         return out
@@ -254,7 +263,7 @@ class WallpaperRepository(private val context: Context) {
         val sh = max(1, (src.height * scale).roundToInt()).coerceAtMost(dstH)
         val scaled = Bitmap.createScaledBitmap(src, sw, sh, true)
 
-        val coverBg = centerCropToSize(src, dstW, dstH)
+        val coverBg = centerCropToSize(src, dstW, dstH, CropOffset.CENTER)
         val blurredBg = softBlurByDownsample(coverBg)
         if (blurredBg != coverBg) coverBg.recycle()
 
@@ -288,14 +297,19 @@ class WallpaperRepository(private val context: Context) {
     }
 
     /**
-     * No upscale: if the image is larger than the screen, center-crop at 1:1; if smaller, center
-     * on a black canvas. If only one side overflows, scale down just enough to fit (no upscale).
+     * No upscale: if the image is larger than the screen, crop at 1:1 using [offset]; if smaller,
+     * center on a black canvas. If only one side overflows, scale down just enough to fit (no upscale).
      */
-    private fun centerNoUpscaleToSize(src: Bitmap, dstW: Int, dstH: Int): Bitmap {
+    private fun centerNoUpscaleToSize(
+        src: Bitmap,
+        dstW: Int,
+        dstH: Int,
+        offset: CropOffset = CropOffset.CENTER,
+    ): Bitmap {
         if (src.width <= 0 || src.height <= 0) return src
         if (src.width >= dstW && src.height >= dstH) {
-            val x = ((src.width - dstW) / 2f).roundToInt().coerceIn(0, src.width - dstW)
-            val y = ((src.height - dstH) / 2f).roundToInt().coerceIn(0, src.height - dstH)
+            val x = cropOrigin(src.width, dstW, offset.x)
+            val y = cropOrigin(src.height, dstH, offset.y)
             return Bitmap.createBitmap(src, x, y, dstW, dstH)
         }
         val scale = min(

@@ -228,6 +228,7 @@
     <string name="nc_library_preview_apply_only">Apenas definir fundo</string>
     <string name="nc_library_preview_apply_advance">Definir e avançar carrossel</string>
     <string name="nc_library_preview_close">Fechar</string>
+    <string name="nc_library_preview_frame_hint">Arraste para enquadrar · toque duplo para centrar · belisque para inspecionar</string>
     <string name="nc_library_share">Partilhar imagem</string>
     <string name="nc_library_share_chooser">Partilhar imagem</string>
     <string name="status_preparing_share">A preparar imagem para partilhar…</string>

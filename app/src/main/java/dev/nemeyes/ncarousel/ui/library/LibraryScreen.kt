@@ -18,7 +18,6 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -88,8 +87,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -113,6 +114,8 @@ import coil.request.ImageRequest
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.CarouselPreferences
+import dev.nemeyes.ncarousel.data.CropOffset
+import dev.nemeyes.ncarousel.data.WallpaperCropMode
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 
@@ -244,6 +247,8 @@ fun LibraryScreen(
     onApplyHrefAndAdvance: (String) -> Unit,
     onToggleExclude: (String) -> Unit,
     onShareHref: (href: String, fileName: String) -> Unit,
+    cropOffsetFor: (href: String) -> CropOffset = { CropOffset.CENTER },
+    onCropOffsetChange: (href: String, offset: CropOffset) -> Unit = { _, _ -> },
 ) {
     var sortMode by remember { mutableStateOf(LibrarySortMode.FOLDERS) }
     /** true = A→Z / oldest / low index; false = Z→A / newest / high index. Date defaults to newest first. */
@@ -491,6 +496,8 @@ fun LibraryScreen(
                 state = state,
                 target = target,
                 rootFolderLabel = rootFolderLabel,
+                initialCropOffset = cropOffsetFor(target.href),
+                onCropOffsetChange = { offset -> onCropOffsetChange(target.href, offset) },
                 onDismiss = { previewTarget = null },
                 onApplyOnly = {
                     val href = target.href
@@ -1019,52 +1026,95 @@ fun LibraryScreen(
 }
 
 /**
- * Pinch-to-zoom + pan for preview image only (header/actions stay fixed).
- * Double-tap resets to fit. Zoom state resets when [resetKey] changes.
+ * Preview image gestures:
+ * - Cover / Center: drag frames wallpaper (BiasAlignment); pinch zooms for inspect only.
+ * - Fit: pinch-to-zoom + pan for inspect (no framing).
+ * Double-tap: if zoomed, reset zoom; else if framing, reset crop offset to center.
  */
 @Composable
 private fun ZoomablePreviewPane(
     resetKey: Any?,
+    framingEnabled: Boolean,
+    cropOffset: CropOffset,
+    onCropOffsetChange: (CropOffset) -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable (imageModifier: Modifier) -> Unit,
+    content: @Composable (imageModifier: Modifier, contentScale: ContentScale, alignment: Alignment) -> Unit,
 ) {
     var scale by remember(resetKey) { mutableFloatStateOf(1f) }
-    var offsetX by remember(resetKey) { mutableFloatStateOf(0f) }
-    var offsetY by remember(resetKey) { mutableFloatStateOf(0f) }
+    var inspectPanX by remember(resetKey) { mutableFloatStateOf(0f) }
+    var inspectPanY by remember(resetKey) { mutableFloatStateOf(0f) }
+    val inspecting = scale > 1.01f
+    val cropOffsetState = rememberUpdatedState(cropOffset)
+    val onCropOffsetChangeState = rememberUpdatedState(onCropOffsetChange)
     val transformState = rememberTransformableState { zoomChange, panChange, _ ->
         val newScale = (scale * zoomChange).coerceIn(1f, 5f)
         scale = newScale
         if (newScale > 1.01f) {
-            offsetX += panChange.x
-            offsetY += panChange.y
+            inspectPanX += panChange.x
+            inspectPanY += panChange.y
         } else {
-            offsetX = 0f
-            offsetY = 0f
+            inspectPanX = 0f
+            inspectPanY = 0f
         }
     }
 
     Box(
         modifier = modifier
             .clipToBounds()
-            .transformable(state = transformState)
-            .pointerInput(resetKey) {
+            .transformable(
+                state = transformState,
+                // When framing at 1×, leave drag to crop-offset gestures; pan only while inspecting.
+                canPan = { !framingEnabled || inspecting },
+            )
+            .pointerInput(resetKey, framingEnabled, inspecting) {
+                if (framingEnabled && !inspecting) {
+                    detectDragGestures { _, dragAmount ->
+                        val w = size.width.toFloat().coerceAtLeast(1f)
+                        val h = size.height.toFloat().coerceAtLeast(1f)
+                        val current = cropOffsetState.value
+                        // Drag image with finger: content moves with drag → bias decreases.
+                        val next = CropOffset(
+                            x = (current.x - dragAmount.x / (w * 0.5f)).coerceIn(-1f, 1f),
+                            y = (current.y - dragAmount.y / (h * 0.5f)).coerceIn(-1f, 1f),
+                        )
+                        onCropOffsetChangeState.value(next)
+                    }
+                }
+            }
+            .pointerInput(resetKey, framingEnabled) {
                 detectTapGestures(
                     onDoubleTap = {
-                        scale = 1f
-                        offsetX = 0f
-                        offsetY = 0f
+                        if (scale > 1.01f) {
+                            scale = 1f
+                            inspectPanX = 0f
+                            inspectPanY = 0f
+                        } else if (framingEnabled && !cropOffsetState.value.isCentered()) {
+                            onCropOffsetChangeState.value(CropOffset.CENTER)
+                        } else {
+                            scale = 1f
+                            inspectPanX = 0f
+                            inspectPanY = 0f
+                        }
                     },
                 )
             },
         contentAlignment = Alignment.Center,
     ) {
+        val contentScale = if (framingEnabled) ContentScale.Crop else ContentScale.Fit
+        val alignment: Alignment = if (framingEnabled) {
+            BiasAlignment(cropOffset.x, cropOffset.y)
+        } else {
+            Alignment.Center
+        }
         content(
             Modifier.graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                translationX = offsetX
-                translationY = offsetY
+                translationX = inspectPanX
+                translationY = inspectPanY
             },
+            contentScale,
+            alignment,
         )
     }
 }
@@ -1074,6 +1124,8 @@ private fun LibraryFullscreenPreview(
     state: MainUiState,
     target: LibraryPreviewTarget,
     rootFolderLabel: String,
+    initialCropOffset: CropOffset,
+    onCropOffsetChange: (CropOffset) -> Unit,
     onDismiss: () -> Unit,
     onApplyOnly: () -> Unit,
     onApplyAndAdvance: () -> Unit,
@@ -1084,6 +1136,8 @@ private fun LibraryFullscreenPreview(
     val isCurrent = state.lastWallpaperHref != null && target.href == state.lastWallpaperHref
     val isExcluded = target.href in state.excludedImageHrefs
     val carouselIndex = state.imageCarouselIndexByHref[target.href]
+    val framingEnabled = state.wallpaperCropMode != WallpaperCropMode.FIT
+    var cropOffset by remember(target.href) { mutableStateOf(initialCropOffset.coerced()) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1190,11 +1244,17 @@ private fun LibraryFullscreenPreview(
                 }
                 ZoomablePreviewPane(
                     resetKey = target.href,
+                    framingEnabled = framingEnabled,
+                    cropOffset = cropOffset,
+                    onCropOffsetChange = { next ->
+                        cropOffset = next
+                        onCropOffsetChange(next)
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                ) { imageModifier ->
+                ) { imageModifier, contentScale, alignment ->
                     LibraryThumbnail(
                         ctx = ctx,
                         serverUrl = state.serverUrl,
@@ -1204,7 +1264,8 @@ private fun LibraryFullscreenPreview(
                         sizePx = 2048,
                         modifier = imageModifier.fillMaxSize(),
                         isCurrent = false,
-                        contentScale = ContentScale.Fit,
+                        contentScale = contentScale,
+                        alignment = alignment,
                     )
                 }
                 val compactPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -1216,6 +1277,14 @@ private fun LibraryFullscreenPreview(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    if (framingEnabled) {
+                        Text(
+                            text = stringResource(R.string.nc_library_preview_frame_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.75f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     TextButton(
                         onClick = onToggleExclude,
                         enabled = !state.busy,
@@ -1270,6 +1339,7 @@ private fun LibraryThumbnail(
     modifier: Modifier,
     isCurrent: Boolean,
     contentScale: ContentScale = ContentScale.Crop,
+    alignment: Alignment = Alignment.Center,
 ) {
     if (fileId == null || serverUrl.isBlank() || loginName.isBlank() || password.isBlank()) {
         Box(
@@ -1290,6 +1360,7 @@ private fun LibraryThumbnail(
         model = model,
         contentDescription = null,
         contentScale = contentScale,
+        alignment = alignment,
         modifier = modifier.then(
             if (isCurrent) {
                 Modifier

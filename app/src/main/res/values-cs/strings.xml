@@ -228,6 +228,7 @@
     <string name="nc_library_preview_apply_only">Pouze nastavit tapetu</string>
     <string name="nc_library_preview_apply_advance">Nastavit a posunout karusel</string>
     <string name="nc_library_preview_close">Zavřít</string>
+    <string name="nc_library_preview_frame_hint">Tažením orámujte · dvojité klepnutí vycentruje · štípnutím prohlédnete</string>
     <string name="nc_library_share">Sdílet obrázek</string>
     <string name="nc_library_share_chooser">Sdílet obrázek</string>
     <string name="status_preparing_share">Připravuje se obrázek ke sdílení…</string>
