@@ -10,7 +10,13 @@
     <string name="login_intro">Conectați serverul Nextcloud pentru a folosi fotografiile ca fundal. Vă puteți autentifica în browser (recomandat) sau salva numele de utilizator și parola aplicației.</string>
     <string name="settings_group_account">Cont</string>
     <string name="settings_group_connection">Conexiune</string>
-    <string name="settings_group_carousel">Carusel și fundal</string>
+    <string name="settings_group_wallpaper">Fundal</string>
+    <string name="settings_group_carousel">Carusel</string>
+    <string name="settings_group_exclusions">Excluderi</string>
+    <string name="settings_group_storage">Stocare</string>
+    <string name="settings_group_notifications">Notificări</string>
+    <string name="settings_group_expand">Extinde secțiunea</string>
+    <string name="settings_group_collapse">Restrânge secțiunea</string>
     <string name="field_server_url">Adresa serverului</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Nume de utilizator</string>

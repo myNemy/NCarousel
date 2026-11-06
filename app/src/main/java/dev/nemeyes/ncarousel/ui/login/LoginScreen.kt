@@ -67,7 +67,11 @@ fun LoginScreen(
             )
         }
 
-        SettingsGroup(title = stringResource(R.string.settings_group_connection), icon = Icons.Outlined.Cloud) {
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_connection),
+            icon = Icons.Outlined.Cloud,
+            collapsible = false,
+        ) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.serverUrl,

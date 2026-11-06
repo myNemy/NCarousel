@@ -14,7 +14,13 @@
     <string name="login_intro">Connect your Nextcloud server to use photos as wallpaper. You can sign in with the browser (recommended) or save your username and app password.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_group_connection">Connection</string>
-    <string name="settings_group_carousel">Carousel &amp; wallpaper</string>
+    <string name="settings_group_wallpaper">Wallpaper</string>
+    <string name="settings_group_carousel">Carousel</string>
+    <string name="settings_group_exclusions">Exclusions</string>
+    <string name="settings_group_storage">Storage</string>
+    <string name="settings_group_notifications">Notifications</string>
+    <string name="settings_group_expand">Expand section</string>
+    <string name="settings_group_collapse">Collapse section</string>
     <string name="field_server_url">Server address</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Username</string>

@@ -10,7 +10,13 @@
     <string name="login_intro">Verbinden Sie Ihren Nextcloud-Server, um Fotos als Hintergrundbild zu nutzen. Sie können sich im Browser anmelden (empfohlen) oder Benutzername und App-Passwort speichern.</string>
     <string name="settings_group_account">Konto</string>
     <string name="settings_group_connection">Verbindung</string>
-    <string name="settings_group_carousel">Karussell &amp; Hintergrundbild</string>
+    <string name="settings_group_wallpaper">Hintergrund</string>
+    <string name="settings_group_carousel">Karussell</string>
+    <string name="settings_group_exclusions">Ausschlüsse</string>
+    <string name="settings_group_storage">Speicher</string>
+    <string name="settings_group_notifications">Benachrichtigungen</string>
+    <string name="settings_group_expand">Abschnitt erweitern</string>
+    <string name="settings_group_collapse">Abschnitt einklappen</string>
     <string name="field_server_url">Serveradresse</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Benutzername</string>

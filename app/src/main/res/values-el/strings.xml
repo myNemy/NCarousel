@@ -10,7 +10,13 @@
     <string name="login_intro">Συνδέστε τον διακομιστή Nextcloud για να χρησιμοποιείτε φωτογραφίες ως ταπετσαρία. Μπορείτε να συνδεθείτε από το πρόγραμμα περιήγησης (προτείνεται) ή να αποθηκεύσετε όνομα χρήστη και κωδικό εφαρμογής.</string>
     <string name="settings_group_account">Λογαριασμός</string>
     <string name="settings_group_connection">Σύνδεση</string>
-    <string name="settings_group_carousel">Καρουζέλ και ταπετσαρία</string>
+    <string name="settings_group_wallpaper">Ταπετσαρία</string>
+    <string name="settings_group_carousel">Καρουζέλ</string>
+    <string name="settings_group_exclusions">Εξαιρέσεις</string>
+    <string name="settings_group_storage">Αποθήκευση</string>
+    <string name="settings_group_notifications">Ειδοποιήσεις</string>
+    <string name="settings_group_expand">Ανάπτυξη ενότητας</string>
+    <string name="settings_group_collapse">Σύμπτυξη ενότητας</string>
     <string name="field_server_url">Διεύθυνση διακομιστή</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Όνομα χρήστη</string>

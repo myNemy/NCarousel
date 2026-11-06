@@ -10,7 +10,13 @@
     <string name="login_intro">Anslut din Nextcloud-server för att använda foton som bakgrund. Du kan logga in i webbläsaren (rekommenderas) eller spara användarnamn och applösenord.</string>
     <string name="settings_group_account">Konto</string>
     <string name="settings_group_connection">Anslutning</string>
-    <string name="settings_group_carousel">Karusell &amp; bakgrund</string>
+    <string name="settings_group_wallpaper">Bakgrund</string>
+    <string name="settings_group_carousel">Karusell</string>
+    <string name="settings_group_exclusions">Uteslutningar</string>
+    <string name="settings_group_storage">Lagring</string>
+    <string name="settings_group_notifications">Aviseringar</string>
+    <string name="settings_group_expand">Expandera avsnitt</string>
+    <string name="settings_group_collapse">Komprimera avsnitt</string>
     <string name="field_server_url">Serveradress</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Användarnamn</string>

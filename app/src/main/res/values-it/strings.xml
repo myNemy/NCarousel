@@ -12,7 +12,13 @@
     <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Puoi usare l\'accesso dal browser (consigliato) o salvare utente e app password.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_group_connection">Connessione</string>
-    <string name="settings_group_carousel">Carosello e sfondo</string>
+    <string name="settings_group_wallpaper">Sfondo</string>
+    <string name="settings_group_carousel">Carousel</string>
+    <string name="settings_group_exclusions">Esclusioni</string>
+    <string name="settings_group_storage">Archiviazione</string>
+    <string name="settings_group_notifications">Notifiche</string>
+    <string name="settings_group_expand">Espandi sezione</string>
+    <string name="settings_group_collapse">Comprimi sezione</string>
     <string name="field_server_url">Indirizzo server</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Nome utente</string>

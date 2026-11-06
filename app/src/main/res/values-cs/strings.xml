@@ -10,7 +10,13 @@
     <string name="login_intro">Připojte svůj server Nextcloud a používejte fotky jako tapetu. Můžete se přihlásit v prohlížeči (doporučeno) nebo uložit uživatelské jméno a heslo aplikace.</string>
     <string name="settings_group_account">Účet</string>
     <string name="settings_group_connection">Připojení</string>
-    <string name="settings_group_carousel">Karusel a tapeta</string>
+    <string name="settings_group_wallpaper">Tapeta</string>
+    <string name="settings_group_carousel">Karusel</string>
+    <string name="settings_group_exclusions">Vyloučení</string>
+    <string name="settings_group_storage">Úložiště</string>
+    <string name="settings_group_notifications">Oznámení</string>
+    <string name="settings_group_expand">Rozbalit sekci</string>
+    <string name="settings_group_collapse">Sbalit sekci</string>
     <string name="field_server_url">Adresa serveru</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Uživatelské jméno</string>

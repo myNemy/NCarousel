@@ -10,7 +10,13 @@
     <string name="login_intro">Verbind je Nextcloud-server om foto\'s als achtergrond te gebruiken. Je kunt inloggen via de browser (aanbevolen) of gebruikersnaam en app-wachtwoord opslaan.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_group_connection">Verbinding</string>
-    <string name="settings_group_carousel">Carrousel &amp; achtergrond</string>
+    <string name="settings_group_wallpaper">Achtergrond</string>
+    <string name="settings_group_carousel">Carrousel</string>
+    <string name="settings_group_exclusions">Uitsluitingen</string>
+    <string name="settings_group_storage">Opslag</string>
+    <string name="settings_group_notifications">Meldingen</string>
+    <string name="settings_group_expand">Sectie uitvouwen</string>
+    <string name="settings_group_collapse">Sectie invouwen</string>
     <string name="field_server_url">Serveradres</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Gebruikersnaam</string>

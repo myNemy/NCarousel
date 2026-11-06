@@ -10,7 +10,13 @@
     <string name="login_intro">Conecta tu servidor Nextcloud para usar fotos como fondo de pantalla. Puedes iniciar sesión en el navegador (recomendado) o guardar usuario y contraseña de aplicación.</string>
     <string name="settings_group_account">Cuenta</string>
     <string name="settings_group_connection">Conexión</string>
-    <string name="settings_group_carousel">Carrusel &amp; fondo de pantalla</string>
+    <string name="settings_group_wallpaper">Fondo de pantalla</string>
+    <string name="settings_group_carousel">Carrusel</string>
+    <string name="settings_group_exclusions">Exclusiones</string>
+    <string name="settings_group_storage">Almacenamiento</string>
+    <string name="settings_group_notifications">Notificaciones</string>
+    <string name="settings_group_expand">Expandir sección</string>
+    <string name="settings_group_collapse">Contraer sección</string>
     <string name="field_server_url">Dirección del servidor</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Usuario</string>

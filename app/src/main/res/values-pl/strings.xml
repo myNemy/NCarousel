@@ -10,7 +10,13 @@
     <string name="login_intro">Połącz serwer Nextcloud, aby używać zdjęć jako tapety. Możesz zalogować się w przeglądarce (zalecane) lub zapisać nazwę użytkownika i hasło aplikacji.</string>
     <string name="settings_group_account">Konto</string>
     <string name="settings_group_connection">Połączenie</string>
-    <string name="settings_group_carousel">Karuzela &amp; tapeta</string>
+    <string name="settings_group_wallpaper">Tapeta</string>
+    <string name="settings_group_carousel">Karuzela</string>
+    <string name="settings_group_exclusions">Wykluczenia</string>
+    <string name="settings_group_storage">Pamięć</string>
+    <string name="settings_group_notifications">Powiadomienia</string>
+    <string name="settings_group_expand">Rozwiń sekcję</string>
+    <string name="settings_group_collapse">Zwiń sekcję</string>
     <string name="field_server_url">Adres serwera</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Nazwa użytkownika</string>

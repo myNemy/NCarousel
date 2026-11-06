@@ -10,7 +10,13 @@
     <string name="login_intro">Csatlakoztassa Nextcloud-kiszolgálóját a fényképek háttérképként való használatához. Bejelentkezhet a böngészőben (ajánlott), vagy elmentheti a felhasználónevet és az alkalmazásjelszót.</string>
     <string name="settings_group_account">Fiók</string>
     <string name="settings_group_connection">Kapcsolat</string>
-    <string name="settings_group_carousel">Körhinta és háttérkép</string>
+    <string name="settings_group_wallpaper">Háttérkép</string>
+    <string name="settings_group_carousel">Körforgás</string>
+    <string name="settings_group_exclusions">Kizárások</string>
+    <string name="settings_group_storage">Tárhely</string>
+    <string name="settings_group_notifications">Értesítések</string>
+    <string name="settings_group_expand">Szakasz kibontása</string>
+    <string name="settings_group_collapse">Szakasz összecsukása</string>
     <string name="field_server_url">Kiszolgáló címe</string>
     <string name="placeholder_server_url">https://cloud.example.com</string>
     <string name="field_username">Felhasználónév</string>

@@ -19,9 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.ManageAccounts
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -108,13 +112,22 @@ fun SettingsScreen(
     var orderExpanded by remember { mutableStateOf(false) }
     var wallpaperTargetExpanded by remember { mutableStateOf(false) }
     var wallpaperCropExpanded by remember { mutableStateOf(false) }
-    var accountExpanded by remember { mutableStateOf(false) }
+    var accountMenuExpanded by remember { mutableStateOf(false) }
     var geocoderOrderExpanded by remember { mutableStateOf(false) }
     var pendingImportText by remember { mutableStateOf<String?>(null) }
     var pendingImportCount by remember { mutableStateOf(0) }
     var showClearExcludedConfirm by remember { mutableStateOf(false) }
     val excludedCount = state.excludedImageHrefs.size
     val excludedActionsEnabled = !state.busy && state.activeAccountId != null
+
+    // All sections start collapsed when entering Settings.
+    var accountSectionExpanded by remember { mutableStateOf(false) }
+    var connectionSectionExpanded by remember { mutableStateOf(false) }
+    var wallpaperSectionExpanded by remember { mutableStateOf(false) }
+    var carouselSectionExpanded by remember { mutableStateOf(false) }
+    var exclusionsSectionExpanded by remember { mutableStateOf(false) }
+    var storageSectionExpanded by remember { mutableStateOf(false) }
+    var notificationsSectionExpanded by remember { mutableStateOf(false) }
 
     val exportExcludedLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain"),
@@ -230,10 +243,15 @@ fun SettingsScreen(
         Spacer(Modifier.height(4.dp))
 
         if (state.accounts.isNotEmpty() && state.activeAccountId != null) {
-            SettingsGroup(title = stringResource(R.string.settings_group_account), icon = Icons.Outlined.ManageAccounts) {
+            SettingsGroup(
+                title = stringResource(R.string.settings_group_account),
+                icon = Icons.Outlined.ManageAccounts,
+                expanded = accountSectionExpanded,
+                onExpandedChange = { accountSectionExpanded = it },
+            ) {
                 ExposedDropdownMenuBox(
-                    expanded = accountExpanded,
-                    onExpandedChange = { accountExpanded = it },
+                    expanded = accountMenuExpanded,
+                    onExpandedChange = { accountMenuExpanded = it },
                 ) {
                     val activeLabel = state.accounts.firstOrNull { it.id == state.activeAccountId }?.label.orEmpty()
                     OutlinedTextField(
@@ -247,20 +265,20 @@ fun SettingsScreen(
                         value = activeLabel,
                         onValueChange = {},
                         label = { Text(stringResource(R.string.settings_active_account)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountExpanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountMenuExpanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         enabled = !state.busy,
                     )
                     ExposedDropdownMenu(
-                        expanded = accountExpanded,
-                        onDismissRequest = { accountExpanded = false },
+                        expanded = accountMenuExpanded,
+                        onDismissRequest = { accountMenuExpanded = false },
                     ) {
                         state.accounts.forEach { a ->
                             DropdownMenuItem(
                                 text = { Text(a.label) },
                                 onClick = {
                                     onActiveAccountChange(a.id)
-                                    accountExpanded = false
+                                    accountMenuExpanded = false
                                 },
                             )
                         }
@@ -278,7 +296,12 @@ fun SettingsScreen(
             }
         }
 
-        SettingsGroup(title = stringResource(R.string.settings_group_connection), icon = Icons.Outlined.Cloud) {
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_connection),
+            icon = Icons.Outlined.Cloud,
+            expanded = connectionSectionExpanded,
+            onExpandedChange = { connectionSectionExpanded = it },
+        ) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.serverUrl,
@@ -337,43 +360,12 @@ fun SettingsScreen(
             }
         }
 
-        SettingsGroup(title = stringResource(R.string.settings_group_carousel), icon = Icons.Outlined.PhotoLibrary) {
-            ExposedDropdownMenuBox(
-                expanded = orderExpanded,
-                onExpandedChange = { orderExpanded = it },
-            ) {
-                OutlinedTextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(
-                            type = MenuAnchorType.PrimaryNotEditable,
-                            enabled = !state.busy,
-                        ),
-                    readOnly = true,
-                    value = orderModeLabel(state.orderMode),
-                    onValueChange = {},
-                    label = { Text(stringResource(R.string.field_order_mode)) },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = orderExpanded)
-                    },
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                    enabled = !state.busy,
-                )
-                ExposedDropdownMenu(
-                    expanded = orderExpanded,
-                    onDismissRequest = { orderExpanded = false },
-                ) {
-                    OrderMode.entries.forEach { mode ->
-                        DropdownMenuItem(
-                            text = { Text(orderModeLabel(mode)) },
-                            onClick = {
-                                onOrderModeChange(mode)
-                                orderExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_wallpaper),
+            icon = Icons.Outlined.Wallpaper,
+            expanded = wallpaperSectionExpanded,
+            onExpandedChange = { wallpaperSectionExpanded = it },
+        ) {
             ExposedDropdownMenuBox(
                 expanded = wallpaperTargetExpanded,
                 onExpandedChange = { wallpaperTargetExpanded = it },
@@ -446,42 +438,50 @@ fun SettingsScreen(
                     }
                 }
             }
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = state.maxImageSizeMb.toString(),
-                onValueChange = onMaxMbChange,
-                label = { Text(stringResource(R.string.field_max_image_mb)) },
-                supportingText = { Text(stringResource(R.string.hint_max_mb_unlimited)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !state.busy,
-            )
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = state.maxWallpaperDiskCacheMb.toString(),
-                onValueChange = onMaxDiskCacheMbChange,
-                label = { Text(stringResource(R.string.field_disk_cache_mb)) },
-                supportingText = {
-                    Text(
-                        stringResource(
-                            R.string.disk_cache_supporting,
-                            WallpaperDiskCache.MIN_MB,
-                            WallpaperDiskCache.MAX_MB,
-                        ),
-                    )
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !state.busy,
-            )
-            TextButton(
-                onClick = onClearWallpaperDiskCache,
-                enabled = !state.busy && state.activeAccountId != null,
-                modifier = Modifier.fillMaxWidth(),
+        }
+
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_carousel),
+            icon = Icons.Outlined.PhotoLibrary,
+            expanded = carouselSectionExpanded,
+            onExpandedChange = { carouselSectionExpanded = it },
+        ) {
+            ExposedDropdownMenuBox(
+                expanded = orderExpanded,
+                onExpandedChange = { orderExpanded = it },
             ) {
-                Text(stringResource(R.string.clear_wallpaper_disk_cache))
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(
+                            type = MenuAnchorType.PrimaryNotEditable,
+                            enabled = !state.busy,
+                        ),
+                    readOnly = true,
+                    value = orderModeLabel(state.orderMode),
+                    onValueChange = {},
+                    label = { Text(stringResource(R.string.field_order_mode)) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = orderExpanded)
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    enabled = !state.busy,
+                )
+                ExposedDropdownMenu(
+                    expanded = orderExpanded,
+                    onDismissRequest = { orderExpanded = false },
+                ) {
+                    OrderMode.entries.forEach { mode ->
+                        DropdownMenuItem(
+                            text = { Text(orderModeLabel(mode)) },
+                            onClick = {
+                                onOrderModeChange(mode)
+                                orderExpanded = false
+                            },
+                        )
+                    }
+                }
             }
-            SettingsInlineDivider()
             SettingsSwitchRow(
                 title = stringResource(R.string.auto_wallpaper_switch_title),
                 checked = state.autoWallpaperEnabled,
@@ -495,7 +495,64 @@ fun SettingsScreen(
                 onCheckedChange = onAutoUnmeteredOnlyChange,
                 enabled = !state.busy && state.autoWallpaperEnabled,
             )
-            SettingsInlineDivider()
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = state.autoIntervalMinutes.toString(),
+                onValueChange = onIntervalChange,
+                label = { Text(stringResource(R.string.field_interval_minutes)) },
+                supportingText = {
+                    Text(
+                        stringResource(
+                            R.string.interval_supporting,
+                            WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
+                        ),
+                    )
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = !state.busy && state.autoWallpaperEnabled,
+            )
+            Text(
+                text = stringResource(R.string.main_intro_body, WallpaperWorkScheduler.MIN_INTERVAL_MINUTES),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (state.autoWallpaperEnabled && state.batteryOptimizationMayDelayWork) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.battery_opt_banner_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.battery_opt_banner_body),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                        TextButton(
+                            onClick = onRequestBatteryOptimizationFromBanner,
+                            enabled = !state.busy,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Text(stringResource(R.string.battery_opt_banner_action))
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_exclusions),
+            icon = Icons.Outlined.Block,
+            expanded = exclusionsSectionExpanded,
+            onExpandedChange = { exclusionsSectionExpanded = it },
+        ) {
             Text(
                 text = stringResource(R.string.settings_excluded_count, excludedCount),
                 style = MaterialTheme.typography.bodyMedium,
@@ -565,58 +622,57 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.settings_excluded_clear))
             }
-            Text(
-                text = stringResource(R.string.main_intro_body, WallpaperWorkScheduler.MIN_INTERVAL_MINUTES),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            if (state.autoWallpaperEnabled && state.batteryOptimizationMayDelayWork) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = stringResource(R.string.battery_opt_banner_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        Text(
-                            text = stringResource(R.string.battery_opt_banner_body),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(top = 6.dp),
-                        )
-                        TextButton(
-                            onClick = onRequestBatteryOptimizationFromBanner,
-                            enabled = !state.busy,
-                            modifier = Modifier.padding(top = 4.dp),
-                        ) {
-                            Text(stringResource(R.string.battery_opt_banner_action))
-                        }
-                    }
-                }
-            }
+        }
+
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_storage),
+            icon = Icons.Outlined.Storage,
+            expanded = storageSectionExpanded,
+            onExpandedChange = { storageSectionExpanded = it },
+        ) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = state.autoIntervalMinutes.toString(),
-                onValueChange = onIntervalChange,
-                label = { Text(stringResource(R.string.field_interval_minutes)) },
+                value = state.maxImageSizeMb.toString(),
+                onValueChange = onMaxMbChange,
+                label = { Text(stringResource(R.string.field_max_image_mb)) },
+                supportingText = { Text(stringResource(R.string.hint_max_mb_unlimited)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = !state.busy,
+            )
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = state.maxWallpaperDiskCacheMb.toString(),
+                onValueChange = onMaxDiskCacheMbChange,
+                label = { Text(stringResource(R.string.field_disk_cache_mb)) },
                 supportingText = {
                     Text(
                         stringResource(
-                            R.string.interval_supporting,
-                            WallpaperWorkScheduler.MIN_INTERVAL_MINUTES,
+                            R.string.disk_cache_supporting,
+                            WallpaperDiskCache.MIN_MB,
+                            WallpaperDiskCache.MAX_MB,
                         ),
                     )
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !state.busy && state.autoWallpaperEnabled,
+                enabled = !state.busy,
             )
-            SettingsInlineDivider()
+            TextButton(
+                onClick = onClearWallpaperDiskCache,
+                enabled = !state.busy && state.activeAccountId != null,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.clear_wallpaper_disk_cache))
+            }
+        }
+
+        SettingsGroup(
+            title = stringResource(R.string.settings_group_notifications),
+            icon = Icons.Outlined.Notifications,
+            expanded = notificationsSectionExpanded,
+            onExpandedChange = { notificationsSectionExpanded = it },
+        ) {
             SettingsSwitchRow(
                 title = stringResource(R.string.notify_switch_label),
                 checked = state.showStatusNotifications,
@@ -739,13 +795,15 @@ fun SettingsScreen(
                     Text(stringResource(R.string.notify_open_channel_settings))
                 }
             }
-            Button(
-                onClick = onSaveCarousel,
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.save_carousel_options_btn))
-            }
+        }
+
+        // Always visible so carousel/wallpaper/storage changes can be saved without opening a section.
+        Button(
+            onClick = onSaveCarousel,
+            enabled = !state.busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.save_carousel_options_btn))
         }
 
         Spacer(Modifier.height(24.dp))
