@@ -228,7 +228,9 @@
     <string name="nc_library_preview_apply_only">Csak háttérkép beállítása</string>
     <string name="nc_library_preview_apply_advance">Beállítás és körforgás léptetése</string>
     <string name="nc_library_preview_close">Bezárás</string>
-    <string name="nc_library_preview_frame_hint">Húzással keretez · dupla koppintás középre · csípéssel nagyít</string>
+    <string name="nc_library_preview_frame_hint">Húzással keretez · dupla koppintás középre</string>
+    <string name="nc_library_preview_adjust_frame">Keretezés</string>
+    <string name="nc_library_preview_view_full">Teljes kép</string>
     <string name="nc_library_share">Kép megosztása</string>
     <string name="nc_library_share_chooser">Kép megosztása</string>
     <string name="status_preparing_share">Kép előkészítése megosztáshoz…</string>

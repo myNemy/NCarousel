@@ -228,7 +228,9 @@
     <string name="nc_library_preview_apply_only">Nur als Hintergrund setzen</string>
     <string name="nc_library_preview_apply_advance">Setzen und Karussell fortsetzen</string>
     <string name="nc_library_preview_close">Schließen</string>
-    <string name="nc_library_preview_frame_hint">Ziehen zum Ausrichten · Doppeltipp zum Zentrieren · Kneifen zum Prüfen</string>
+    <string name="nc_library_preview_frame_hint">Ziehen zum Ausrichten · Doppeltipp zum Zentrieren</string>
+    <string name="nc_library_preview_adjust_frame">Ausrichten</string>
+    <string name="nc_library_preview_view_full">Ganzes Bild</string>
     <string name="nc_library_share">Bild teilen</string>
     <string name="nc_library_share_chooser">Bild teilen</string>
     <string name="status_preparing_share">Bild zum Teilen wird vorbereitet…</string>

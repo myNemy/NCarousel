@@ -228,7 +228,9 @@
     <string name="nc_library_preview_apply_only">Doar setează fundalul</string>
     <string name="nc_library_preview_apply_advance">Setează și avansează caruselul</string>
     <string name="nc_library_preview_close">Închide</string>
-    <string name="nc_library_preview_frame_hint">Trage pentru cadru · dublu tap pentru centru · ciupiți pentru inspectare</string>
+    <string name="nc_library_preview_frame_hint">Trage pentru cadru · dublu tap pentru centru</string>
+    <string name="nc_library_preview_adjust_frame">Cadrează</string>
+    <string name="nc_library_preview_view_full">Imagine întreagă</string>
     <string name="nc_library_share">Partajează imaginea</string>
     <string name="nc_library_share_chooser">Partajează imaginea</string>
     <string name="status_preparing_share">Se pregătește imaginea pentru partajare…</string>

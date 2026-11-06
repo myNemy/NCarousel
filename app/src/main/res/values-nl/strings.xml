@@ -228,7 +228,9 @@
     <string name="nc_library_preview_apply_only">Alleen als achtergrond</string>
     <string name="nc_library_preview_apply_advance">Instellen en carrousel doorzetten</string>
     <string name="nc_library_preview_close">Sluiten</string>
-    <string name="nc_library_preview_frame_hint">Sleep om in te kaderen · dubbeltik om te centreren · knijp om te inspecteren</string>
+    <string name="nc_library_preview_frame_hint">Sleep om in te kaderen · dubbeltik om te centreren</string>
+    <string name="nc_library_preview_adjust_frame">Kaderen</string>
+    <string name="nc_library_preview_view_full">Hele afbeelding</string>
     <string name="nc_library_share">Afbeelding delen</string>
     <string name="nc_library_share_chooser">Afbeelding delen</string>
     <string name="status_preparing_share">Afbeelding voorbereiden om te delen…</string>

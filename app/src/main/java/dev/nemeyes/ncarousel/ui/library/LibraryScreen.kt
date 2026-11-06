@@ -1028,8 +1028,8 @@ fun LibraryScreen(
 
 /**
  * Preview image gestures:
- * - Cover / Center: drag frames wallpaper (BiasAlignment); pinch zooms for inspect only.
- * - Fit: pinch-to-zoom + pan for inspect (no framing).
+ * - Full view (default): ContentScale.Fit + pinch-to-zoom / pan.
+ * - Framing mode (Cover/Center only, via toggle): Crop + drag offset; pinch for inspect.
  * Double-tap: if zoomed, reset zoom; else if framing, reset crop offset to center.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -1138,7 +1138,9 @@ private fun LibraryFullscreenPreview(
     val isCurrent = state.lastWallpaperHref != null && target.href == state.lastWallpaperHref
     val isExcluded = target.href in state.excludedImageHrefs
     val carouselIndex = state.imageCarouselIndexByHref[target.href]
-    val framingEnabled = state.wallpaperCropMode != WallpaperCropMode.FIT
+    val framingAvailable = state.wallpaperCropMode != WallpaperCropMode.FIT
+    var framingMode by remember(target.href) { mutableStateOf(false) }
+    val framingEnabled = framingAvailable && framingMode
     var cropOffset by remember(target.href) { mutableStateOf(initialCropOffset.coerced()) }
     Dialog(
         onDismissRequest = onDismiss,
@@ -1245,7 +1247,7 @@ private fun LibraryFullscreenPreview(
                     }
                 }
                 ZoomablePreviewPane(
-                    resetKey = target.href,
+                    resetKey = target.href to framingMode,
                     framingEnabled = framingEnabled,
                     cropOffset = cropOffset,
                     onCropOffsetChange = { next ->
@@ -1279,13 +1281,30 @@ private fun LibraryFullscreenPreview(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    if (framingEnabled) {
-                        Text(
-                            text = stringResource(R.string.nc_library_preview_frame_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.75f),
-                            textAlign = TextAlign.Center,
+                    if (framingAvailable) {
+                        FilterChip(
+                            selected = framingMode,
+                            onClick = { framingMode = !framingMode },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (framingMode) {
+                                            R.string.nc_library_preview_view_full
+                                        } else {
+                                            R.string.nc_library_preview_adjust_frame
+                                        },
+                                    ),
+                                )
+                            },
                         )
+                        if (framingMode) {
+                            Text(
+                                text = stringResource(R.string.nc_library_preview_frame_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.75f),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                     TextButton(
                         onClick = onToggleExclude,
