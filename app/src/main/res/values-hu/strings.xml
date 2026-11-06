@@ -234,6 +234,9 @@
     <string name="nc_library_excluded_badge">Kizárva</string>
     <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_library_filter_excluded">Kizártak</string>
+    <string name="nc_library_filter_in_carousel">Körforgásban</string>
+    <string name="nc_library_empty_in_carousel_title">Nincs kép a körforgásban</string>
+    <string name="nc_library_empty_in_carousel_body">Semmi sem felel meg a szűrőnek. Kapcsolja ki a „Körforgásban” szűrőt, vagy vegyen fel újra kizárt képeket.</string>
     <string name="nc_library_empty_excluded_title">Nincs kizárt kép</string>
     <string name="nc_library_empty_excluded_body">Semmi sem felel meg a szűrőnek. Kapcsolja ki a „Kizártak” szűrőt, vagy zárjon ki képeket a könyvtárból.</string>
     <string name="nc_about_title">Névjegy</string>

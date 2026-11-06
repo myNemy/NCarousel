@@ -234,6 +234,9 @@
     <string name="nc_library_excluded_badge">Excluida</string>
     <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_library_filter_excluded">Excluidas</string>
+    <string name="nc_library_filter_in_carousel">En el carrusel</string>
+    <string name="nc_library_empty_in_carousel_title">No hay imágenes en el carrusel</string>
+    <string name="nc_library_empty_in_carousel_body">Nada coincide con este filtro. Desactiva «En el carrusel» o vuelve a incluir imágenes excluidas.</string>
     <string name="nc_library_empty_excluded_title">No hay imágenes excluidas</string>
     <string name="nc_library_empty_excluded_body">Nada coincide con este filtro. Desactiva «Excluidas» o excluye imágenes desde la biblioteca.</string>
     <string name="nc_about_title">Acerca de</string>

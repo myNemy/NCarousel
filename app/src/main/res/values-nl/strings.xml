@@ -234,6 +234,9 @@
     <string name="nc_library_excluded_badge">Uitgesloten</string>
     <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_library_filter_excluded">Uitgesloten</string>
+    <string name="nc_library_filter_in_carousel">In carrousel</string>
+    <string name="nc_library_empty_in_carousel_title">Geen afbeeldingen in carrousel</string>
+    <string name="nc_library_empty_in_carousel_body">Niets komt overeen met dit filter. Zet “In carrousel” uit of neem uitgesloten afbeeldingen weer op.</string>
     <string name="nc_library_empty_excluded_title">Geen uitgesloten afbeeldingen</string>
     <string name="nc_library_empty_excluded_body">Niets komt overeen met dit filter. Zet “Uitgesloten” uit of sluit afbeeldingen uit in de bibliotheek.</string>
     <string name="nc_about_title">Over</string>

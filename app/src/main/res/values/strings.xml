@@ -249,8 +249,11 @@
     <string name="nc_library_excluded_badge">Excluded</string>
     <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_library_filter_excluded">Excluded</string>
+    <string name="nc_library_filter_in_carousel">In carousel</string>
     <string name="nc_library_empty_excluded_title">No excluded images</string>
     <string name="nc_library_empty_excluded_body">Nothing matches this filter. Turn off “Excluded” or exclude images from the library.</string>
+    <string name="nc_library_empty_in_carousel_title">No images in carousel</string>
+    <string name="nc_library_empty_in_carousel_body">Nothing matches this filter. Turn off “In carousel” or include some excluded images again.</string>
     <string name="nc_about_title">About</string>
     <string name="nc_about_version">Version %1$s (%2$d)</string>
     <string name="nc_about_summary">Rotating wallpapers from Nextcloud (WebDAV), with options for network/battery and manual pick from the Library.</string>

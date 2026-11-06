@@ -234,6 +234,9 @@
     <string name="nc_library_excluded_badge">Utesluten</string>
     <string name="nc_library_excluded_name">%1$s</string>
     <string name="nc_library_filter_excluded">Uteslutna</string>
+    <string name="nc_library_filter_in_carousel">I karusellen</string>
+    <string name="nc_library_empty_in_carousel_title">Inga bilder i karusellen</string>
+    <string name="nc_library_empty_in_carousel_body">Inget matchar detta filter. Stäng av ”I karusellen” eller inkludera uteslutna bilder igen.</string>
     <string name="nc_library_empty_excluded_title">Inga uteslutna bilder</string>
     <string name="nc_library_empty_excluded_body">Inget matchar detta filter. Stäng av ”Uteslutna” eller uteslut bilder från biblioteket.</string>
     <string name="nc_about_title">Om</string>

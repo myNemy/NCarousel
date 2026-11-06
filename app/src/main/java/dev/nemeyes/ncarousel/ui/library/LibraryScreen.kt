@@ -12,6 +12,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +84,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,7 +93,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -113,6 +119,9 @@ import okhttp3.Credentials
 private enum class LibrarySortMode { NAME, FOLDERS, DATE, INDEX }
 
 private enum class LibraryViewMode { LIST, GRID }
+
+/** Mutually exclusive exclusion filter chips (default = show everything). */
+private enum class LibraryExclusionFilter { ALL, IN_CAROUSEL, EXCLUDED_ONLY }
 
 private data class LibraryPreviewTarget(
     val href: String,
@@ -249,7 +258,7 @@ fun LibraryScreen(
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
-    var showExcludedOnly by remember { mutableStateOf(false) }
+    var exclusionFilter by remember { mutableStateOf(LibraryExclusionFilter.ALL) }
     var folderMenuExpanded by remember { mutableStateOf(false) }
     var previewTarget by remember { mutableStateOf<LibraryPreviewTarget?>(null) }
     var filtersExpanded by remember { mutableStateOf(true) }
@@ -365,14 +374,18 @@ fun LibraryScreen(
         sortedRows,
         query,
         folderFilter,
-        showExcludedOnly,
+        exclusionFilter,
         state.excludedImageHrefs,
         state.lastWallpaperHref,
     ) {
         val q = query.trim().lowercase()
         val matched = sortedRows.filter { r ->
             matchesFolderFilter(r, folderFilter) &&
-                (!showExcludedOnly || r.href in state.excludedImageHrefs) &&
+                when (exclusionFilter) {
+                    LibraryExclusionFilter.ALL -> true
+                    LibraryExclusionFilter.IN_CAROUSEL -> r.href !in state.excludedImageHrefs
+                    LibraryExclusionFilter.EXCLUDED_ONLY -> r.href in state.excludedImageHrefs
+                } &&
                 (
                     q.isEmpty() ||
                         r.fileName.lowercase().contains(q) ||
@@ -454,9 +467,16 @@ fun LibraryScreen(
             append(" · ")
             append(folderFilterDisplay)
         }
-        if (showExcludedOnly) {
-            append(" · ")
-            append(stringResource(R.string.nc_library_filter_excluded))
+        when (exclusionFilter) {
+            LibraryExclusionFilter.ALL -> Unit
+            LibraryExclusionFilter.IN_CAROUSEL -> {
+                append(" · ")
+                append(stringResource(R.string.nc_library_filter_in_carousel))
+            }
+            LibraryExclusionFilter.EXCLUDED_ONLY -> {
+                append(" · ")
+                append(stringResource(R.string.nc_library_filter_excluded))
+            }
         }
         val q = query.trim()
         if (q.isNotEmpty()) {
@@ -710,8 +730,36 @@ fun LibraryScreen(
                                 },
                             )
                             FilterChip(
-                                selected = showExcludedOnly,
-                                onClick = { showExcludedOnly = !showExcludedOnly },
+                                selected = exclusionFilter == LibraryExclusionFilter.IN_CAROUSEL,
+                                onClick = {
+                                    exclusionFilter = if (
+                                        exclusionFilter == LibraryExclusionFilter.IN_CAROUSEL
+                                    ) {
+                                        LibraryExclusionFilter.ALL
+                                    } else {
+                                        LibraryExclusionFilter.IN_CAROUSEL
+                                    }
+                                },
+                                label = { Text(stringResource(R.string.nc_library_filter_in_carousel)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Outlined.CheckCircle,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                },
+                            )
+                            FilterChip(
+                                selected = exclusionFilter == LibraryExclusionFilter.EXCLUDED_ONLY,
+                                onClick = {
+                                    exclusionFilter = if (
+                                        exclusionFilter == LibraryExclusionFilter.EXCLUDED_ONLY
+                                    ) {
+                                        LibraryExclusionFilter.ALL
+                                    } else {
+                                        LibraryExclusionFilter.EXCLUDED_ONLY
+                                    }
+                                },
                                 label = { Text(stringResource(R.string.nc_library_filter_excluded)) },
                                 leadingIcon = {
                                     Icon(
@@ -743,10 +791,13 @@ fun LibraryScreen(
                     ) {
                         Text(
                             text = stringResource(
-                                if (showExcludedOnly) {
-                                    R.string.nc_library_empty_excluded_title
-                                } else {
-                                    R.string.nc_library_empty_title
+                                when (exclusionFilter) {
+                                    LibraryExclusionFilter.EXCLUDED_ONLY ->
+                                        R.string.nc_library_empty_excluded_title
+                                    LibraryExclusionFilter.IN_CAROUSEL ->
+                                        R.string.nc_library_empty_in_carousel_title
+                                    LibraryExclusionFilter.ALL ->
+                                        R.string.nc_library_empty_title
                                 },
                             ),
                             style = MaterialTheme.typography.titleMedium,
@@ -755,10 +806,13 @@ fun LibraryScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = stringResource(
-                                if (showExcludedOnly) {
-                                    R.string.nc_library_empty_excluded_body
-                                } else {
-                                    R.string.nc_library_empty_body
+                                when (exclusionFilter) {
+                                    LibraryExclusionFilter.EXCLUDED_ONLY ->
+                                        R.string.nc_library_empty_excluded_body
+                                    LibraryExclusionFilter.IN_CAROUSEL ->
+                                        R.string.nc_library_empty_in_carousel_body
+                                    LibraryExclusionFilter.ALL ->
+                                        R.string.nc_library_empty_body
                                 },
                             ),
                             style = MaterialTheme.typography.bodyMedium,
@@ -964,6 +1018,57 @@ fun LibraryScreen(
     }
 }
 
+/**
+ * Pinch-to-zoom + pan for preview image only (header/actions stay fixed).
+ * Double-tap resets to fit. Zoom state resets when [resetKey] changes.
+ */
+@Composable
+private fun ZoomablePreviewPane(
+    resetKey: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable (imageModifier: Modifier) -> Unit,
+) {
+    var scale by remember(resetKey) { mutableFloatStateOf(1f) }
+    var offsetX by remember(resetKey) { mutableFloatStateOf(0f) }
+    var offsetY by remember(resetKey) { mutableFloatStateOf(0f) }
+    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+        val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+        scale = newScale
+        if (newScale > 1.01f) {
+            offsetX += panChange.x
+            offsetY += panChange.y
+        } else {
+            offsetX = 0f
+            offsetY = 0f
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .clipToBounds()
+            .transformable(state = transformState)
+            .pointerInput(resetKey) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        scale = 1f
+                        offsetX = 0f
+                        offsetY = 0f
+                    },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        content(
+            Modifier.graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                translationX = offsetX
+                translationY = offsetY
+            },
+        )
+    }
+}
+
 @Composable
 private fun LibraryFullscreenPreview(
     state: MainUiState,
@@ -1083,13 +1188,13 @@ private fun LibraryFullscreenPreview(
                         )
                     }
                 }
-                Box(
+                ZoomablePreviewPane(
+                    resetKey = target.href,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
+                ) { imageModifier ->
                     LibraryThumbnail(
                         ctx = ctx,
                         serverUrl = state.serverUrl,
@@ -1097,7 +1202,7 @@ private fun LibraryFullscreenPreview(
                         password = state.password,
                         fileId = target.fileId,
                         sizePx = 2048,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = imageModifier.fillMaxSize(),
                         isCurrent = false,
                         contentScale = ContentScale.Fit,
                     )
