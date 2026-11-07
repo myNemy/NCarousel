@@ -120,7 +120,7 @@ class NextcloudWebDavClient(
      */
     override suspend fun listImageEntriesRecursive(
         remoteFolder: String,
-        maxImageBytes: Long = 0L,
+        maxImageBytes: Long,
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')

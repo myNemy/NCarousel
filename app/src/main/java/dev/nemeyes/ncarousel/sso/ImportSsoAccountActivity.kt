@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.appcompat.app.AlertDialog
 import com.nextcloud.android.sso.AccountImporter
 import com.nextcloud.android.sso.Constants
 import com.nextcloud.android.sso.exceptions.AccountImportCancelledException
@@ -98,7 +98,7 @@ class ImportSsoAccountActivity : AppCompatActivity() {
     }
 
     private fun showErrorAndFinish(exception: SSOException) {
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setMessage(exception.message)
             .setPositiveButton(android.R.string.ok, null)
             .setOnDismissListener { finishCancelled() }
