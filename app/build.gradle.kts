@@ -104,6 +104,8 @@ android {
     }
 
     compileOptions {
+        // Required by Nextcloud Android-SingleSignOn (AAR metadata).
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -162,8 +164,10 @@ dependencies {
     // Nextcloud Login Flow v2: open default browser / custom tabs
     implementation("androidx.browser:browser:1.8.0")
 
-    // Nextcloud Files app Single Sign-On (account import + network bridge)
-    implementation("com.github.nextcloud:Android-SingleSignOn:1.3.5")
+    // Nextcloud Files SSO (1.3.4: compileSdk 35-friendly; 1.3.5+ needs API 37 / AGP 9.1).
+    // Import UI: local trampoline [dev.nemeyes.ncarousel.sso.ImportSsoAccount].
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    implementation("com.github.nextcloud:Android-SingleSignOn:1.3.4")
     implementation("com.google.code.gson:gson:2.11.0")
 
     // Offline-first metadata cache

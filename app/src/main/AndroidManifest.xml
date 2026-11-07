@@ -36,6 +36,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Nextcloud Files SSO import trampoline (AccountImporter multi-step flow). -->
+        <activity
+            android:name=".sso.ImportSsoAccountActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NCarousel.Transparent" />
+
         <service
             android:name=".quicksettings.NextWallpaperTileService"
             android:exported="true"
