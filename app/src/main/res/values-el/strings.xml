@@ -23,6 +23,10 @@
     <string name="field_password_app">Κωδικός / κωδικός εφαρμογής</string>
     <string name="field_remote_folder">Απομακρυσμένος φάκελος</string>
     <string name="placeholder_remote_folder">Photos</string>
+    <string name="folder_empty_suggest_dismiss">Όχι τώρα</string>
+    <string name="folder_empty_suggest_message">Καμία εικόνα στο «%1$s». Περιήγηση φακέλων Nextcloud και επιλογή άλλου;</string>
+    <string name="folder_empty_suggest_title">Δεν βρέθηκαν εικόνες</string>
+    <string name="field_remote_folder_hint">Κενό = Photos. Για περιήγηση: URL, χρήστης και κωδικός εφαρμογής (ή συνδεδεμένος λογαριασμός).</string>
     <string name="msg_folder_browse_need_account">Συνδεθείτε ή εισαγάγετε URL, όνομα χρήστη και κωδικό εφαρμογής για περιήγηση φακέλων.</string>
     <string name="folder_picker_empty">Δεν υπάρχουν υποφάκελοι εδώ.</string>
     <string name="folder_picker_retry">Επανάληψη</string>
@@ -219,7 +223,7 @@
     <string name="nc_snake_cd_right">Δεξιά</string>
     <string name="nc_library_title">Βιβλιοθήκη</string>
     <string name="nc_library_empty_title">Δεν υπάρχουν εικόνες στη βιβλιοθήκη</string>
-    <string name="nc_library_empty_body">Ανανεώστε τη λίστα εικόνων από τον φάκελο Nextcloud για να επιλέξετε και να εφαρμόσετε μια εικόνα.</string>
+    <string name="nc_library_empty_body">Ανανεώστε τη λίστα από τον φάκελο Nextcloud. Αν μείνει κενή, θα προταθεί περιήγηση φακέλων (και στις Ρυθμίσεις).</string>
     <string name="nc_library_refresh">Ανανέωση λίστας</string>
     <string name="nc_library_count">%1$d εικόνες</string>
     <string name="nc_library_tap_to_apply">Πατήστε για εφαρμογή</string>

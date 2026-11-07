@@ -25,6 +25,10 @@
     <string name="field_password_app">Password / app password</string>
     <string name="field_remote_folder">Cartella remota</string>
     <string name="placeholder_remote_folder">Photos</string>
+    <string name="folder_empty_suggest_dismiss">Non ora</string>
+    <string name="folder_empty_suggest_message">Nessuna immagine in “%1$s”. Sfogliare le cartelle Nextcloud e sceglierne un’altra?</string>
+    <string name="folder_empty_suggest_title">Nessuna immagine</string>
+    <string name="field_remote_folder_hint">Vuoto = Photos. Per sfogliare servono URL, utente e app password (oppure un account già connesso).</string>
     <string name="msg_folder_browse_need_account">Accedi oppure inserisci URL, utente e app password per sfogliare le cartelle.</string>
     <string name="folder_picker_empty">Nessuna sottocartella qui.</string>
     <string name="folder_picker_retry">Riprova</string>
@@ -228,7 +232,7 @@
     <string name="nc_snake_cd_right">Destra</string>
     <string name="nc_library_title">Libreria</string>
     <string name="nc_library_empty_title">Nessuna immagine in libreria</string>
-    <string name="nc_library_empty_body">Aggiorna l\'elenco immagini dalla tua cartella Nextcloud per poter scegliere e applicare un\'immagine.</string>
+    <string name="nc_library_empty_body">Aggiorna l’elenco dalla cartella Nextcloud. Se resta vuoto, ti verrà proposto lo sfoglio cartelle (anche in Impostazioni).</string>
     <string name="nc_library_refresh">Aggiorna elenco</string>
     <string name="nc_library_count">%1$d immagini</string>
     <string name="nc_library_tap_to_apply">Tocca per applicare</string>

@@ -44,12 +44,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -75,6 +79,7 @@ import dev.nemeyes.ncarousel.ui.about.AboutScreen
 import dev.nemeyes.ncarousel.ui.components.KOFI_SUPPORT_URL
 import dev.nemeyes.ncarousel.ui.components.KofiDrawerSupport
 import dev.nemeyes.ncarousel.ui.components.NCarouselLogoMark
+import dev.nemeyes.ncarousel.ui.components.RemoteFolderPickerDialog
 import dev.nemeyes.ncarousel.ui.library.LibraryScreen
 import dev.nemeyes.ncarousel.ui.login.LoginScreen
 import dev.nemeyes.ncarousel.ui.main.MainHomeScreen
@@ -98,6 +103,8 @@ fun HomeScreen(viewModel: MainViewModel) {
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val exifAutoRetryDoneForKey = remember { HashSet<String>() }
+    var emptyListFolderPrompt by remember { mutableStateOf<String?>(null) }
+    var showRemoteFolderPicker by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -201,8 +208,50 @@ fun HomeScreen(viewModel: MainViewModel) {
                     }
                     context.startActivity(Intent.createChooser(send, ev.chooserTitle))
                 }
+                is UiEvent.SuggestBrowseRemoteFolder -> {
+                    emptyListFolderPrompt = ev.folderLabel.ifBlank { "Photos" }
+                }
             }
         }
+    }
+
+    emptyListFolderPrompt?.let { folderLabel ->
+        AlertDialog(
+            onDismissRequest = { emptyListFolderPrompt = null },
+            title = { Text(stringResource(R.string.folder_empty_suggest_title)) },
+            text = {
+                Text(stringResource(R.string.folder_empty_suggest_message, folderLabel))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        emptyListFolderPrompt = null
+                        showRemoteFolderPicker = true
+                    },
+                ) {
+                    Text(stringResource(R.string.folder_picker_browse))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { emptyListFolderPrompt = null }) {
+                    Text(stringResource(R.string.folder_empty_suggest_dismiss))
+                }
+            },
+        )
+    }
+
+    if (showRemoteFolderPicker) {
+        RemoteFolderPickerDialog(
+            // Start at account root so Photos (or another folder) can be chosen explicitly.
+            initialPath = "",
+            onLoadChildren = viewModel::listRemoteChildFolders,
+            onDismiss = { showRemoteFolderPicker = false },
+            onFolderSelected = { path ->
+                showRemoteFolderPicker = false
+                viewModel.updateRemoteFolder(path)
+                viewModel.refreshImageList()
+            },
+        )
     }
 
     val deferInitialConsent: () -> Unit = {

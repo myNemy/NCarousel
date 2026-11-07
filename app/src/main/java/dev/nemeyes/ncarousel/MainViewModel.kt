@@ -131,6 +131,11 @@ sealed interface UiEvent {
     data object RequestIgnoreBatteryOptimizations : UiEvent
     /** Launch Nextcloud Files SSO account picker ([com.nextcloud.android.sso.ImportSsoAccount]). */
     data object RequestSsoImport : UiEvent
+    /**
+     * Refresh found no images under [folderLabel] (blank / default → Photos).
+     * UI may offer the remote folder browser.
+     */
+    data class SuggestBrowseRemoteFolder(val folderLabel: String) : UiEvent
     /** Content URI from [ImageShareHelper] for ACTION_SEND (no Nextcloud credentials). */
     data class ShareImage(
         val uri: android.net.Uri,
@@ -844,6 +849,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         withContext(Dispatchers.IO) {
                             CarouselStatusNotifications.maybeShowListRefreshed(app, carousel, list.size)
                         }
+                        if (list.isEmpty()) {
+                            _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
+                        }
                     },
                     onFailure = { e ->
                         _ui.update {
@@ -853,9 +861,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 imageLastModifiedEpochMs = emptyMap(),
                                 imageContentLengthBytes = emptyMap(),
                                 imageCarouselIndexByHref = emptyMap(),
+                                remoteFolder = folder,
                                 statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
                             )
                         }
+                        // Missing / wrong folder often surfaces as PROPFIND failure — offer browse.
+                        _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
                     },
                 )
             } finally {

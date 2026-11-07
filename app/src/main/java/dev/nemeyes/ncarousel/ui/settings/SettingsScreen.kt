@@ -347,6 +347,7 @@ fun SettingsScreen(
                 onValueChange = onFolderChange,
                 label = { Text(stringResource(R.string.field_remote_folder)) },
                 placeholder = { Text(stringResource(R.string.placeholder_remote_folder)) },
+                supportingText = { Text(stringResource(R.string.field_remote_folder_hint)) },
                 singleLine = true,
                 enabled = !state.busy,
             )

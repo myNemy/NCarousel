@@ -23,6 +23,10 @@
     <string name="field_password_app">Contraseña / contraseña de aplicación</string>
     <string name="field_remote_folder">Carpeta remota</string>
     <string name="placeholder_remote_folder">Photos</string>
+    <string name="folder_empty_suggest_dismiss">Ahora no</string>
+    <string name="folder_empty_suggest_message">No hay imágenes en «%1$s». ¿Explorar carpetas de Nextcloud y elegir otra?</string>
+    <string name="folder_empty_suggest_title">No hay imágenes</string>
+    <string name="field_remote_folder_hint">Vacío = Photos. Para explorar: URL, usuario y contraseña de aplicación (o cuenta iniciada).</string>
     <string name="msg_folder_browse_need_account">Inicia sesión o introduce URL, usuario y contraseña de aplicación para explorar carpetas.</string>
     <string name="folder_picker_empty">No hay subcarpetas aquí.</string>
     <string name="folder_picker_retry">Reintentar</string>
@@ -219,7 +223,7 @@
     <string name="nc_snake_cd_right">Derecha</string>
     <string name="nc_library_title">Biblioteca</string>
     <string name="nc_library_empty_title">No hay imágenes en la biblioteca</string>
-    <string name="nc_library_empty_body">Actualiza la lista de imágenes desde tu carpeta de Nextcloud para elegir y aplicar una imagen.</string>
+    <string name="nc_library_empty_body">Actualiza la lista desde tu carpeta de Nextcloud. Si sigue vacía, se ofrecerá un explorador de carpetas (también en Ajustes).</string>
     <string name="nc_library_refresh">Actualizar lista</string>
     <string name="nc_library_count">%1$d imágenes</string>
     <string name="nc_library_tap_to_apply">Toca para aplicar</string>
