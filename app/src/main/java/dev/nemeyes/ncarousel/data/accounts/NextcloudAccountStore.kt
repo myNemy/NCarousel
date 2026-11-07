@@ -40,8 +40,9 @@ class NextcloudAccountStore(context: Context) {
                             serverBaseUrl = o.getString("serverBaseUrl"),
                             userId = o.getString("userId"),
                             loginName = o.optString("loginName", o.getString("userId")),
-                            appPassword = o.getString("appPassword"),
+                            appPassword = o.optString("appPassword", ""),
                             remoteFolder = o.optString("remoteFolder", "Photos"),
+                            ssoAccountName = o.optString("ssoAccountName", "").ifBlank { null },
                         ),
                     )
                 }
@@ -94,7 +95,8 @@ class NextcloudAccountStore(context: Context) {
                     .put("userId", a.userId)
                     .put("loginName", a.loginName)
                     .put("appPassword", a.appPassword)
-                    .put("remoteFolder", a.remoteFolder),
+                    .put("remoteFolder", a.remoteFolder)
+                    .put("ssoAccountName", a.ssoAccountName.orEmpty()),
             )
         }
         prefs.edit().putString(KEY_ACCOUNTS_JSON, arr.toString()).apply()

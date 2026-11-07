@@ -20,6 +20,8 @@ import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
 import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
+import dev.nemeyes.ncarousel.data.NextcloudDavAccess
+import dev.nemeyes.ncarousel.data.NextcloudDavAccessFactory
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
 import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
@@ -56,6 +58,10 @@ data class MainUiState(
     val password: String = "",
     val remoteFolder: String = "",
     val hasActiveAccount: Boolean = false,
+    /** Active account uses Nextcloud Files SSO (Library previews must not use Basic Auth). */
+    val accountUsesSso: Boolean = false,
+    /** Android Account Manager name when [accountUsesSso] is true. */
+    val ssoAccountName: String? = null,
     val accounts: List<AccountUi> = emptyList(),
     val activeAccountId: String? = null,
     val orderMode: OrderMode = OrderMode.RANDOM,
@@ -123,6 +129,8 @@ data class AccountUi(
 sealed interface UiEvent {
     data class OpenUrl(val url: String) : UiEvent
     data object RequestIgnoreBatteryOptimizations : UiEvent
+    /** Launch Nextcloud Files SSO account picker ([com.nextcloud.android.sso.ImportSsoAccount]). */
+    data object RequestSsoImport : UiEvent
     /** Content URI from [ImageShareHelper] for ACTION_SEND (no Nextcloud credentials). */
     data class ShareImage(
         val uri: android.net.Uri,
@@ -173,6 +181,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 password = acc0?.appPassword.orEmpty(),
                 remoteFolder = acc0?.remoteFolder.orEmpty(),
                 hasActiveAccount = acc0 != null,
+                accountUsesSso = acc0?.usesSso == true,
+                ssoAccountName = acc0?.ssoAccountName,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 orderMode = carousel.orderMode,
@@ -411,6 +421,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _ui.update {
             it.copy(
                 hasActiveAccount = true,
+                accountUsesSso = false,
+                ssoAccountName = null,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 statusMessage = appStr(R.string.msg_account_saved_encrypted),
@@ -419,6 +431,75 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         scheduleThemingRefresh()
+    }
+
+    /** Asks the UI to launch Nextcloud Files SSO account import. */
+    fun startNextcloudSsoImport() {
+        _events.tryEmit(UiEvent.RequestSsoImport)
+    }
+
+    /**
+     * Persists an account imported from Nextcloud Files SSO.
+     * Network for this account must use [NextcloudDavAccessFactory] (SSO bridge), not Basic Auth.
+     */
+    fun importSsoAccount(
+        serverUrl: String,
+        userId: String,
+        ssoAccountName: String,
+    ) {
+        val base = serverUrl.trim().trimEnd('/')
+        val uid = userId.trim()
+        val name = ssoAccountName.trim()
+        if (base.isBlank() || uid.isBlank() || name.isBlank()) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_sso_import_failed)) }
+            return
+        }
+        val normalized = if (base.startsWith("https://", ignoreCase = true) ||
+            base.startsWith("http://", ignoreCase = true)
+        ) {
+            base
+        } else {
+            "https://$base"
+        }
+        if (!normalized.startsWith("https://", ignoreCase = true)) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
+            return
+        }
+        val folder = _ui.value.remoteFolder.ifBlank { "Photos" }
+        val acc = NextcloudAccount(
+            serverBaseUrl = normalized,
+            userId = uid,
+            loginName = uid,
+            appPassword = "",
+            remoteFolder = folder,
+            ssoAccountName = name,
+        )
+        accounts.upsert(acc)
+        accounts.setActiveAccountId(acc.id)
+        WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
+        _ui.update {
+            it.copy(
+                serverUrl = acc.serverBaseUrl,
+                username = acc.userId,
+                loginName = acc.loginName,
+                password = "",
+                remoteFolder = acc.remoteFolder,
+                hasActiveAccount = true,
+                accountUsesSso = true,
+                ssoAccountName = name,
+                accounts = accountsUi(),
+                activeAccountId = accounts.getActiveAccountId(),
+                statusMessage = appStr(R.string.msg_sso_import_saved),
+                instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
+                instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
+            )
+        }
+        scheduleThemingRefresh()
+        loadCachedListIfAny()
+    }
+
+    fun onSsoImportCancelled() {
+        _ui.update { it.copy(statusMessage = appStr(R.string.msg_sso_import_cancelled)) }
     }
 
     fun startNextcloudLoginV2() {
@@ -464,10 +545,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     val active = accounts.getActiveAccount()
                                     it.copy(
                                         hasActiveAccount = true,
+                                        accountUsesSso = active?.usesSso == true,
+                                        ssoAccountName = active?.ssoAccountName,
                                         accounts = accountsUi(),
                                         activeAccountId = accounts.getActiveAccountId(),
                                         serverUrl = active?.serverBaseUrl.orEmpty(),
                                         username = active?.userId.orEmpty(),
+                                        loginName = active?.loginName.orEmpty(),
                                         password = active?.appPassword.orEmpty(),
                                         remoteFolder = active?.remoteFolder.orEmpty(),
                                         statusMessage = appStr(R.string.msg_login_complete_saved),
@@ -649,13 +733,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val bytes = withContext(Dispatchers.IO) {
                 val disk = WallpaperDiskCache(app, acc.id, carousel.maxWallpaperDiskCacheMb)
                 disk.get(href) ?: run {
-                    val client = NextcloudWebDavClient(
-                        http,
-                        acc.serverBaseUrl,
-                        acc.userId,
-                        acc.loginName,
-                        acc.appPassword,
-                    )
+                    val client = NextcloudDavAccessFactory.create(app, http, acc)
                     client.downloadFile(href).getOrNull()
                 }
             }
@@ -701,13 +779,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val token = beginBusy()
             _ui.update { it.copy(statusMessage = null) }
             try {
-                val client = NextcloudWebDavClient(
-                    http,
-                    active.serverBaseUrl,
-                    active.userId,
-                    active.loginName,
-                    active.appPassword,
-                )
+                val client = webDavClientFor(active)
                 val result = client.verifyReachable()
                 _ui.update {
                     it.copy(
@@ -1127,6 +1199,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _ui.update { it.copy(statusMessage = message) }
     }
 
+    /**
+     * Lists immediate child folders under [relativePath] (empty = account root).
+     * Uses the active account when present; otherwise form credentials (non-SSO).
+     */
+    fun listRemoteChildFolders(
+        relativePath: String,
+        onResult: (Result<List<String>>) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    davAccessForBrowse().listChildFolders(relativePath.trim().trim('/')).getOrThrow()
+                }
+            }
+            onResult(result)
+        }
+    }
+
+    /** True when browsing remote folders is possible (active account or filled Basic Auth form). */
+    fun canBrowseRemoteFolders(): Boolean {
+        val active = activeOrNull()
+        if (active != null) return true
+        val s = _ui.value
+        return s.serverUrl.trim().startsWith("https://", ignoreCase = true) &&
+            s.username.isNotBlank() &&
+            s.password.isNotBlank()
+    }
+
+    private fun davAccessForBrowse(): NextcloudDavAccess {
+        val active = activeOrNull()
+        if (active != null) return webDavClientFor(active)
+        val s = _ui.value
+        if (!s.serverUrl.trim().startsWith("https://", ignoreCase = true) ||
+            s.username.isBlank() ||
+            s.password.isBlank()
+        ) {
+            error(appStr(R.string.msg_folder_browse_need_account))
+        }
+        return NextcloudWebDavClient(
+            http,
+            s.serverUrl.trim().trimEnd('/'),
+            s.username.trim(),
+            s.loginName.ifBlank { s.username }.trim(),
+            s.password,
+        )
+    }
+
     private fun activeRemoteFolder(): String {
         val s = _ui.value
         val active = activeOrNull()
@@ -1135,14 +1254,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun webDavClientFor(active: NextcloudAccount): NextcloudWebDavClient =
-        NextcloudWebDavClient(
-            http,
-            active.serverBaseUrl,
-            active.userId,
-            active.loginName,
-            active.appPassword,
-        )
+    private fun webDavClientFor(active: NextcloudAccount): NextcloudDavAccess =
+        NextcloudDavAccessFactory.create(getApplication(), http, active)
 
     /** Uploads the local excluded list to `{remoteFolder}/.ncarousel/excluded-hrefs.txt`. */
     fun saveExcludedHrefsToNextcloud() {
@@ -1244,6 +1357,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 activeAccountId = id,
                 hasActiveAccount = a != null,
+                accountUsesSso = a?.usesSso == true,
+                ssoAccountName = a?.ssoAccountName,
                 serverUrl = a?.serverBaseUrl.orEmpty(),
                 username = a?.userId.orEmpty(),
                 loginName = a?.loginName.orEmpty(),
@@ -1286,6 +1401,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 hasActiveAccount = a != null,
+                accountUsesSso = a?.usesSso == true,
+                ssoAccountName = a?.ssoAccountName,
                 serverUrl = a?.serverBaseUrl.orEmpty(),
                 username = a?.userId.orEmpty(),
                 loginName = a?.loginName.orEmpty(),

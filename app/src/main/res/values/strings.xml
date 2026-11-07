@@ -11,7 +11,7 @@
     <string name="top_sign_in">Sign in</string>
 
     <!-- Login / connection -->
-    <string name="login_intro">Connect your Nextcloud server to use photos as wallpaper. You can sign in with the browser (recommended) or save your username and app password.</string>
+    <string name="login_intro">Connect your Nextcloud server to use photos as wallpaper. Prefer the Nextcloud app account if installed, or sign in with the browser / username and app password.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_group_connection">Connection</string>
     <string name="settings_group_wallpaper">Wallpaper</string>
@@ -27,7 +27,21 @@
     <string name="field_password_app">Password / app password</string>
     <string name="field_remote_folder">Remote folder</string>
     <string name="placeholder_remote_folder">Photos</string>
+    <string name="msg_folder_browse_need_account">Sign in or enter server URL, username, and app password to browse folders.</string>
+    <string name="folder_picker_empty">No subfolders here.</string>
+    <string name="folder_picker_retry">Retry</string>
+    <string name="folder_picker_cancel">Cancel</string>
+    <string name="folder_picker_use_this">Use this folder</string>
+    <string name="folder_picker_up">Parent folder</string>
+    <string name="folder_picker_root">(account root)</string>
+    <string name="folder_picker_title">Choose remote folder</string>
+    <string name="folder_picker_browse">Browse folders</string>
     <string name="login_browser_recommended">Sign in with browser (recommended)</string>
+    <string name="msg_sso_import_failed_detail">Could not import Nextcloud account: %1$s</string>
+    <string name="msg_sso_import_failed">Could not import Nextcloud account.</string>
+    <string name="msg_sso_import_cancelled">Nextcloud account import cancelled.</string>
+    <string name="msg_sso_import_saved">Account imported from Nextcloud app.</string>
+    <string name="login_sso_nextcloud_app">Use Nextcloud app account</string>
     <string name="save_credentials">Save credentials</string>
     <string name="settings_active_account">Active account</string>
     <string name="remove_active_account">Remove active account</string>

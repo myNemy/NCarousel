@@ -9,7 +9,7 @@
     <string name="nav_support_kofi">Supportami su Ko-fi</string>
     <string name="top_sign_in">Accedi</string>
 
-    <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Puoi usare l\'accesso dal browser (consigliato) o salvare utente e app password.</string>
+    <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Preferisci l’account dell’app Nextcloud se installata, oppure accedi dal browser / utente e app password.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_group_connection">Connessione</string>
     <string name="settings_group_wallpaper">Sfondo</string>
@@ -25,7 +25,21 @@
     <string name="field_password_app">Password / app password</string>
     <string name="field_remote_folder">Cartella remota</string>
     <string name="placeholder_remote_folder">Photos</string>
+    <string name="msg_folder_browse_need_account">Accedi oppure inserisci URL, utente e app password per sfogliare le cartelle.</string>
+    <string name="folder_picker_empty">Nessuna sottocartella qui.</string>
+    <string name="folder_picker_retry">Riprova</string>
+    <string name="folder_picker_cancel">Annulla</string>
+    <string name="folder_picker_use_this">Usa questa cartella</string>
+    <string name="folder_picker_up">Cartella superiore</string>
+    <string name="folder_picker_root">(radice account)</string>
+    <string name="folder_picker_title">Scegli cartella remota</string>
+    <string name="folder_picker_browse">Sfoglia cartelle</string>
     <string name="login_browser_recommended">Accedi con il browser (consigliato)</string>
+    <string name="msg_sso_import_failed_detail">Impossibile importare l’account Nextcloud: %1$s</string>
+    <string name="msg_sso_import_failed">Impossibile importare l’account Nextcloud.</string>
+    <string name="msg_sso_import_cancelled">Importazione account Nextcloud annullata.</string>
+    <string name="msg_sso_import_saved">Account importato dall’app Nextcloud.</string>
+    <string name="login_sso_nextcloud_app">Usa account app Nextcloud</string>
     <string name="save_credentials">Salva credenziali</string>
     <string name="settings_active_account">Account attivo</string>
     <string name="remove_active_account">Rimuovi account attivo</string>

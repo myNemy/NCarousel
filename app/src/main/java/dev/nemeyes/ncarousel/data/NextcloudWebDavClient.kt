@@ -8,10 +8,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
-import java.io.StringReader
-
 /**
  * Minimal WebDAV client for Nextcloud following the official overview:
  * [Nextcloud WebDAV basic APIs](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html).
@@ -25,7 +21,7 @@ class NextcloudWebDavClient(
     private val davUserId: String,
     private val basicAuthUser: String,
     private val password: String,
-) {
+) : NextcloudDavAccess {
 
     private val authHeader = Credentials.basic(basicAuthUser, password)
     private val baseUrl = serverBaseUrl.trimEnd('/').toHttpUrlOrNull()
@@ -39,22 +35,10 @@ class NextcloudWebDavClient(
         .followSslRedirects(false)
         .build()
 
-    private val propfindBody = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
-          <d:prop>
-            <d:getlastmodified/>
-            <d:getcontentlength/>
-            <d:getcontenttype/>
-            <oc:fileid/>
-            <oc:permissions/>
-            <d:resourcetype/>
-            <d:getetag/>
-          </d:prop>
-        </d:propfind>
-    """.trimIndent().toRequestBody("application/xml; charset=utf-8".toMediaType())
+    private val propfindBody =
+        DavPropfind.requestBodyXml.toRequestBody("application/xml; charset=utf-8".toMediaType())
 
-    suspend fun verifyReachable(): Result<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun verifyReachable(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val url = filesDavUrl(davUserId, "")
             val request = Request.Builder()
@@ -71,6 +55,20 @@ class NextcloudWebDavClient(
         }
     }
 
+    override suspend fun listChildFolders(relativeFolder: String): Result<List<String>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val folder = relativeFolder.trim().trim('/')
+                val entries = propfindDepthOne(folder)
+                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+                entries.mapNotNull { e ->
+                    if (!e.isCollection) return@mapNotNull null
+                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
+                    hrefToRelativeUserPath(e.hrefDecoded)
+                }.distinct().sortedBy { it.lowercase() }
+            }
+        }
+
     /**
      * Lists image file paths (relative to `remote.php/dav/files/{userId}/`) under [remoteFolder],
      * scanning subfolders recursively (same idea as the KDE [Nextcloud-Carousel](https://forgejo.it/Nemeyes/Nextcloud-Carousel) plugin).
@@ -78,9 +76,9 @@ class NextcloudWebDavClient(
     /**
      * @param maxImageBytes if &gt; 0, skips files whose `getcontentlength` is known and larger than this.
      */
-    suspend fun listImageHrefsRecursive(
+    override suspend fun listImageHrefsRecursive(
         remoteFolder: String,
-        maxImageBytes: Long = 0L,
+        maxImageBytes: Long,
     ): Result<List<String>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')
@@ -91,9 +89,9 @@ class NextcloudWebDavClient(
                 if (!visited.add(key)) return
                 val entries = propfindDepthOne(folder)
                 val selfHref = folderDavHref(folder)
-                val selfNorm = normalizeHref(selfHref)
+                val selfNorm = DavPropfind.normalizeHref(selfHref)
                 for (e in entries) {
-                    if (normalizeHref(e.hrefDecoded) == selfNorm) {
+                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) {
                         continue
                     }
                     when {
@@ -101,7 +99,7 @@ class NextcloudWebDavClient(
                             val child = hrefToRelativeUserPath(e.hrefDecoded) ?: continue
                             visit(child)
                         }
-                        isImageHref(e.hrefDecoded, e.contentType) -> {
+                        DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
                             val len = e.contentLengthBytes
                             if (maxImageBytes > 0L && len != null && len > maxImageBytes) {
                                 continue
@@ -120,7 +118,7 @@ class NextcloudWebDavClient(
      * Same as [listImageHrefsRecursive] but keeps WebDAV metadata when present (etag, lastModified, content length/type).
      * Intended for offline-first DB sync.
      */
-    suspend fun listImageEntriesRecursive(
+    override suspend fun listImageEntriesRecursive(
         remoteFolder: String,
         maxImageBytes: Long = 0L,
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
@@ -133,15 +131,15 @@ class NextcloudWebDavClient(
                 if (!visited.add(key)) return
                 val entries = propfindDepthOne(folder)
                 val selfHref = folderDavHref(folder)
-                val selfNorm = normalizeHref(selfHref)
+                val selfNorm = DavPropfind.normalizeHref(selfHref)
                 for (e in entries) {
-                    if (normalizeHref(e.hrefDecoded) == selfNorm) continue
+                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                     when {
                         e.isCollection -> {
                             val child = hrefToRelativeUserPath(e.hrefDecoded) ?: continue
                             visit(child)
                         }
-                        isImageHref(e.hrefDecoded, e.contentType) -> {
+                        DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
                             val len = e.contentLengthBytes
                             if (maxImageBytes > 0L && len != null && len > maxImageBytes) continue
                             collected += e
@@ -151,11 +149,11 @@ class NextcloudWebDavClient(
             }
             visit(root)
             // Deduplicate by href; keep first occurrence.
-            collected.distinctBy { normalizeHref(it.hrefDecoded) }
+            collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
         }
     }
 
-    suspend fun downloadFile(hrefPath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+    override suspend fun downloadFile(hrefPath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
             val url = absoluteUrlForHref(hrefPath)
             val request = Request.Builder()
@@ -175,7 +173,7 @@ class NextcloudWebDavClient(
      * (e.g. `Photos/.ncarousel/excluded-hrefs.txt`).
      * [NoSuchElementException] when the server returns 404.
      */
-    suspend fun downloadRelativeFile(relativePath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+    override suspend fun downloadRelativeFile(relativePath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
             val url = filesDavUrl(davUserId, relativePath.trim().trim('/'))
             val request = Request.Builder()
@@ -197,7 +195,7 @@ class NextcloudWebDavClient(
      * Creates a collection at [relativeFolder] (MKCOL).
      * Treats “already exists” responses as success (405 / 409 / 301).
      */
-    suspend fun ensureFolder(relativeFolder: String): Result<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun ensureFolder(relativeFolder: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val path = relativeFolder.trim().trim('/')
             if (path.isEmpty()) return@runCatching
@@ -219,10 +217,10 @@ class NextcloudWebDavClient(
     }
 
     /** Creates or overwrites a file under the user’s DAV root (PUT). */
-    suspend fun putFile(
+    override suspend fun putFile(
         relativePath: String,
         bytes: ByteArray,
-        contentType: String = "text/plain; charset=utf-8",
+        contentType: String,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val path = relativePath.trim().trim('/')
@@ -262,12 +260,9 @@ class NextcloudWebDavClient(
                 error("PROPFIND at \"$where\": HTTP ${response.code}.$hint404")
             }
             val xml = response.body?.string() ?: error("Empty PROPFIND body")
-            return parsePropfind(xml)
+            return DavPropfind.parse(xml)
         }
     }
-
-    private fun normalizeHref(href: String): String =
-        Uri.decode(href.trim()).trimEnd('/').lowercase()
 
     private fun folderDavHref(folder: String): String {
         val path = folder.trim().trim('/')
@@ -314,120 +309,5 @@ class NextcloudWebDavClient(
             .encodedPath(rel)
             .build()
             .toString()
-    }
-
-    private fun parsePropfind(xml: String): List<DavEntry> {
-        val factory = XmlPullParserFactory.newInstance()
-        factory.isNamespaceAware = true
-        val parser = factory.newPullParser()
-        parser.setInput(StringReader(xml))
-        val list = mutableListOf<DavEntry>()
-        var currentHref: String? = null
-        var inResourceType = false
-        var hasCollection = false
-        var contentType: String? = null
-        var contentLengthBytes: Long? = null
-        var etag: String? = null
-        var lastModified: String? = null
-        var fileId: Long? = null
-        var depth = 0
-
-        fun flushResponse() {
-            val href = currentHref ?: return
-            list += DavEntry(
-                hrefDecoded = Uri.decode(href),
-                isCollection = hasCollection,
-                fileId = fileId,
-                contentType = contentType,
-                contentLengthBytes = contentLengthBytes,
-                etag = etag,
-                lastModified = lastModified,
-            )
-            currentHref = null
-            inResourceType = false
-            hasCollection = false
-            contentType = null
-            contentLengthBytes = null
-            etag = null
-            lastModified = null
-            fileId = null
-        }
-
-        var event = parser.eventType
-        while (event != XmlPullParser.END_DOCUMENT) {
-            when (event) {
-                XmlPullParser.START_TAG -> {
-                    depth++
-                    val name = parser.name
-                    when {
-                        name.equals("response", ignoreCase = true) -> {
-                            currentHref = null
-                            inResourceType = false
-                            hasCollection = false
-                            contentType = null
-                            contentLengthBytes = null
-                            etag = null
-                            lastModified = null
-                        }
-                        name.equals("href", ignoreCase = true) -> {
-                            currentHref = readTextElementContents(parser)
-                        }
-                        name.equals("resourcetype", ignoreCase = true) -> inResourceType = true
-                        inResourceType && name.equals("collection", ignoreCase = true) -> hasCollection = true
-                        name.equals("getcontenttype", ignoreCase = true) -> {
-                            contentType = readTextElementContents(parser).ifBlank { null }
-                        }
-                        name.equals("getcontentlength", ignoreCase = true) -> {
-                            val raw = readTextElementContents(parser)
-                            contentLengthBytes = raw.toLongOrNull()
-                        }
-                        name.equals("getetag", ignoreCase = true) -> {
-                            etag = readTextElementContents(parser).ifBlank { null }
-                        }
-                        name.equals("getlastmodified", ignoreCase = true) -> {
-                            lastModified = readTextElementContents(parser).ifBlank { null }
-                        }
-                        name.equals("fileid", ignoreCase = true) -> {
-                            fileId = readTextElementContents(parser).toLongOrNull()
-                        }
-                    }
-                }
-                XmlPullParser.END_TAG -> {
-                    if (parser.name.equals("response", ignoreCase = true)) {
-                        flushResponse()
-                    }
-                    if (parser.name.equals("resourcetype", ignoreCase = true)) {
-                        inResourceType = false
-                    }
-                    depth--
-                }
-            }
-            event = parser.next()
-        }
-        return list
-    }
-
-    /** Reads character data until the matching end tag (caller is on START_TAG). */
-    private fun readTextElementContents(parser: XmlPullParser): String {
-        val sb = StringBuilder()
-        var type = parser.next()
-        while (type != XmlPullParser.END_TAG) {
-            if (type == XmlPullParser.TEXT) sb.append(parser.text)
-            type = parser.next()
-        }
-        return sb.toString().trim()
-    }
-
-    private fun isImageHref(href: String, contentType: String?): Boolean {
-        val ct = contentType?.lowercase() ?: ""
-        if (ct.startsWith("image/") && !ct.contains("svg")) return true
-        val lower = href.lowercase()
-        return IMAGE_EXTENSIONS.any { lower.endsWith(it) }
-    }
-
-    companion object {
-        private val IMAGE_EXTENSIONS = listOf(
-            ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif",
-        )
     }
 }

@@ -38,13 +38,7 @@ class ImageSyncRepository(context: Context) {
         maxImageBytes: Long,
     ): Result<List<String>> = withContext(Dispatchers.IO) {
         runCatching {
-            val client = NextcloudWebDavClient(
-                http,
-                account.serverBaseUrl,
-                account.userId,
-                account.loginName,
-                account.appPassword,
-            )
+            val client = NextcloudDavAccessFactory.create(app, http, account)
             val items = client.listImageEntriesRecursive(account.remoteFolder, maxImageBytes).getOrThrow()
             val now = System.currentTimeMillis()
             val entries = items.map { e ->

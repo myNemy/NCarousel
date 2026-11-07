@@ -13,8 +13,8 @@ Android app that downloads images from a folder on your **Nextcloud** server and
 
 ## Features
 
-- Sign in to your own Nextcloud (browser login or username / app password); multiple accounts
-- Choose a remote folder and sync the image list
+- Sign in to your own Nextcloud (Nextcloud app account if installed, browser login, or username / app password); multiple accounts
+- Browse Nextcloud folders and pick a remote folder, then sync the image list
 - Automatic wallpaper rotation (minimum interval 1 minute; WorkManager may delay in Doze)
 - Order modes: sequential, random, shuffle once, smart random, no-repeat
 - Manual “next” from the app and an optional Quick Settings tile

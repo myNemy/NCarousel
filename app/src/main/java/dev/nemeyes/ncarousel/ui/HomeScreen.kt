@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.nextcloud.android.sso.ImportSsoAccount
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -153,6 +154,18 @@ fun HomeScreen(viewModel: MainViewModel) {
         snackbar.showSnackbar(msg)
     }
 
+    val ssoImportLauncher = rememberLauncherForActivityResult(ImportSsoAccount()) { account ->
+        if (account == null) {
+            viewModel.onSsoImportCancelled()
+        } else {
+            viewModel.importSsoAccount(
+                serverUrl = account.url.orEmpty(),
+                userId = account.userId.orEmpty(),
+                ssoAccountName = account.name.orEmpty(),
+            )
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { ev ->
             when (ev) {
@@ -163,6 +176,17 @@ fun HomeScreen(viewModel: MainViewModel) {
                 UiEvent.RequestIgnoreBatteryOptimizations -> {
                     BatteryOptimizationHelper.startExemptionRequest(context)
                     viewModel.refreshBatteryOptimizationStatus()
+                }
+                UiEvent.RequestSsoImport -> {
+                    runCatching { ssoImportLauncher.launch(null) }
+                        .onFailure { e ->
+                            viewModel.setStatusMessage(
+                                context.getString(
+                                    R.string.msg_sso_import_failed_detail,
+                                    e.message ?: e.javaClass.simpleName,
+                                ),
+                            )
+                        }
                 }
                 is UiEvent.ShareImage -> {
                     val send = Intent(Intent.ACTION_SEND).apply {
@@ -285,6 +309,14 @@ fun HomeScreen(viewModel: MainViewModel) {
                 onFolderChange = viewModel::updateRemoteFolder,
                 onSaveCredentials = viewModel::saveCredentials,
                 onLoginV2 = viewModel::startNextcloudLoginV2,
+                onLoginSso = viewModel::startNextcloudSsoImport,
+                canBrowseFolders = viewModel.canBrowseRemoteFolders(),
+                onLoadFolderChildren = viewModel::listRemoteChildFolders,
+                onBrowseFoldersUnavailable = {
+                    viewModel.setStatusMessage(
+                        context.getString(R.string.msg_folder_browse_need_account),
+                    )
+                },
             )
         }
     } else {
@@ -552,6 +584,14 @@ private fun AuthenticatedShell(
                                 onFolderChange = viewModel::updateRemoteFolder,
                                 onSaveCredentials = viewModel::saveCredentials,
                                 onLoginV2 = viewModel::startNextcloudLoginV2,
+                                onLoginSso = viewModel::startNextcloudSsoImport,
+                                canBrowseFolders = viewModel.canBrowseRemoteFolders(),
+                                onLoadFolderChildren = viewModel::listRemoteChildFolders,
+                                onBrowseFoldersUnavailable = {
+                                    viewModel.setStatusMessage(
+                                        context.getString(R.string.msg_folder_browse_need_account),
+                                    )
+                                },
                                 onActiveAccountChange = viewModel::setActiveAccount,
                                 onDeleteActiveAccount = {
                                     val id = viewModel.ui.value.activeAccountId

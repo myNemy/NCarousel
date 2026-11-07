@@ -147,13 +147,7 @@ object NextWallpaperApplicator {
         progressProvider: () -> PickProgress = { progress },
     ): String? {
         val http = HttpClientProvider.create(app)
-        val client = NextcloudWebDavClient(
-            http,
-            active.serverBaseUrl,
-            active.userId,
-            active.loginName,
-            active.appPassword,
-        )
+        val client = NextcloudDavAccessFactory.create(app, http, active)
         val disk = WallpaperDiskCache(app, active.id, carousel.maxWallpaperDiskCacheMb)
         val bytes = disk.get(href) ?: run {
             val b = client.downloadFile(href).getOrElse { e ->

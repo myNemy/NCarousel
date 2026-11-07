@@ -136,6 +136,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
@@ -160,6 +161,10 @@ dependencies {
 
     // Nextcloud Login Flow v2: open default browser / custom tabs
     implementation("androidx.browser:browser:1.8.0")
+
+    // Nextcloud Files app Single Sign-On (account import + network bridge)
+    implementation("com.github.nextcloud:Android-SingleSignOn:1.3.5")
+    implementation("com.google.code.gson:gson:2.11.0")
 
     // Offline-first metadata cache
     implementation("androidx.room:room-runtime:2.6.1")

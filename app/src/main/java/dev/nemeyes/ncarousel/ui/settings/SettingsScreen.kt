@@ -63,6 +63,7 @@ import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperCropMode
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperTarget
+import dev.nemeyes.ncarousel.ui.components.RemoteFolderPickerDialog
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 import dev.nemeyes.ncarousel.ui.components.SettingsInlineDivider
 import dev.nemeyes.ncarousel.ui.components.SettingsSwitchRow
@@ -80,6 +81,10 @@ fun SettingsScreen(
     onFolderChange: (String) -> Unit,
     onSaveCredentials: () -> Unit,
     onLoginV2: () -> Unit,
+    onLoginSso: () -> Unit,
+    canBrowseFolders: Boolean,
+    onLoadFolderChildren: (path: String, onResult: (Result<List<String>>) -> Unit) -> Unit,
+    onBrowseFoldersUnavailable: () -> Unit,
     onActiveAccountChange: (String) -> Unit,
     onDeleteActiveAccount: () -> Unit,
     onSaveCarousel: () -> Unit,
@@ -117,6 +122,7 @@ fun SettingsScreen(
     var pendingImportText by remember { mutableStateOf<String?>(null) }
     var pendingImportCount by remember { mutableStateOf(0) }
     var showClearExcludedConfirm by remember { mutableStateOf(false) }
+    var showFolderPicker by remember { mutableStateOf(false) }
     val excludedCount = state.excludedImageHrefs.size
     val excludedActionsEnabled = !state.busy && state.activeAccountId != null
 
@@ -344,6 +350,26 @@ fun SettingsScreen(
                 singleLine = true,
                 enabled = !state.busy,
             )
+            OutlinedButton(
+                onClick = {
+                    if (canBrowseFolders) {
+                        showFolderPicker = true
+                    } else {
+                        onBrowseFoldersUnavailable()
+                    }
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.folder_picker_browse))
+            }
+            Button(
+                onClick = onLoginSso,
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.login_sso_nextcloud_app))
+            }
             FilledTonalButton(
                 onClick = onLoginV2,
                 enabled = !state.busy,
@@ -351,7 +377,7 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.login_browser_recommended))
             }
-            Button(
+            FilledTonalButton(
                 onClick = onSaveCredentials,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
@@ -807,6 +833,18 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showFolderPicker) {
+        RemoteFolderPickerDialog(
+            initialPath = state.remoteFolder,
+            onLoadChildren = onLoadFolderChildren,
+            onDismiss = { showFolderPicker = false },
+            onFolderSelected = { path ->
+                onFolderChange(path)
+                showFolderPicker = false
+            },
+        )
     }
 }
 

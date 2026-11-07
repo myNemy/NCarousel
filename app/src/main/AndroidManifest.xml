@@ -8,6 +8,15 @@
     <uses-permission
         android:name="android.permission.POST_NOTIFICATIONS"
         android:minSdkVersion="33" />
+    <!-- Nextcloud SSO (AccountImporter / Files app bridge). -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+
+    <!-- Package visibility for Nextcloud Files (SSO). Merged again from the SSO library. -->
+    <queries>
+        <package android:name="com.nextcloud.client" />
+        <package android:name="com.nextcloud.android.beta" />
+        <package android:name="com.nextcloud.android.qa" />
+    </queries>
 
     <application
         android:allowBackup="true"

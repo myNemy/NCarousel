@@ -11,7 +11,7 @@ import dev.nemeyes.ncarousel.data.ImageExifPlaceLabel
 import dev.nemeyes.ncarousel.data.ImageListCache
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
-import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
+import dev.nemeyes.ncarousel.data.NextcloudDavAccessFactory
 import dev.nemeyes.ncarousel.data.WallpaperDiskCache
 import dev.nemeyes.ncarousel.data.WallpaperOrderEngine
 import dev.nemeyes.ncarousel.data.WallpaperRepository
@@ -41,13 +41,7 @@ class ImageWallpaperWorker(
             val listCache = ImageListCache(applicationContext, active.id)
             var hrefs = listCache.read()
             val http = HttpClientProvider.create(applicationContext)
-            val client = NextcloudWebDavClient(
-                http,
-                active.serverBaseUrl,
-                active.userId,
-                active.loginName,
-                active.appPassword,
-            )
+            val client = NextcloudDavAccessFactory.create(applicationContext, http, active)
             val order = WallpaperOrderEngine(applicationContext, active.id)
 
             if (hrefs.isEmpty()) {

@@ -86,10 +86,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import dev.nemeyes.ncarousel.data.SsoNextcloudDavAccess
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -845,9 +849,7 @@ fun LibraryScreen(
                                     leadingContent = {
                                         LibraryThumbnail(
                                             ctx = ctx,
-                                            serverUrl = state.serverUrl,
-                                            loginName = state.loginName,
-                                            password = state.password,
+                                            state = state,
                                             fileId = fileId,
                                             sizePx = 192,
                                             modifier = Modifier
@@ -1261,9 +1263,7 @@ private fun LibraryFullscreenPreview(
                 ) { imageModifier, contentScale, alignment ->
                     LibraryThumbnail(
                         ctx = ctx,
-                        serverUrl = state.serverUrl,
-                        loginName = state.loginName,
-                        password = state.password,
+                        state = state,
                         fileId = target.fileId,
                         sizePx = 2048,
                         modifier = imageModifier.fillMaxSize(),
@@ -1352,9 +1352,7 @@ private fun LibraryFullscreenPreview(
 @Composable
 private fun LibraryThumbnail(
     ctx: android.content.Context,
-    serverUrl: String,
-    loginName: String,
-    password: String,
+    state: MainUiState,
     fileId: Long?,
     sizePx: Int,
     modifier: Modifier,
@@ -1362,19 +1360,64 @@ private fun LibraryThumbnail(
     contentScale: ContentScale = ContentScale.Crop,
     alignment: Alignment = Alignment.Center,
 ) {
-    if (fileId == null || serverUrl.isBlank() || loginName.isBlank() || password.isBlank()) {
+    val imageModifier = modifier.then(
+        if (isCurrent) {
+            Modifier
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(8.dp),
+                )
+                .padding(2.dp)
+                .clip(RoundedCornerShape(6.dp))
+        } else {
+            Modifier.clip(RoundedCornerShape(8.dp))
+        },
+    )
+    if (fileId == null) {
         Box(
-            modifier = modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
         )
         return
     }
-    val url = remember(serverUrl, fileId, sizePx) { previewUrl(serverUrl, fileId, sizePx) }
-    val model = remember(url, loginName, password) {
+
+    if (state.accountUsesSso) {
+        val ssoName = state.ssoAccountName
+        val userId = state.username
+        if (ssoName.isNullOrBlank() || userId.isBlank()) {
+            Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+            return
+        }
+        val bytes by produceState<ByteArray?>(initialValue = null, fileId, ssoName, sizePx) {
+            value = withContext(Dispatchers.IO) {
+                SsoNextcloudDavAccess(ctx, ssoName, userId)
+                    .downloadPreview(fileId, sizePx)
+                    .getOrNull()
+            }
+        }
+        if (bytes == null) {
+            Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        } else {
+            AsyncImage(
+                model = bytes,
+                contentDescription = null,
+                contentScale = contentScale,
+                alignment = alignment,
+                modifier = imageModifier,
+            )
+        }
+        return
+    }
+
+    if (state.serverUrl.isBlank() || state.loginName.isBlank() || state.password.isBlank()) {
+        Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        return
+    }
+    val url = remember(state.serverUrl, fileId, sizePx) { previewUrl(state.serverUrl, fileId, sizePx) }
+    val model = remember(url, state.loginName, state.password) {
         ImageRequest.Builder(ctx)
             .data(url)
-            .addHeader("Authorization", Credentials.basic(loginName, password))
+            .addHeader("Authorization", Credentials.basic(state.loginName, state.password))
             .build()
     }
     AsyncImage(
@@ -1382,20 +1425,7 @@ private fun LibraryThumbnail(
         contentDescription = null,
         contentScale = contentScale,
         alignment = alignment,
-        modifier = modifier.then(
-            if (isCurrent) {
-                Modifier
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp),
-                    )
-                    .padding(2.dp)
-                    .clip(RoundedCornerShape(6.dp))
-            } else {
-                Modifier.clip(RoundedCornerShape(8.dp))
-            },
-        ),
+        modifier = imageModifier,
     )
 }
 
@@ -1450,9 +1480,7 @@ private fun LibraryGridCell(
         ) {
             LibraryThumbnail(
                 ctx = ctx,
-                serverUrl = state.serverUrl,
-                loginName = state.loginName,
-                password = state.password,
+                state = state,
                 fileId = fileId,
                 sizePx = 512,
                 modifier = Modifier

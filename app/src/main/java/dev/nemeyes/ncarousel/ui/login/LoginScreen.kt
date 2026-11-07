@@ -17,10 +17,15 @@ import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -30,6 +35,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.nemeyes.ncarousel.MainUiState
 import dev.nemeyes.ncarousel.R
+import dev.nemeyes.ncarousel.ui.components.RemoteFolderPickerDialog
 import dev.nemeyes.ncarousel.ui.components.SettingsGroup
 
 @Composable
@@ -42,7 +48,12 @@ fun LoginScreen(
     onFolderChange: (String) -> Unit,
     onSaveCredentials: () -> Unit,
     onLoginV2: () -> Unit,
+    onLoginSso: () -> Unit,
+    canBrowseFolders: Boolean,
+    onLoadFolderChildren: (path: String, onResult: (Result<List<String>>) -> Unit) -> Unit,
+    onBrowseFoldersUnavailable: () -> Unit,
 ) {
+    var showFolderPicker by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -114,6 +125,26 @@ fun LoginScreen(
                 singleLine = true,
                 enabled = !state.busy,
             )
+            OutlinedButton(
+                onClick = {
+                    if (canBrowseFolders) {
+                        showFolderPicker = true
+                    } else {
+                        onBrowseFoldersUnavailable()
+                    }
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.folder_picker_browse))
+            }
+            Button(
+                onClick = onLoginSso,
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.login_sso_nextcloud_app))
+            }
             FilledTonalButton(
                 onClick = onLoginV2,
                 enabled = !state.busy,
@@ -121,7 +152,7 @@ fun LoginScreen(
             ) {
                 Text(stringResource(R.string.login_browser_recommended))
             }
-            Button(
+            FilledTonalButton(
                 onClick = onSaveCredentials,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
@@ -130,5 +161,17 @@ fun LoginScreen(
             }
         }
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showFolderPicker) {
+        RemoteFolderPickerDialog(
+            initialPath = state.remoteFolder,
+            onLoadChildren = onLoadFolderChildren,
+            onDismiss = { showFolderPicker = false },
+            onFolderSelected = { path ->
+                onFolderChange(path)
+                showFolderPicker = false
+            },
+        )
     }
 }
