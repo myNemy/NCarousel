@@ -1,0 +1,4 @@
+- Add: Share image from Library fullscreen preview (Android share sheet).
+- Add: Library filters “In carousel” / “Excluded”; pinch-to-zoom in preview.
+- Add: Collapsible Settings sections (all collapsed on entry).
+- Add: Optional Adjust frame in preview for Cover/Center crop; framing remembered per image.
