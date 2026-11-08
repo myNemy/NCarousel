@@ -66,9 +66,9 @@ class NextcloudWebDavClient(
         }
 
     /**
-     * Lists image file paths under [remoteFolder].
-     * Prefers a single `Depth: infinity` PROPFIND (same idea as the KDE Nextcloud-Carousel plugin);
-     * falls back to recursive `Depth: 1` when the server rejects infinity.
+     * Lists image file paths under [remoteFolder] via recursive `Depth: 1` PROPFIND
+     * (Nextcloud documents Depth 0/1 for folder listings; RFC 4918 §9.1 allows servers to
+     * reject or mishandle `Depth: infinity`, which previously yielded empty libraries).
      *
      * @param maxImageBytes if &gt; 0, skips files whose `getcontentlength` is known and larger than this.
      */
@@ -88,23 +88,8 @@ class NextcloudWebDavClient(
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')
-            listImagesPreferInfinity(root, maxImageBytes)
+            listImagesDepthOneWalk(root, maxImageBytes)
         }
-    }
-
-    private fun listImagesPreferInfinity(root: String, maxImageBytes: Long): List<DavEntry> {
-        // One-shot tree listing when the server allows it (avoids Depth:1 path/join undercounts).
-        val infinity = runCatching { propfind(root, depth = "infinity", missingOk = false) }.getOrNull()
-        if (infinity != null) {
-            return DavPropfind.collectImagesFromEntries(
-                entries = infinity,
-                davUserId = davUserId,
-                rootFolder = root,
-                parentFolder = root,
-                maxImageBytes = maxImageBytes,
-            )
-        }
-        return listImagesDepthOneWalk(root, maxImageBytes)
     }
 
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
@@ -231,10 +216,6 @@ class NextcloudWebDavClient(
         davHttp.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 if (missingOk && response.code == 404) return emptyList()
-                // Depth:infinity is often disabled (403/405/501) — caller may fall back to Depth:1.
-                if (depth.equals("infinity", ignoreCase = true)) {
-                    error("PROPFIND Depth:infinity unsupported: HTTP ${response.code}")
-                }
                 val where = folder.ifBlank { "(account root)" }
                 val hint404 =
                     if (response.code == 404) {

@@ -139,8 +139,8 @@ object DavPropfind {
 
     /**
      * Stable identity for image dedupe: prefer Nextcloud `oc:fileid`, else user-relative path.
-     * Never key only on the basename — Depth:1/infinity often returns relative hrefs that collide
-     * across folders (`IMG_0001.jpg` in many albums).
+     * Never key only on the basename — Depth:1 relative hrefs collide across folders
+     * (`IMG_0001.jpg` in many albums).
      */
     fun imageIdentityKey(entry: DavEntry, userRelativePath: String): String {
         val id = entry.fileId
@@ -172,7 +172,7 @@ object DavPropfind {
     }
 
     /**
-     * Collect image files from a flat PROPFIND result (Depth:1 children or Depth:infinity tree).
+     * Collect image files from a Depth:1 PROPFIND result (parent + immediate children).
      * Resolves relative hrefs against [parentFolder], keeps only entries under [rootFolder],
      * applies [maxImageBytes], and returns canonical hrefs (deduped by fileId/path).
      */

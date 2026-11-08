@@ -60,22 +60,10 @@ class SsoNextcloudDavAccess(
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')
-            listImagesPreferInfinity(root, maxImageBytes)
+            // Recursive Depth:1 only — Nextcloud may accept Depth:infinity with unusable
+            // Multistatus (wrong collection flags / incomplete tree); that used to skip fallback.
+            listImagesDepthOneWalk(root, maxImageBytes)
         }
-    }
-
-    private fun listImagesPreferInfinity(root: String, maxImageBytes: Long): List<DavEntry> {
-        val infinity = runCatching { propfind(root, depth = "infinity", missingOk = false) }.getOrNull()
-        if (infinity != null) {
-            return DavPropfind.collectImagesFromEntries(
-                entries = infinity,
-                davUserId = davUserId,
-                rootFolder = root,
-                parentFolder = root,
-                maxImageBytes = maxImageBytes,
-            )
-        }
-        return listImagesDepthOneWalk(root, maxImageBytes)
     }
 
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
@@ -174,9 +162,6 @@ class SsoNextcloudDavAccess(
             requestString("PROPFIND", path, body = DavPropfind.requestBodyXml, headers = headers)
         } catch (e: NextcloudHttpRequestFailedException) {
             if (missingOk && e.statusCode == 404) return emptyList()
-            if (depth.equals("infinity", ignoreCase = true)) {
-                error("PROPFIND Depth:infinity unsupported: HTTP ${e.statusCode}")
-            }
             val where = folder.ifBlank { "(account root)" }
             val hint404 =
                 if (e.statusCode == 404) {
