@@ -8,6 +8,13 @@ import java.io.StringReader
 /** Shared WebDAV PROPFIND body + Multistatus XML parsing for OkHttp and SSO clients. */
 object DavPropfind {
 
+    /**
+     * Pause between nested Depth:1 PROPFINDs during a recursive library walk.
+     * Listing stays single-threaded; this only softens sustained PHP-FPM/DB load on
+     * large folder trees (thousands of collections). Does not change which folders are visited.
+     */
+    const val INTER_PROPFIND_DELAY_MS: Long = 40L
+
     val requestBodyXml: String = """
         <?xml version="1.0" encoding="UTF-8"?>
         <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">

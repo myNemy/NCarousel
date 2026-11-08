@@ -2,12 +2,16 @@ package dev.nemeyes.ncarousel.data
 
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlin.coroutines.coroutineContext
+
 /**
  * Minimal WebDAV client for Nextcloud following the official overview:
  * [Nextcloud WebDAV basic APIs](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html).
@@ -95,9 +99,13 @@ class NextcloudWebDavClient(
         remoteFolder: String,
         maxImageBytes: Long,
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val root = remoteFolder.trim().trim('/')
-            listImagesDepthOneWalk(root, maxImageBytes)
+            Result.success(listImagesDepthOneWalk(root, maxImageBytes))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -108,13 +116,20 @@ class NextcloudWebDavClient(
      * previously skipped reachable subtrees (~760 images vs v0.2.55).
      *
      * Collection URLs use a trailing slash (RFC 4918 §5.2 / Nextcloud Depth 0|1 listings).
+     * Walk is strictly serial (no parallel PROPFIND); [DavPropfind.INTER_PROPFIND_DELAY_MS]
+     * paces nested visits; [ensureActive] stops the walk when the refresh job is cancelled
+     * so a new refresh cannot overlap an abandoned tree walk.
      */
-    private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
+    private suspend fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
         val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
-        fun visitUrl(requestUrl: String, isRoot: Boolean, whereLabel: String) {
+        suspend fun visitUrl(requestUrl: String, isRoot: Boolean, whereLabel: String) {
+            coroutineContext.ensureActive()
             val selfNorm = DavPropfind.normalizeHref(requestUrl)
             if (!visited.add(selfNorm)) return
+            if (!isRoot && DavPropfind.INTER_PROPFIND_DELAY_MS > 0L) {
+                delay(DavPropfind.INTER_PROPFIND_DELAY_MS)
+            }
             // Nested 404 (gone mount) must not abort the whole library; exact-href visits
             // avoid false 404s from bad path joins that missingOk used to swallow.
             val entries = propfindUrl(

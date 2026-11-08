@@ -8,8 +8,11 @@ import com.nextcloud.android.sso.aidl.NextcloudRequest
 import com.nextcloud.android.sso.api.NextcloudAPI
 import com.nextcloud.android.sso.exceptions.NextcloudHttpRequestFailedException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
+import kotlin.coroutines.coroutineContext
 
 /**
  * WebDAV / file access via Nextcloud Files Single Sign-On ([NextcloudAPI]).
@@ -67,24 +70,32 @@ class SsoNextcloudDavAccess(
         remoteFolder: String,
         maxImageBytes: Long,
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val root = remoteFolder.trim().trim('/')
             // Recursive Depth:1 only — do not use Depth:infinity (RFC 4918 §9.1 / Nextcloud may
             // return an unusable Multistatus that previously emptied the library).
-            listImagesDepthOneWalk(root, maxImageBytes)
+            Result.success(listImagesDepthOneWalk(root, maxImageBytes))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     /**
      * Same Depth:1 walk as [NextcloudWebDavClient]: PROPFIND nested collections at the exact
-     * Multistatus href (not a re-joined relative path).
+     * Multistatus href (not a re-joined relative path). Serial + paced; see OkHttp twin.
      */
-    private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
+    private suspend fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
         val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
-        fun visitPath(requestPath: String, isRoot: Boolean, whereLabel: String) {
+        suspend fun visitPath(requestPath: String, isRoot: Boolean, whereLabel: String) {
+            coroutineContext.ensureActive()
             val selfNorm = DavPropfind.normalizeHref(requestPath)
             if (!visited.add(selfNorm)) return
+            if (!isRoot && DavPropfind.INTER_PROPFIND_DELAY_MS > 0L) {
+                delay(DavPropfind.INTER_PROPFIND_DELAY_MS)
+            }
             val entries = propfindPath(
                 requestPath,
                 depth = "1",

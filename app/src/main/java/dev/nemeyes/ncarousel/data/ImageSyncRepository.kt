@@ -37,7 +37,7 @@ class ImageSyncRepository(context: Context) {
         account: NextcloudAccount,
         maxImageBytes: Long,
     ): Result<List<String>> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val client = NextcloudDavAccessFactory.create(app, http, account)
             val items = client.listImageEntriesRecursive(account.remoteFolder, maxImageBytes).getOrThrow()
             // Never replace a good Room cache with an empty "success" (Depth:infinity / filter
@@ -70,7 +70,11 @@ class ImageSyncRepository(context: Context) {
                 dao.deleteAllForAccount(account.id)
                 dao.upsertAll(entries)
             }
-            entries.map { it.href }
+            Result.success(entries.map { it.href })
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
