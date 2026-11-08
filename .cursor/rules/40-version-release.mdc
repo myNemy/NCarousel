@@ -12,10 +12,12 @@ Bump **`ncarouselBaseVersionName`** (at least **patch**) and **`ncarouselLocalVe
 
 Daily try-outs on **`dev`** / **`feature/*`** do **not** require these bumps (see `.cursor/rules/06-git-branch-workflow.mdc`).
 
+**Before editing versions on publish:** propose patch/minor/major and wait for confirmation — **`.cursor/rules/41-publish-version-suggestion.mdc`**. Do not default silently to patch-only when the ship set includes new user-visible capabilities.
+
 ## Gradle fields
 
 - **`ncarouselLocalVersionCode`**: +1 on every **`main`** publish that ships app changes.
-- **`ncarouselBaseVersionName`**: bump patch (or minor/major) so the public version string and git tag advance.
+- **`ncarouselBaseVersionName`**: bump patch, minor, or major (per confirmed suggestion) so the public version string and git tag advance.
 - **Same commit:** update `defaultConfig` literals `versionCode = <digits>` and `versionName = "<name>"` to match those vals (F-Droid checkupdates; see rule `62-fdroid-binaries-requirements-ncarousel.mdc`).
 
 ## CI note

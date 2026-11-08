@@ -1,0 +1,53 @@
+---
+description: On publish, propose semver bump and wait for user confirmation before editing versions
+alwaysApply: true
+---
+
+# Publish version suggestion (confirm before bump)
+
+Cross-rules: **`.cursor/rules/06-git-branch-workflow.mdc`** (workflow **D**), **`.cursor/rules/40-version-release.mdc`**, **`.cursor/rules/50-commit-push-release-automation.mdc`**.
+
+## Hard gate
+
+When the user asks to **publish** / **merge to main** / **release** / **promuovi** / ship to F-Droid (workflow **D**), the agent **MUST NOT** edit `ncarouselBaseVersionName`, `ncarouselLocalVersionCode`, or the matching `defaultConfig` literals until the user **confirms** the proposed numbering (or explicitly overrides, e.g. «usa patch», «ok 0.3.0»).
+
+Optional helper (same repo only): `scripts/suggest-release-version.sh`.
+
+## Mandatory step (before any version edit)
+
+Run this **before** step **D.3** bump / changelog edits:
+
+1. Read current vals from `app/build.gradle.kts`: `ncarouselBaseVersionName`, `ncarouselLocalVersionCode`.
+2. Inspect commits on this repo only: `git log main..dev --oneline` (and skim bodies with `git log main..dev` if subjects are weak).
+3. Classify the ship set (highest wins):
+   - **major** — breaking user/API/data migration that intentionally breaks old installs or settings contracts.
+   - **minor** — new user-visible capability / feature (`feat`, SSO, folder browser, new Settings surface, Library mode, etc.), even if commit prefixes are weak or say `fix`.
+   - **patch** — fixes, chore, docs-only that still touch the APK, small UX polish without a new capability.
+4. Propose exact next numbers from current `X.Y.Z` / `versionCode`:
+   - **patch** → `X.Y.(Z+1)`
+   - **minor** → `X.(Y+1).0`
+   - **major** → `(X+1).0.0`
+   - **`versionCode`** → always `ncarouselLocalVersionCode + 1` on any publish (independent of semver level).
+5. Present **1–3 lines**: suggested `versionName` + `versionCode`, bump level, short rationale (cite notable commits / features).
+6. **Stop and wait** for confirmation or override. Do not merge-to-main bump, do not write Gradle/Fastlane version files yet.
+
+## After confirmation
+
+Continue workflow **D** as usual: merge → apply the **confirmed** bump + Fastlane changelog → push `main` → CI Release APK → sync `fdroiddata` → merge `main` → `dev`.
+
+## Unchanged rules
+
+- **No** version bump on `dev` / `feature/*` trial commits.
+- **`versionCode` always +1** on every store publish that bumps.
+- F-Droid metadata sync still happens **after** a successful `main` publish (rules `61` / `62`), not during the suggestion step.
+- If the user says **no version bump** / **WIP** / **draft** on a `main` commit, skip bump entirely (rule `50`).
+
+## Classification hints (examples)
+
+| Signal in `main..dev` | Prefer |
+|----------------------|--------|
+| SSO login, remote folder browser, new Library/Settings capability | **minor** |
+| Bugfix, undercount, crash, polish of existing UI | **patch** |
+| Breaking settings schema / remove required permission without migration | **major** |
+
+When unsure between patch and minor, prefer **minor** if a user would describe the release as “new features,” and say so in the rationale.

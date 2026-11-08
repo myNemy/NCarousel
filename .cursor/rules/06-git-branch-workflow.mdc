@@ -38,13 +38,14 @@ Same local folder; switch branches with `git switch`. Do **not** treat every com
 
 ### D — Publish (only when user asks: publish / merge to main / release / F-Droid)
 
-1. `git switch main` and pull.
-2. Merge `dev` → `main`.
-3. Apply release bump + changelog (`.cursor/rules/50-commit-push-release-automation.mdc`).
-4. Commit and push `main` to forgejo + origin.
-5. Follow CI until `NCarousel-<version>.apk` is on the GitHub Release.
-6. Sync and push `fdroiddata` (rules `61-*`, `62-fdroid-*`).
-7. **Mandatory hand-back:** `git switch dev`, merge `main` → `dev`, push `dev` to both remotes — so the next session resumes aligned with the published version.
+1. **Propose semver first** (`.cursor/rules/41-publish-version-suggestion.mdc`): inspect `main..dev`, suggest patch/minor/major + exact `versionName`/`versionCode`, wait for user confirmation. Do **not** edit Gradle versions until confirmed.
+2. `git switch main` and pull.
+3. Merge `dev` → `main`.
+4. Apply the **confirmed** release bump + changelog (`.cursor/rules/50-commit-push-release-automation.mdc`).
+5. Commit and push `main` to forgejo + origin.
+6. Follow CI until `NCarousel-<version>.apk` is on the GitHub Release.
+7. Sync and push `fdroiddata` (rules `61-*`, `62-fdroid-*`).
+8. **Mandatory hand-back:** `git switch dev`, merge `main` → `dev`, push `dev` to both remotes — so the next session resumes aligned with the published version.
 
 ### E — After publish
 
