@@ -143,7 +143,12 @@ object DavPropfind {
      *
      * [davUserId] is accepted for API compatibility; the first path segment after `files/` is
      * always stripped so SSO/login-name vs UID mismatches do not drop whole subtrees.
-     * [parentFolder] is only used for short relative hrefs (e.g. `2024/`), and never double-prefixed.
+     *
+     * RFC 4918 §8.3 relative refs in Multistatus are **path-absolute** (start with `/`) or
+     * absolute-URI. Path-absolute hrefs that are not under `/remote.php/dav/files/` return
+     * null — never invent a `parentFolder` join (that produced PROPFIND 404s which `missingOk`
+     * then swallowed, undercounting vs v0.2.55). [parentFolder] is only for rare non-standard
+     * segment-relative hrefs (e.g. `2024/`).
      */
     @Suppress("UNUSED_PARAMETER")
     fun hrefToRelativeUserPath(href: String, davUserId: String, parentFolder: String = ""): String? {
@@ -156,13 +161,13 @@ object DavPropfind {
             // Strip whatever user segment the server put in the href (uid, login, …).
             return if (slash < 0) "" else after.substring(slash + 1).trimEnd('/')
         }
-        // Relative href from Depth:1 under [parentFolder] (RFC 4918).
         if (decoded.contains("://")) return null
-        val rel = decoded.trim().trimStart('/').trimEnd('/')
+        // path-absolute but not a DAV files href — do not parent-join (404 bait).
+        if (decoded.startsWith("/")) return null
+        val rel = decoded.trim().trimEnd('/')
         if (rel.isEmpty() || rel.startsWith("remote.php", ignoreCase = true)) return null
         val parent = parentFolder.trim().trim('/')
         if (parent.isEmpty()) return rel
-        // Server sometimes returns a path already rooted at the user folder (or at parent).
         if (rel.equals(parent, ignoreCase = true)) return parent
         if (rel.startsWith("$parent/", ignoreCase = true)) return rel
         return "$parent/$rel"

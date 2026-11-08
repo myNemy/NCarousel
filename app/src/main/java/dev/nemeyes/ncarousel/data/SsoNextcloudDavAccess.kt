@@ -27,7 +27,7 @@ class SsoNextcloudDavAccess(
         runCatching {
             requestBytes(
                 "PROPFIND",
-                filesDavPath(""),
+                filesDavPath("", collection = true),
                 body = DavPropfind.requestBodyXml,
                 headers = mapOf(
                     "Depth" to listOf("0"),
@@ -42,7 +42,12 @@ class SsoNextcloudDavAccess(
         withContext(Dispatchers.IO) {
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
-                val entries = propfind(folder, depth = "1", missingOk = false)
+                val entries = propfindPath(
+                    filesDavPath(folder, collection = true),
+                    depth = "1",
+                    missingOk = false,
+                    whereLabel = folder,
+                )
                 val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
                 entries.mapNotNull { e ->
                     if (!e.isCollection) return@mapNotNull null
@@ -71,26 +76,30 @@ class SsoNextcloudDavAccess(
     }
 
     /**
-     * Same proven Depth:1 walk as [NextcloudWebDavClient] (v0.2.55 / `b52b76e` semantics).
+     * Same Depth:1 walk as [NextcloudWebDavClient]: PROPFIND nested collections at the exact
+     * Multistatus href (not a re-joined relative path).
      */
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
         val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
-        fun visit(folder: String, isRoot: Boolean) {
-            val key = folder.trimEnd('/').lowercase() + "/"
-            if (!visited.add(key)) return
-            val entries = propfind(folder, depth = "1", missingOk = !isRoot)
-            val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+        fun visitPath(requestPath: String, isRoot: Boolean, whereLabel: String) {
+            val selfNorm = DavPropfind.normalizeHref(requestPath)
+            if (!visited.add(selfNorm)) return
+            val entries = propfindPath(
+                requestPath,
+                depth = "1",
+                missingOk = !isRoot,
+                whereLabel = whereLabel,
+            )
             for (e in entries) {
                 if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                 when {
                     e.isCollection -> {
-                        val child = DavPropfind.hrefToRelativeUserPath(
-                            e.hrefDecoded,
-                            davUserId,
-                            parentFolder = folder,
-                        ) ?: continue
-                        visit(child, isRoot = false)
+                        val childPath = collectionPathFromHref(e.hrefDecoded)
+                        val childLabel =
+                            DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId).orEmpty()
+                                .ifBlank { e.hrefDecoded }
+                        visitPath(childPath, isRoot = false, whereLabel = childLabel)
                     }
                     DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
                         val len = e.contentLengthBytes
@@ -100,7 +109,8 @@ class SsoNextcloudDavAccess(
                 }
             }
         }
-        visit(root, isRoot = true)
+        val rootPath = filesDavPath(root, collection = true)
+        visitPath(rootPath, isRoot = true, whereLabel = root.ifBlank { "(account root)" })
         return collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
     }
 
@@ -114,7 +124,7 @@ class SsoNextcloudDavAccess(
     override suspend fun downloadRelativeFile(relativePath: String): Result<ByteArray> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val path = filesDavPath(relativePath.trim().trim('/'))
+                val path = filesDavPath(relativePath.trim().trim('/'), collection = false)
                 try {
                     requestBytes("GET", path)
                 } catch (e: NextcloudHttpRequestFailedException) {
@@ -129,7 +139,8 @@ class SsoNextcloudDavAccess(
             val path = relativeFolder.trim().trim('/')
             if (path.isEmpty()) return@runCatching
             try {
-                requestBytes("MKCOL", filesDavPath(path), body = null)
+                // MKCOL: keep non-slash URL form (same as OkHttp / v0.2.55).
+                requestBytes("MKCOL", filesDavPath(path, collection = false), body = null)
             } catch (e: NextcloudHttpRequestFailedException) {
                 when (e.statusCode) {
                     201, 200, 204, 405, 409, 301, 302 -> Unit
@@ -149,7 +160,7 @@ class SsoNextcloudDavAccess(
             require(path.isNotEmpty()) { "Empty DAV path" }
             requestBytes(
                 method = "PUT",
-                urlPath = filesDavPath(path),
+                urlPath = filesDavPath(path, collection = false),
                 bodyBytes = bytes,
                 contentType = contentType,
             )
@@ -165,8 +176,12 @@ class SsoNextcloudDavAccess(
         }
     }
 
-    private fun propfind(folder: String, depth: String, missingOk: Boolean): List<DavEntry> {
-        val path = filesDavPath(folder)
+    private fun propfindPath(
+        path: String,
+        depth: String,
+        missingOk: Boolean,
+        whereLabel: String,
+    ): List<DavEntry> {
         val headers = mapOf(
             "Depth" to listOf(depth),
             "Content-Type" to listOf("application/xml; charset=utf-8"),
@@ -175,7 +190,7 @@ class SsoNextcloudDavAccess(
             requestString("PROPFIND", path, body = DavPropfind.requestBodyXml, headers = headers)
         } catch (e: NextcloudHttpRequestFailedException) {
             if (missingOk && e.statusCode == 404) return emptyList()
-            val where = folder.ifBlank { "(account root)" }
+            val where = whereLabel.ifBlank { "(account root)" }
             val hint404 =
                 if (e.statusCode == 404) {
                     " Check the Remote folder value (same as in Nextcloud Files, no leading slash)."
@@ -206,9 +221,10 @@ class SsoNextcloudDavAccess(
         NextcloudAPI(app, account, Gson()).use { api ->
             val builder = NextcloudRequest.Builder()
                 .setMethod(method)
-                // Match the path encoding that successfully listed ~4499 images on `b52b76e`
-                // (pre-encode segments + encode once for NextcloudAPI). Raw setUrl after e4b9228
-                // correlated with empty/failed refresh for some accounts.
+                // [urlPath] must be a *decoded* path-absolute URL. Encode exactly once here.
+                // Pre-encoding segments and encoding again turned `%20` into `%2520`, so PROPFIND
+                // 404'd folders with spaces/unicode; nested missingOk then dropped those subtrees
+                // (undercount vs OkHttp / v0.2.55).
                 .setUrl(Uri.encode(urlPath, "/@&=+$,:;!?'()*"))
             val hdrs = HashMap(headers)
             if (contentType != null) {
@@ -232,22 +248,25 @@ class SsoNextcloudDavAccess(
         return "/remote.php/dav/files/$davUserId/$suffix"
     }
 
-    private fun filesDavPath(relativeFolder: String): String {
+    /** Decoded DAV path; [requestBytes] applies a single [Uri.encode]. */
+    private fun filesDavPath(relativeFolder: String, collection: Boolean): String {
         val path = relativeFolder.trim().trim('/')
-        val encoded = path.split('/')
-            .filter { it.isNotEmpty() }
-            .joinToString("/") { segment ->
-                Uri.encode(segment, "@+&.=-_~:,;!$'()*")
-            }
-        val suffix = if (encoded.isEmpty()) "" else "/$encoded"
+        val slash = if (collection) "/" else ""
+        val suffix = if (path.isEmpty()) slash else "/$path$slash"
         return "/remote.php/dav/files/$davUserId$suffix"
     }
 
+    /** Collection PROPFIND path from a Multistatus href (trailing slash, decoded). */
+    private fun collectionPathFromHref(hrefDecoded: String): String =
+        davPathFromHref(hrefDecoded).trimEnd('/') + "/"
+
+    /** Decoded path-absolute for SSO [requestBytes] (single encode at the call site). */
     private fun davPathFromHref(hrefPath: String): String {
         val h = hrefPath.trim()
         if (h.startsWith("http://", ignoreCase = true) || h.startsWith("https://", ignoreCase = true)) {
             val uri = Uri.parse(h)
-            return uri.encodedPath.orEmpty().ifBlank { error("Invalid DAV href") }
+            val decoded = uri.path.orEmpty().ifBlank { error("Invalid DAV href") }
+            return decoded
         }
         return if (h.startsWith("/")) h else "/$h"
     }

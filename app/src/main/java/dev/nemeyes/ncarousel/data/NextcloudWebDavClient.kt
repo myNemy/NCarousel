@@ -40,7 +40,7 @@ class NextcloudWebDavClient(
 
     override suspend fun verifyReachable(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = filesDavUrl(davUserId, "")
+            val url = filesDavUrl(davUserId, "", collection = true)
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", authHeader)
@@ -59,7 +59,12 @@ class NextcloudWebDavClient(
         withContext(Dispatchers.IO) {
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
-                val entries = propfind(folder, depth = "1", missingOk = false)
+                val entries = propfindUrl(
+                    filesDavUrl(davUserId, folder, collection = true),
+                    depth = "1",
+                    missingOk = false,
+                    whereLabel = folder,
+                )
                 val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
                 entries.mapNotNull { e ->
                     if (!e.isCollection) return@mapNotNull null
@@ -97,29 +102,36 @@ class NextcloudWebDavClient(
     }
 
     /**
-     * Proven Depth:1 walk (aligned with v0.2.55 / pre-infinity `b52b76e`):
-     * keep server hrefs, skip self via normalizeHref, resolve child paths with parentFolder,
-     * tolerate nested 404s without aborting the whole tree.
+     * Depth:1 walk aligned with v0.2.55 visit semantics, with one count-critical fix:
+     * nested collections are PROPFIND'd at the **exact href** from the parent Multistatus
+     * (RFC 4918 §8.3), not at a re-joined relative path. Wrong joins + nested `missingOk`
+     * previously skipped reachable subtrees (~760 images vs v0.2.55).
+     *
+     * Collection URLs use a trailing slash (RFC 4918 §5.2 / Nextcloud Depth 0|1 listings).
      */
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
         val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
-        fun visit(folder: String, isRoot: Boolean) {
-            val key = folder.trimEnd('/').lowercase() + "/"
-            if (!visited.add(key)) return
-            // Nested 404 (gone mount / broken link) must not abort the whole library sync.
-            val entries = propfind(folder, depth = "1", missingOk = !isRoot)
-            val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+        fun visitUrl(requestUrl: String, isRoot: Boolean, whereLabel: String) {
+            val selfNorm = DavPropfind.normalizeHref(requestUrl)
+            if (!visited.add(selfNorm)) return
+            // Nested 404 (gone mount) must not abort the whole library; exact-href visits
+            // avoid false 404s from bad path joins that missingOk used to swallow.
+            val entries = propfindUrl(
+                requestUrl,
+                depth = "1",
+                missingOk = !isRoot,
+                whereLabel = whereLabel,
+            )
             for (e in entries) {
                 if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                 when {
                     e.isCollection -> {
-                        val child = DavPropfind.hrefToRelativeUserPath(
-                            e.hrefDecoded,
-                            davUserId,
-                            parentFolder = folder,
-                        ) ?: continue
-                        visit(child, isRoot = false)
+                        val childUrl = collectionUrlFromHref(e.hrefDecoded)
+                        val childLabel =
+                            DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId).orEmpty()
+                                .ifBlank { e.hrefDecoded }
+                        visitUrl(childUrl, isRoot = false, whereLabel = childLabel)
                     }
                     DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
                         val len = e.contentLengthBytes
@@ -129,7 +141,8 @@ class NextcloudWebDavClient(
                 }
             }
         }
-        visit(root, isRoot = true)
+        val rootUrl = filesDavUrl(davUserId, root, collection = true)
+        visitUrl(rootUrl, isRoot = true, whereLabel = root.ifBlank { "(account root)" })
         return collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
     }
 
@@ -155,7 +168,7 @@ class NextcloudWebDavClient(
      */
     override suspend fun downloadRelativeFile(relativePath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = filesDavUrl(davUserId, relativePath.trim().trim('/'))
+            val url = filesDavUrl(davUserId, relativePath.trim().trim('/'), collection = false)
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", authHeader)
@@ -179,7 +192,8 @@ class NextcloudWebDavClient(
         runCatching {
             val path = relativeFolder.trim().trim('/')
             if (path.isEmpty()) return@runCatching
-            val url = filesDavUrl(davUserId, path)
+            // MKCOL: keep non-slash URL form (same as v0.2.55); slash is for PROPFIND only.
+            val url = filesDavUrl(davUserId, path, collection = false)
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", authHeader)
@@ -205,7 +219,7 @@ class NextcloudWebDavClient(
         runCatching {
             val path = relativePath.trim().trim('/')
             require(path.isNotEmpty()) { "Empty DAV path" }
-            val url = filesDavUrl(davUserId, path)
+            val url = filesDavUrl(davUserId, path, collection = false)
             val body = bytes.toRequestBody(contentType.toMediaType())
             val request = Request.Builder()
                 .url(url)
@@ -220,8 +234,12 @@ class NextcloudWebDavClient(
         }
     }
 
-    private fun propfind(folder: String, depth: String, missingOk: Boolean): List<DavEntry> {
-        val url = filesDavUrl(davUserId, folder)
+    private fun propfindUrl(
+        url: String,
+        depth: String,
+        missingOk: Boolean,
+        whereLabel: String,
+    ): List<DavEntry> {
         val request = Request.Builder()
             .url(url)
             .header("Authorization", authHeader)
@@ -231,7 +249,7 @@ class NextcloudWebDavClient(
         davHttp.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 if (missingOk && response.code == 404) return emptyList()
-                val where = folder.ifBlank { "(account root)" }
+                val where = whereLabel.ifBlank { "(account root)" }
                 val hint404 =
                     if (response.code == 404) {
                         " Check the Remote folder value (same as in Nextcloud Files, no leading slash)."
@@ -251,7 +269,11 @@ class NextcloudWebDavClient(
         return "/remote.php/dav/files/$davUserId/$suffix"
     }
 
-    private fun filesDavUrl(user: String, relativeFolder: String): String {
+    /**
+     * @param collection when true, append a trailing `/` (RFC 4918 §5.2 clients SHOULD use
+     * the slash form for collections; avoids relative-href resolution against the parent segment).
+     */
+    private fun filesDavUrl(user: String, relativeFolder: String, collection: Boolean): String {
         val base = serverBaseUrl.trimEnd('/')
         val path = relativeFolder.trim().trim('/')
         val encoded = path.split('/')
@@ -259,27 +281,67 @@ class NextcloudWebDavClient(
             .joinToString("/") { segment ->
                 Uri.encode(segment, "@+&.=-_~:,;!$'()*")
             }
-        val suffix = if (encoded.isEmpty()) "" else "/$encoded"
+        val slash = if (collection) "/" else ""
+        val suffix = if (encoded.isEmpty()) slash else "/$encoded$slash"
         return "$base/remote.php/dav/files/$user$suffix"
+    }
+
+    /**
+     * PROPFIND URL for a collection href from Multistatus.
+     * Prefers the server’s `/remote.php/dav/files/{user}/…` path (keeps the href’s user
+     * segment) with per-segment encoding + trailing slash — avoids both wrong parent joins
+     * and broken `toHttpUrlOrNull` on decoded absolute URLs that contain spaces.
+     */
+    private fun collectionUrlFromHref(hrefDecoded: String): String {
+        val decoded = hrefDecoded.trim()
+        val marker = "/remote.php/dav/files/"
+        val idx = decoded.indexOf(marker, ignoreCase = true)
+        if (idx >= 0) {
+            val fromMarker = decoded.substring(idx).trimEnd('/')
+            val encodedPath = fromMarker.split('/').joinToString("/") { seg ->
+                if (seg.isEmpty()) "" else Uri.encode(seg, "@+&.=-_~:,;!$'()*")
+            } + "/"
+            return baseUrl.newBuilder()
+                .encodedPath(encodedPath)
+                .build()
+                .toString()
+        }
+        val rel = DavPropfind.hrefToRelativeUserPath(decoded, davUserId)
+            ?: error("Cannot resolve collection href for PROPFIND: $decoded")
+        return filesDavUrl(davUserId, rel, collection = true)
     }
 
     private fun absoluteUrlForHref(hrefPath: String): String {
         val h = hrefPath.trim()
-        // Absolute URL from server: only allow same-origin to avoid leaking Authorization.
-        val abs = h.toHttpUrlOrNull()
-        if (abs != null) {
-            val sameOrigin =
-                abs.scheme == baseUrl.scheme &&
-                    abs.host == baseUrl.host &&
-                    abs.port == baseUrl.port
-            if (!sameOrigin) error("Refusing cross-origin DAV href")
-            return abs.toString()
+        if (h.startsWith("http://", ignoreCase = true) || h.startsWith("https://", ignoreCase = true)) {
+            // Decoded absolute href may contain spaces; rebuild from scheme/host + encoded path.
+            val uri = Uri.parse(h)
+            val host = uri.host ?: error("Invalid DAV href host")
+            if (!host.equals(baseUrl.host, ignoreCase = true)) {
+                error("Refusing cross-origin DAV href")
+            }
+            val scheme = uri.scheme ?: baseUrl.scheme
+            val port = if (uri.port != -1) uri.port else baseUrl.port
+            val pathDecoded = uri.path.orEmpty().ifBlank { error("Invalid DAV href path") }
+            val encodedPath = pathDecoded.split('/').joinToString("/") { seg ->
+                if (seg.isEmpty()) "" else Uri.encode(seg, "@+&.=-_~:,;!$'()*")
+            }
+            val portPart =
+                if ((scheme == "https" && port == 443) || (scheme == "http" && port == 80)) {
+                    ""
+                } else {
+                    ":$port"
+                }
+            return "$scheme://$host$portPart$encodedPath"
         }
 
-        // Relative href: resolve against configured base.
-        val rel = if (h.startsWith("/")) h else "/$h"
+        // Path-absolute (decoded): encode each segment for OkHttp encodedPath.
+        val pathDecoded = if (h.startsWith("/")) h else "/$h"
+        val encodedPath = pathDecoded.split('/').joinToString("/") { seg ->
+            if (seg.isEmpty()) "" else Uri.encode(seg, "@+&.=-_~:,;!$'()*")
+        }
         return baseUrl.newBuilder()
-            .encodedPath(rel)
+            .encodedPath(encodedPath)
             .build()
             .toString()
     }
