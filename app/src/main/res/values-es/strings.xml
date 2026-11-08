@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Fondo actual</string>
     <string name="nc_library_view_grid">Ver como cuadrícula</string>
     <string name="nc_library_view_list">Ver como lista</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Actual</string>
     <string name="nc_library_preview">Vista previa</string>
     <string name="nc_library_preview_apply">Establecer como fondo</string>

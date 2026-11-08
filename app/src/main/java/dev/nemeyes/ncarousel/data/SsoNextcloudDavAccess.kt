@@ -17,6 +17,10 @@ import kotlin.coroutines.coroutineContext
 /**
  * WebDAV / file access via Nextcloud Files Single Sign-On ([NextcloudAPI]).
  * Must be used when [dev.nemeyes.ncarousel.data.accounts.NextcloudAccount.usesSso] is true.
+ *
+ * [NextcloudAPI] is reused per SSO account (official guidance: keep the binder open across
+ * calls). Access is synchronized per account so listing and previews share one connection
+ * without open/close churn on every thumb.
  */
 class SsoNextcloudDavAccess(
     context: Context,
@@ -25,6 +29,24 @@ class SsoNextcloudDavAccess(
 ) : NextcloudDavAccess {
 
     private val app = context.applicationContext
+
+    companion object {
+        private val gson = Gson()
+        private val apiLocks = java.util.concurrent.ConcurrentHashMap<String, Any>()
+        private val apis = java.util.concurrent.ConcurrentHashMap<String, NextcloudAPI>()
+
+        private fun lockFor(accountName: String): Any =
+            apiLocks.getOrPut(accountName) { Any() }
+
+        /** Drop a cached API (e.g. after account removal). Safe if never opened. */
+        fun closeCached(ssoAccountName: String) {
+            val name = ssoAccountName.trim()
+            if (name.isEmpty()) return
+            synchronized(lockFor(name)) {
+                apis.remove(name)?.close()
+            }
+        }
+    }
 
     override suspend fun verifyReachable(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
@@ -179,13 +201,25 @@ class SsoNextcloudDavAccess(
         }
     }
 
-    /** Downloads a Nextcloud core preview image for [fileId] (Library thumbnails). */
+    /**
+     * Downloads a Nextcloud core preview image for [fileId] (Library thumbs / fullscreen).
+     *
+     * Takes the per-account API lock **before** [LibraryPreviewGate] so waiting SSO callers
+     * do not hold preview permits (Basic Auth Coil can still progress). Reuses one
+     * [NextcloudAPI] — do not open/close the binder per thumb.
+     */
     suspend fun downloadPreview(fileId: Long, sizePx: Int): Result<ByteArray> =
-        LibraryPreviewGate.withPermit {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    val path = "/index.php/core/preview?fileId=$fileId&x=$sizePx&y=$sizePx&a=1"
-                    requestBytes("GET", path)
+        withContext(Dispatchers.IO) {
+            runCatching {
+                // Official pattern: GET /index.php/core/preview?fileId=&x=&y= (WebDAV
+                // property nc:has-preview indicates availability). Generation is CPU/RAM
+                // heavy; Nextcloud documents preview_concurrency_* on the server side.
+                val path = "/index.php/core/preview?fileId=$fileId&x=$sizePx&y=$sizePx&a=1"
+                val lock = lockFor(ssoAccountName)
+                synchronized(lock) {
+                    LibraryPreviewGate.withPermitBlocking {
+                        requestBytesLocked("GET", path)
+                    }
                 }
             }
         }
@@ -231,28 +265,57 @@ class SsoNextcloudDavAccess(
         contentType: String? = null,
         headers: Map<String, List<String>> = emptyMap(),
     ): ByteArray {
-        val account = AccountImporter.getSingleSignOnAccount(app, ssoAccountName)
-        NextcloudAPI(app, account, Gson()).use { api ->
-            val builder = NextcloudRequest.Builder()
-                .setMethod(method)
-                // [urlPath] must be a *decoded* path-absolute URL. Encode exactly once here.
-                // Pre-encoding segments and encoding again turned `%20` into `%2520`, so PROPFIND
-                // 404'd folders with spaces/unicode; nested missingOk then dropped those subtrees
-                // (undercount vs OkHttp / v0.2.55).
-                .setUrl(Uri.encode(urlPath, "/@&=+$,:;!?'()*"))
-            val hdrs = HashMap(headers)
-            if (contentType != null) {
-                hdrs["Content-Type"] = listOf(contentType)
-            }
-            if (hdrs.isNotEmpty()) {
-                builder.setHeader(hdrs)
-            }
-            when {
-                bodyBytes != null -> builder.setRequestBodyAsStream(ByteArrayInputStream(bodyBytes))
-                body != null -> builder.setRequestBody(body)
-            }
+        val lock = lockFor(ssoAccountName)
+        synchronized(lock) {
+            return requestBytesLocked(method, urlPath, body, bodyBytes, contentType, headers)
+        }
+    }
+
+    /**
+     * Caller must already hold [lockFor] for [ssoAccountName] (re-entrant from
+     * [downloadPreview] which acquires the gate under the same lock).
+     */
+    private fun requestBytesLocked(
+        method: String,
+        urlPath: String,
+        body: String? = null,
+        bodyBytes: ByteArray? = null,
+        contentType: String? = null,
+        headers: Map<String, List<String>> = emptyMap(),
+    ): ByteArray {
+        val api = apis.getOrPut(ssoAccountName) {
+            val account = AccountImporter.getSingleSignOnAccount(app, ssoAccountName)
+            // Keep the binder open across calls (Android-SingleSignOn NextcloudAPI javadoc).
+            NextcloudAPI(app, account, gson)
+        }
+        val builder = NextcloudRequest.Builder()
+            .setMethod(method)
+            // [urlPath] must be a *decoded* path-absolute URL. Encode exactly once here.
+            // Pre-encoding segments and encoding again turned `%20` into `%2520`, so PROPFIND
+            // 404'd folders with spaces/unicode; nested missingOk then dropped those subtrees
+            // (undercount vs OkHttp / v0.2.55).
+            .setUrl(Uri.encode(urlPath, "/@&=+$,:;!?'()*"))
+        val hdrs = HashMap(headers)
+        if (contentType != null) {
+            hdrs["Content-Type"] = listOf(contentType)
+        }
+        if (hdrs.isNotEmpty()) {
+            builder.setHeader(hdrs)
+        }
+        when {
+            bodyBytes != null -> builder.setRequestBodyAsStream(ByteArrayInputStream(bodyBytes))
+            body != null -> builder.setRequestBody(body)
+        }
+        return try {
             val response = api.performNetworkRequestV2(builder.build())
-            return response.body.use { it.readBytes() }
+            response.body.use { it.readBytes() }
+        } catch (e: NextcloudHttpRequestFailedException) {
+            throw e
+        } catch (e: Exception) {
+            // Stale binder / Files app restart: drop cache so the next call reconnects.
+            // Do not invalidate on ordinary HTTP failures (404, 403, …).
+            apis.remove(ssoAccountName)?.close()
+            throw e
         }
     }
 

@@ -6,13 +6,15 @@ import coil.request.CachePolicy
 import dev.nemeyes.ncarousel.data.LibraryPreviewGate
 import java.util.concurrent.TimeUnit
 import okhttp3.Dispatcher
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 
 /**
- * Coil [ImageLoader] for Library Basic-Auth preview URLs.
+ * Shared Coil [ImageLoader] for Library previews (Basic Auth URLs + SSO [SsoPreviewData]).
  *
- * Uses a dedicated OkHttp client with [LibraryPreviewGate.MAX_CONCURRENT] max requests so
- * Lazy grid/list composition cannot open a large parallel preview storm against Nextcloud.
+ * Mirrors the v0.2.55 Coil path for Basic Auth (shared OkHttp, disk/memory cache) while
+ * capping real network preview starts via [LibraryPreviewGate]. SSO uses a dedicated
+ * fetcher over a reused NextcloudAPI instead of unbounded produceState jobs.
  */
 object LibraryPreviewImageLoader {
     @Volatile
@@ -37,10 +39,21 @@ object LibraryPreviewImageLoader {
             .writeTimeout(30, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
+            // Network-only: disk/memory Coil hits do not acquire the preview gate.
+            .addNetworkInterceptor(
+                Interceptor { chain ->
+                    LibraryPreviewGate.withPermitBlocking {
+                        chain.proceed(chain.request())
+                    }
+                },
+            )
             .build()
         return ImageLoader.Builder(appContext)
             .okHttpClient(okHttp)
-            // Memory cache still helps scroll-back; network stays gated by OkHttp dispatcher.
+            .components {
+                add(SsoPreviewKeyer())
+                add(SsoPreviewFetcher.Factory())
+            }
             .diskCachePolicy(CachePolicy.ENABLED)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .build()

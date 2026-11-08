@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Fond d’écran actuel</string>
     <string name="nc_library_view_grid">Afficher en grille</string>
     <string name="nc_library_view_list">Afficher en liste</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Actuel</string>
     <string name="nc_library_preview">Aperçu</string>
     <string name="nc_library_preview_apply">Définir comme fond d’écran</string>

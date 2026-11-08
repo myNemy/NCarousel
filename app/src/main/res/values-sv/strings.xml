@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Aktuell bakgrund</string>
     <string name="nc_library_view_grid">Visa som rutnät</string>
     <string name="nc_library_view_list">Visa som lista</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Aktuell</string>
     <string name="nc_library_preview">Förhandsvisa</string>
     <string name="nc_library_preview_apply">Ange som bakgrund</string>

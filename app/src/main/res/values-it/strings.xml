@@ -251,6 +251,9 @@
     <string name="nc_library_current_in_folder">%1$s · Sfondo attuale</string>
     <string name="nc_library_view_grid">Mostra a griglia</string>
     <string name="nc_library_view_list">Mostra a lista</string>
+
+    <string name="nc_library_thumbs_enable">Mostra miniature remote</string>
+    <string name="nc_library_thumbs_disable">Nascondi miniature remote</string>
     <string name="nc_library_current_wallpaper_short">Attuale</string>
     <string name="nc_library_preview">Anteprima</string>
     <string name="nc_library_preview_apply">Imposta come sfondo</string>

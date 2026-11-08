@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Fundal curent</string>
     <string name="nc_library_view_grid">Afișează grilă</string>
     <string name="nc_library_view_list">Afișează listă</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Curent</string>
     <string name="nc_library_preview">Previzualizare</string>
     <string name="nc_library_preview_apply">Setează ca fundal</string>

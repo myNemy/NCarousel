@@ -114,6 +114,15 @@ class CarouselPreferences(context: Context) {
         set(value) { prefs.edit().putBoolean(KEY_LIBRARY_GRID, value).apply() }
 
     /**
+     * When true, Library list/grid cells fetch Nextcloud `/core/preview` thumbnails
+     * (visible-only + [LibraryPreviewGate]; default **on**). Opt-out toggle in Library header.
+     * Fullscreen preview always loads on demand regardless of this flag.
+     */
+    var libraryRemoteThumbnailsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LIBRARY_REMOTE_THUMBS, true)
+        set(value) { prefs.edit().putBoolean(KEY_LIBRARY_REMOTE_THUMBS, value).apply() }
+
+    /**
      * After [completeInitialConsentFlow] runs once, the app stops showing the first-launch consent dialog.
      */
     var initialConsentFlowCompleted: Boolean
@@ -166,6 +175,7 @@ class CarouselPreferences(context: Context) {
         private const val KEY_GEO_PHOTON = "geocoder_photon_enabled"
         private const val KEY_GEO_ORDER = "geocoder_order_mode"
         private const val KEY_LIBRARY_GRID = "library_view_is_grid"
+        private const val KEY_LIBRARY_REMOTE_THUMBS = "library_remote_thumbnails_enabled"
         private const val KEY_INITIAL_CONSENT_DONE = "initial_consent_flow_completed"
         private const val KEY_THEMING_COLOR = "theming_color_"
         private const val KEY_THEMING_ON_PRIMARY = "theming_on_primary_"

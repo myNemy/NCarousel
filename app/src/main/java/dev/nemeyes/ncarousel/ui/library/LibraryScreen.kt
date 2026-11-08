@@ -55,6 +55,8 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.HideImage
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
@@ -86,12 +88,10 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import dev.nemeyes.ncarousel.data.SsoNextcloudDavAccess
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -263,6 +263,10 @@ fun LibraryScreen(
             if (libraryPrefs.libraryViewIsGrid) LibraryViewMode.GRID else LibraryViewMode.LIST,
         )
     }
+    // Default on; paced + visible-only loads protect Nextcloud (opt-out toggle remains).
+    var remoteThumbnailsEnabled by remember {
+        mutableStateOf(libraryPrefs.libraryRemoteThumbnailsEnabled)
+    }
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
@@ -272,6 +276,17 @@ fun LibraryScreen(
     var filtersExpanded by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+    /** Only actively visible rows/cells fetch remote thumbs (composed prefetch neighbors wait). */
+    val visibleItemKeys by remember {
+        derivedStateOf {
+            when (viewMode) {
+                LibraryViewMode.LIST ->
+                    listState.layoutInfo.visibleItemsInfo.map { it.key }.toHashSet()
+                LibraryViewMode.GRID ->
+                    gridState.layoutInfo.visibleItemsInfo.map { it.key }.toHashSet()
+            }
+        }
+    }
     val scope = rememberCoroutineScope()
     val rootFolderLabel = stringResource(R.string.nc_library_root_folder)
     val allFoldersLabel = stringResource(R.string.nc_library_folder_filter_all)
@@ -584,6 +599,27 @@ fun LibraryScreen(
                     }
                     IconButton(
                         onClick = {
+                            remoteThumbnailsEnabled = !remoteThumbnailsEnabled
+                            libraryPrefs.libraryRemoteThumbnailsEnabled = remoteThumbnailsEnabled
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (remoteThumbnailsEnabled) {
+                                Icons.Outlined.Image
+                            } else {
+                                Icons.Outlined.HideImage
+                            },
+                            contentDescription = stringResource(
+                                if (remoteThumbnailsEnabled) {
+                                    R.string.nc_library_thumbs_disable
+                                } else {
+                                    R.string.nc_library_thumbs_enable
+                                },
+                            ),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
                             viewMode = when (viewMode) {
                                 LibraryViewMode.LIST -> LibraryViewMode.GRID
                                 LibraryViewMode.GRID -> LibraryViewMode.LIST
@@ -832,8 +868,7 @@ fun LibraryScreen(
                     }
                 } else when (viewMode) {
                     LibraryViewMode.LIST -> {
-                        // LazyColumn only composes visible (+ small scroll prefetch) rows; preview
-                        // concurrency is capped in LibraryPreviewGate / LibraryPreviewImageLoader.
+                        // Prefer Coil (v0.2.55-style) + only load thumbs for layout-visible rows.
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             state = listState,
@@ -845,6 +880,8 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
+                                val loadThumb =
+                                    remoteThumbnailsEnabled && row.href in visibleItemKeys
                                 ListItem(
                                     leadingContent = {
                                         LibraryThumbnail(
@@ -852,6 +889,7 @@ fun LibraryScreen(
                                             state = state,
                                             fileId = fileId,
                                             sizePx = 192,
+                                            loadRemote = loadThumb,
                                             modifier = Modifier
                                                 .size(48.dp)
                                                 .then(
@@ -980,6 +1018,8 @@ fun LibraryScreen(
                                 val isExcluded = row.href in state.excludedImageHrefs
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
+                                val loadThumb =
+                                    remoteThumbnailsEnabled && row.href in visibleItemKeys
                                 LibraryGridCell(
                                     ctx = ctx,
                                     state = state,
@@ -989,6 +1029,7 @@ fun LibraryScreen(
                                     isCurrent = isCurrent,
                                     isExcluded = isExcluded,
                                     rootFolderLabel = rootFolderLabel,
+                                    loadRemoteThumbnails = loadThumb,
                                     enabled = !state.busy,
                                     onClick = { onApplyHref(row.href) },
                                     onLongClick = { openPreview(row, carouselIndex, fileId, isExcluded) },
@@ -1261,11 +1302,13 @@ private fun LibraryFullscreenPreview(
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
                 ) { imageModifier, contentScale, alignment ->
+                    // Fullscreen is on-demand (one image); always allowed, still gated.
                     LibraryThumbnail(
                         ctx = ctx,
                         state = state,
                         fileId = target.fileId,
                         sizePx = 2048,
+                        loadRemote = true,
                         modifier = imageModifier.fillMaxSize(),
                         isCurrent = false,
                         contentScale = contentScale,
@@ -1355,6 +1398,7 @@ private fun LibraryThumbnail(
     state: MainUiState,
     fileId: Long?,
     sizePx: Int,
+    loadRemote: Boolean,
     modifier: Modifier,
     isCurrent: Boolean,
     contentScale: ContentScale = ContentScale.Crop,
@@ -1374,12 +1418,16 @@ private fun LibraryThumbnail(
             Modifier.clip(RoundedCornerShape(8.dp))
         },
     )
-    if (fileId == null) {
+    // Off / not visible / missing fileId → placeholder (no /core/preview). Leaving composition
+    // or flipping loadRemote off cancels in-flight Coil work (same idea as v0.2.55 AsyncImage).
+    if (!loadRemote || fileId == null) {
         Box(
             modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
         )
         return
     }
+
+    val previewLoader = remember(ctx) { LibraryPreviewImageLoader.get(ctx) }
 
     if (state.accountUsesSso) {
         val ssoName = state.ssoAccountName
@@ -1388,24 +1436,27 @@ private fun LibraryThumbnail(
             Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
             return
         }
-        // produceState cancels when the cell leaves composition (fast scroll). Concurrency is
-        // capped inside SsoNextcloudDavAccess.downloadPreview via LibraryPreviewGate.
-        val bytes by produceState<ByteArray?>(initialValue = null, fileId, ssoName, sizePx) {
-            value = SsoNextcloudDavAccess(ctx, ssoName, userId)
-                .downloadPreview(fileId, sizePx)
-                .getOrNull()
+        val model = remember(ssoName, userId, fileId, sizePx) {
+            ImageRequest.Builder(ctx)
+                .data(
+                    SsoPreviewData(
+                        ssoAccountName = ssoName,
+                        davUserId = userId,
+                        fileId = fileId,
+                        sizePx = sizePx,
+                    ),
+                )
+                .size(sizePx)
+                .build()
         }
-        if (bytes == null) {
-            Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
-        } else {
-            AsyncImage(
-                model = bytes,
-                contentDescription = null,
-                contentScale = contentScale,
-                alignment = alignment,
-                modifier = imageModifier,
-            )
-        }
+        AsyncImage(
+            model = model,
+            imageLoader = previewLoader,
+            contentDescription = null,
+            contentScale = contentScale,
+            alignment = alignment,
+            modifier = imageModifier,
+        )
         return
     }
 
@@ -1413,7 +1464,6 @@ private fun LibraryThumbnail(
         Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
         return
     }
-    val previewLoader = remember(ctx) { LibraryPreviewImageLoader.get(ctx) }
     val url = remember(state.serverUrl, fileId, sizePx) { previewUrl(state.serverUrl, fileId, sizePx) }
     val model = remember(url, state.loginName, state.password, sizePx) {
         ImageRequest.Builder(ctx)
@@ -1443,6 +1493,7 @@ private fun LibraryGridCell(
     isCurrent: Boolean,
     isExcluded: Boolean,
     rootFolderLabel: String,
+    loadRemoteThumbnails: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -1485,8 +1536,9 @@ private fun LibraryGridCell(
                 ctx = ctx,
                 state = state,
                 fileId = fileId,
-                // Smaller than display cell: less php-fpm work per thumb (still sharp enough on phone).
+                // Smaller than display cell (less php-fpm work per visible thumb).
                 sizePx = 256,
+                loadRemote = loadRemoteThumbnails,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)

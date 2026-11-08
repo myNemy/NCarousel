@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Aktuální tapeta</string>
     <string name="nc_library_view_grid">Zobrazit mřížku</string>
     <string name="nc_library_view_list">Zobrazit seznam</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Aktuální</string>
     <string name="nc_library_preview">Náhled</string>
     <string name="nc_library_preview_apply">Nastavit jako tapetu</string>

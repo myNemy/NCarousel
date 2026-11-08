@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Τρέχουσα ταπετσαρία</string>
     <string name="nc_library_view_grid">Προβολή πλέγματος</string>
     <string name="nc_library_view_list">Προβολή λίστας</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Τρέχουσα</string>
     <string name="nc_library_preview">Προεπισκόπηση</string>
     <string name="nc_library_preview_apply">Ορισμός ως ταπετσαρία</string>

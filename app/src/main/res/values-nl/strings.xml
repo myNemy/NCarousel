@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Huidige achtergrond</string>
     <string name="nc_library_view_grid">Rasterweergave</string>
     <string name="nc_library_view_list">Lijstweergave</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Huidig</string>
     <string name="nc_library_preview">Voorbeeld</string>
     <string name="nc_library_preview_apply">Instellen als achtergrond</string>

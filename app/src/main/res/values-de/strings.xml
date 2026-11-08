@@ -242,6 +242,9 @@
     <string name="nc_library_current_in_folder">%1$s · Aktuelles Hintergrundbild</string>
     <string name="nc_library_view_grid">Als Raster anzeigen</string>
     <string name="nc_library_view_list">Als Liste anzeigen</string>
+
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Aktuell</string>
     <string name="nc_library_preview">Vorschau</string>
     <string name="nc_library_preview_apply">Als Hintergrundbild festlegen</string>

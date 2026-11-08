@@ -257,6 +257,8 @@
     <string name="nc_library_current_in_folder">%1$s · Current wallpaper</string>
     <string name="nc_library_view_grid">Show as grid</string>
     <string name="nc_library_view_list">Show as list</string>
+    <string name="nc_library_thumbs_enable">Show remote thumbnails</string>
+    <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_current_wallpaper_short">Current</string>
     <string name="nc_library_preview">Preview</string>
     <string name="nc_library_preview_apply">Set as wallpaper</string>
