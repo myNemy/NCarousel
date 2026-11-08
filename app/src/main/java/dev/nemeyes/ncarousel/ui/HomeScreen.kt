@@ -151,14 +151,17 @@ fun HomeScreen(viewModel: MainViewModel) {
         viewModel.refreshWallpaperExif()
     }
 
+    val listErrorPrefix = stringResource(R.string.msg_list_error, "\u0000").substringBefore("\u0000")
     LaunchedEffect(state.statusMessage) {
         val msg = state.statusMessage
         if (msg.isNullOrBlank()) return@LaunchedEffect
-        // Clear first so an identical follow-up message (e.g. same image count after
-        // pull-to-refresh) still retriggers this effect, and so a later success is not
-        // wiped by clearStatus after a cancelled intermediate snackbar.
-        viewModel.clearStatus()
+        // Keep list errors on the Home status card (they used to flash then vanish via
+        // clearStatus-before-snackbar). Ephemeral success toasts still clear after snackbar.
+        val stickyListError = msg.startsWith(listErrorPrefix)
         snackbar.showSnackbar(msg)
+        if (!stickyListError) {
+            viewModel.clearStatusIf(msg)
+        }
     }
 
     val ssoImportLauncher = rememberLauncherForActivityResult(ImportSsoAccount()) { account ->

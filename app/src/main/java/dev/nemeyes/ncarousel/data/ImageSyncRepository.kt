@@ -40,6 +40,17 @@ class ImageSyncRepository(context: Context) {
         runCatching {
             val client = NextcloudDavAccessFactory.create(app, http, account)
             val items = client.listImageEntriesRecursive(account.remoteFolder, maxImageBytes).getOrThrow()
+            // Never replace a good Room cache with an empty "success" (Depth:infinity / filter
+            // regressions previously wiped thousands of rows and left the UI stuck at 0).
+            if (items.isEmpty()) {
+                val cached = dao.listImageHrefs(account.id)
+                if (cached.isNotEmpty()) {
+                    error(
+                        "PROPFIND returned 0 images under \"${account.remoteFolder.trim().trim('/')}\"; " +
+                            "kept cached list of ${cached.size}. Check Remote folder / network.",
+                    )
+                }
+            }
             val now = System.currentTimeMillis()
             val entries = items.map { e ->
                 ImageEntryEntity(

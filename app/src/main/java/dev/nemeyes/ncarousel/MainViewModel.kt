@@ -679,6 +679,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearStatus() = _ui.update { it.copy(statusMessage = null) }
 
+    /** Clears status only when it still equals [expected] (avoids wiping a newer message). */
+    fun clearStatusIf(expected: String) {
+        _ui.update { cur ->
+            if (cur.statusMessage == expected) cur.copy(statusMessage = null) else cur
+        }
+    }
+
     /**
      * Carica EXIF dell’ultimo sfondo applicato da NCarousel ([LastAppliedWallpaperStore]): cache disco o download WebDAV.
      */
@@ -826,6 +833,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshListJob = viewModelScope.launch {
             val token = beginBusy()
             try {
+                data class RestoredLibrary(
+                    val hrefs: List<String>,
+                    val fileIds: Map<String, Long>,
+                    val lastModified: Map<String, Long>,
+                    val sizes: Map<String, Long>,
+                    val carouselIndices: Map<String, Int>,
+                    val excluded: Set<String>,
+                )
                 // Read UI state inside the job so a folder pick just before refresh is not stale.
                 val s = _ui.value
                 val folder = s.remoteFolder.trim().trim('/').ifBlank {
@@ -875,8 +890,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         if (e is CancellationException) throw e
                         val msg = e.message ?: e.javaClass.simpleName
                         // Keep the previous list in the UI; only the status explains the failure.
+                        // If a prior bad sync emptied the UI but Room/legacy cache still has rows,
+                        // restore them here (sync) so the library is usable while the error stays.
+                        val restored = if (_ui.value.imageHrefs.isEmpty()) {
+                            withContext(Dispatchers.IO) {
+                                val meta = syncRepo.readCachedHrefsWithMeta(active.id)
+                                val fromRoom = meta.map { it.href }
+                                val legacy = ImageListCache(getApplication(), active.id).read()
+                                val hrefs = legacy.ifEmpty { fromRoom }
+                                if (hrefs.isEmpty()) {
+                                    null
+                                } else {
+                                    val hrefSet = hrefs.toHashSet()
+                                    val fileIds = meta.mapNotNull { row ->
+                                        row.fileId?.takeIf { row.href in hrefSet }?.let { row.href to it }
+                                    }.toMap()
+                                    val lastModified = meta.mapNotNull { row ->
+                                        if (row.href !in hrefSet) return@mapNotNull null
+                                        parseDavLastModifiedEpochMs(row.lastModified)?.let { row.href to it }
+                                    }.toMap()
+                                    val sizes = meta.mapNotNull { row ->
+                                        if (row.href !in hrefSet) return@mapNotNull null
+                                        row.contentLengthBytes?.takeIf { it > 0L }?.let { row.href to it }
+                                    }.toMap()
+                                    val excluded = ExcludedHrefStore(getApplication(), active.id).read()
+                                    val orderMode = _ui.value.orderMode
+                                    val carouselIndices =
+                                        computeCarouselIndicesForActiveAccount(hrefs, orderMode, excluded)
+                                    RestoredLibrary(hrefs, fileIds, lastModified, sizes, carouselIndices, excluded)
+                                }
+                            }
+                        } else {
+                            null
+                        }
                         _ui.update {
-                            it.copy(
+                            val base = if (restored != null) {
+                                it.copy(
+                                    imageHrefs = restored.hrefs,
+                                    imageFileIds = restored.fileIds,
+                                    imageLastModifiedEpochMs = restored.lastModified,
+                                    imageContentLengthBytes = restored.sizes,
+                                    imageCarouselIndexByHref = restored.carouselIndices,
+                                    excludedImageHrefs = restored.excluded,
+                                )
+                            } else {
+                                it
+                            }
+                            base.copy(
                                 remoteFolder = folder,
                                 statusMessage = appStr(R.string.msg_list_error, msg),
                             )

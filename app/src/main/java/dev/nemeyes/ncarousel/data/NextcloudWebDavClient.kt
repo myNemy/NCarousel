@@ -60,15 +60,19 @@ class NextcloudWebDavClient(
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
                 val entries = propfind(folder, depth = "1", missingOk = false)
-                DavPropfind.childCollectionPaths(entries, davUserId, folder)
-                    .sortedBy { it.lowercase() }
+                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+                entries.mapNotNull { e ->
+                    if (!e.isCollection) return@mapNotNull null
+                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
+                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = folder)
+                }.distinct().sortedBy { it.lowercase() }
             }
         }
 
     /**
      * Lists image file paths under [remoteFolder] via recursive `Depth: 1` PROPFIND
      * (Nextcloud documents Depth 0/1 for folder listings; RFC 4918 §9.1 allows servers to
-     * reject or mishandle `Depth: infinity`, which previously yielded empty libraries).
+     * reject or mishandle `Depth: infinity` — do not use infinity here).
      *
      * @param maxImageBytes if &gt; 0, skips files whose `getcontentlength` is known and larger than this.
      */
@@ -92,30 +96,41 @@ class NextcloudWebDavClient(
         }
     }
 
+    /**
+     * Proven Depth:1 walk (aligned with v0.2.55 / pre-infinity `b52b76e`):
+     * keep server hrefs, skip self via normalizeHref, resolve child paths with parentFolder,
+     * tolerate nested 404s without aborting the whole tree.
+     */
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
-        val collected = LinkedHashMap<String, DavEntry>()
+        val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
         fun visit(folder: String, isRoot: Boolean) {
             val key = folder.trimEnd('/').lowercase() + "/"
             if (!visited.add(key)) return
             // Nested 404 (gone mount / broken link) must not abort the whole library sync.
             val entries = propfind(folder, depth = "1", missingOk = !isRoot)
-            for (img in DavPropfind.collectImagesFromEntries(
-                entries = entries,
-                davUserId = davUserId,
-                rootFolder = root,
-                parentFolder = folder,
-                maxImageBytes = maxImageBytes,
-            )) {
-                val rel = DavPropfind.hrefToRelativeUserPath(img.hrefDecoded, davUserId) ?: continue
-                collected.putIfAbsent(DavPropfind.imageIdentityKey(img, rel), img)
-            }
-            for (child in DavPropfind.childCollectionPaths(entries, davUserId, folder)) {
-                visit(child, isRoot = false)
+            val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+            for (e in entries) {
+                if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
+                when {
+                    e.isCollection -> {
+                        val child = DavPropfind.hrefToRelativeUserPath(
+                            e.hrefDecoded,
+                            davUserId,
+                            parentFolder = folder,
+                        ) ?: continue
+                        visit(child, isRoot = false)
+                    }
+                    DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
+                        val len = e.contentLengthBytes
+                        if (maxImageBytes > 0L && len != null && len > maxImageBytes) continue
+                        collected += e
+                    }
+                }
             }
         }
         visit(root, isRoot = true)
-        return collected.values.toList()
+        return collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
     }
 
     override suspend fun downloadFile(hrefPath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
@@ -228,6 +243,12 @@ class NextcloudWebDavClient(
             val xml = response.body?.string() ?: error("Empty PROPFIND body")
             return DavPropfind.parse(xml)
         }
+    }
+
+    private fun folderDavHref(folder: String): String {
+        val path = folder.trim().trim('/')
+        val suffix = if (path.isEmpty()) "" else "$path/"
+        return "/remote.php/dav/files/$davUserId/$suffix"
     }
 
     private fun filesDavUrl(user: String, relativeFolder: String): String {

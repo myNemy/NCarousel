@@ -43,8 +43,12 @@ class SsoNextcloudDavAccess(
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
                 val entries = propfind(folder, depth = "1", missingOk = false)
-                DavPropfind.childCollectionPaths(entries, davUserId, folder)
-                    .sortedBy { it.lowercase() }
+                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+                entries.mapNotNull { e ->
+                    if (!e.isCollection) return@mapNotNull null
+                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
+                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = folder)
+                }.distinct().sortedBy { it.lowercase() }
             }
         }
 
@@ -60,35 +64,44 @@ class SsoNextcloudDavAccess(
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')
-            // Recursive Depth:1 only — Nextcloud may accept Depth:infinity with unusable
-            // Multistatus (wrong collection flags / incomplete tree); that used to skip fallback.
+            // Recursive Depth:1 only — do not use Depth:infinity (RFC 4918 §9.1 / Nextcloud may
+            // return an unusable Multistatus that previously emptied the library).
             listImagesDepthOneWalk(root, maxImageBytes)
         }
     }
 
+    /**
+     * Same proven Depth:1 walk as [NextcloudWebDavClient] (v0.2.55 / `b52b76e` semantics).
+     */
     private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
-        val collected = LinkedHashMap<String, DavEntry>()
+        val collected = mutableListOf<DavEntry>()
         val visited = mutableSetOf<String>()
         fun visit(folder: String, isRoot: Boolean) {
             val key = folder.trimEnd('/').lowercase() + "/"
             if (!visited.add(key)) return
             val entries = propfind(folder, depth = "1", missingOk = !isRoot)
-            for (img in DavPropfind.collectImagesFromEntries(
-                entries = entries,
-                davUserId = davUserId,
-                rootFolder = root,
-                parentFolder = folder,
-                maxImageBytes = maxImageBytes,
-            )) {
-                val rel = DavPropfind.hrefToRelativeUserPath(img.hrefDecoded, davUserId) ?: continue
-                collected.putIfAbsent(DavPropfind.imageIdentityKey(img, rel), img)
-            }
-            for (child in DavPropfind.childCollectionPaths(entries, davUserId, folder)) {
-                visit(child, isRoot = false)
+            val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
+            for (e in entries) {
+                if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
+                when {
+                    e.isCollection -> {
+                        val child = DavPropfind.hrefToRelativeUserPath(
+                            e.hrefDecoded,
+                            davUserId,
+                            parentFolder = folder,
+                        ) ?: continue
+                        visit(child, isRoot = false)
+                    }
+                    DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
+                        val len = e.contentLengthBytes
+                        if (maxImageBytes > 0L && len != null && len > maxImageBytes) continue
+                        collected += e
+                    }
+                }
             }
         }
         visit(root, isRoot = true)
-        return collected.values.toList()
+        return collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
     }
 
     override suspend fun downloadFile(hrefPath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
@@ -193,8 +206,10 @@ class SsoNextcloudDavAccess(
         NextcloudAPI(app, account, Gson()).use { api ->
             val builder = NextcloudRequest.Builder()
                 .setMethod(method)
-                // NextcloudAPI encodes the path; pass a raw path (no pre-encode) to avoid %20 → %2520.
-                .setUrl(urlPath)
+                // Match the path encoding that successfully listed ~4499 images on `b52b76e`
+                // (pre-encode segments + encode once for NextcloudAPI). Raw setUrl after e4b9228
+                // correlated with empty/failed refresh for some accounts.
+                .setUrl(Uri.encode(urlPath, "/@&=+$,:;!?'()*"))
             val hdrs = HashMap(headers)
             if (contentType != null) {
                 hdrs["Content-Type"] = listOf(contentType)
@@ -211,10 +226,20 @@ class SsoNextcloudDavAccess(
         }
     }
 
-    /** Raw (decoded) DAV path; SSO [NextcloudAPI] applies encoding once. */
+    private fun folderDavHref(folder: String): String {
+        val path = folder.trim().trim('/')
+        val suffix = if (path.isEmpty()) "" else "$path/"
+        return "/remote.php/dav/files/$davUserId/$suffix"
+    }
+
     private fun filesDavPath(relativeFolder: String): String {
         val path = relativeFolder.trim().trim('/')
-        val suffix = if (path.isEmpty()) "" else "/$path"
+        val encoded = path.split('/')
+            .filter { it.isNotEmpty() }
+            .joinToString("/") { segment ->
+                Uri.encode(segment, "@+&.=-_~:,;!$'()*")
+            }
+        val suffix = if (encoded.isEmpty()) "" else "/$encoded"
         return "/remote.php/dav/files/$davUserId$suffix"
     }
 
