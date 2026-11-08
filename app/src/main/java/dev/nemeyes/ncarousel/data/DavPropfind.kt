@@ -137,8 +137,13 @@ object DavPropfind {
 
     /**
      * Turns a DAV href (absolute, root-absolute, or relative) into a path relative to
-     * `/remote.php/dav/files/{davUserId}/`.
+     * `/remote.php/dav/files/{user}/` (the `{user}` segment is stripped, not kept).
+     *
+     * [davUserId] is accepted for API compatibility; the first path segment after `files/` is
+     * always stripped so SSO/login-name vs UID mismatches do not drop whole subtrees.
+     * [parentFolder] is only used for short relative hrefs (e.g. `2024/`), and never double-prefixed.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun hrefToRelativeUserPath(href: String, davUserId: String, parentFolder: String = ""): String? {
         val decoded = Uri.decode(href.trim())
         val marker = "/remote.php/dav/files/"
@@ -146,16 +151,19 @@ object DavPropfind {
         if (idx >= 0) {
             val after = decoded.substring(idx + marker.length)
             val slash = after.indexOf('/')
-            val pathUser = if (slash < 0) after else after.substring(0, slash)
-            if (!pathUser.equals(davUserId, ignoreCase = true)) return null
+            // Strip whatever user segment the server put in the href (uid, login, …).
             return if (slash < 0) "" else after.substring(slash + 1).trimEnd('/')
         }
-        // Relative href (segment or nested path) from Depth:1 under [parentFolder].
+        // Relative href from Depth:1 under [parentFolder] (RFC 4918).
         if (decoded.contains("://")) return null
-        val rel = decoded.trim().trimStart('/')
+        val rel = decoded.trim().trimStart('/').trimEnd('/')
         if (rel.isEmpty() || rel.startsWith("remote.php", ignoreCase = true)) return null
         val parent = parentFolder.trim().trim('/')
-        return if (parent.isEmpty()) rel.trimEnd('/') else "$parent/${rel.trimEnd('/')}"
+        if (parent.isEmpty()) return rel
+        // Server sometimes returns a path already rooted at the user folder (or at parent).
+        if (rel.equals(parent, ignoreCase = true)) return parent
+        if (rel.startsWith("$parent/", ignoreCase = true)) return rel
+        return "$parent/$rel"
     }
 
     private fun readTextElementContents(parser: XmlPullParser): String {
