@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Niet nu</string>
     <string name="folder_empty_suggest_message">Geen afbeeldingen onder “%1$s”. Nextcloud-mappen bladeren en een andere kiezen?</string>
     <string name="folder_empty_suggest_title">Geen afbeeldingen</string>
-    <string name="field_remote_folder_hint">Leeg = Photos. Bladeren: URL, gebruiker en app-wachtwoord (of ingelogd account).</string>
+    <string name="field_remote_folder_hint">Leeg = Photos. Gebruik «Mappen bladeren» hieronder om een pad te kiezen.</string>
+    <string name="folder_picker_open_a_folder">Open een map in de lijst en tik op Deze map gebruiken.</string>
+    <string name="field_remote_folder_hint_login">Leeg = Photos. Na aanmelden mappen bladeren in Instellingen.</string>
     <string name="msg_folder_browse_need_account">Meld je aan of vul server-URL, gebruikersnaam en app-wachtwoord in om mappen te bladeren.</string>
     <string name="folder_picker_empty">Geen submappen hier.</string>
     <string name="folder_picker_retry">Opnieuw</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Rechts</string>
     <string name="nc_library_title">Bibliotheek</string>
     <string name="nc_library_empty_title">Geen afbeeldingen in bibliotheek</string>
-    <string name="nc_library_empty_body">Vernieuw de lijst vanuit je Nextcloud-map. Blijft die leeg, dan wordt een mappenkiezer aangeboden (ook in Instellingen).</string>
+    <string name="nc_library_empty_body">Vernieuw de lijst vanuit je Nextcloud-map. Blijft die leeg, blader mappen in Instellingen (of via de melding na vernieuwen).</string>
     <string name="nc_library_refresh">Lijst vernieuwen</string>
     <string name="nc_library_count">%1$d afbeeldingen</string>
     <string name="nc_library_tap_to_apply">Tik om toe te passen</string>

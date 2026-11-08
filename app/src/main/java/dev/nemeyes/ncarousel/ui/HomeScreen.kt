@@ -359,13 +359,6 @@ fun HomeScreen(viewModel: MainViewModel) {
                 onSaveCredentials = viewModel::saveCredentials,
                 onLoginV2 = viewModel::startNextcloudLoginV2,
                 onLoginSso = viewModel::startNextcloudSsoImport,
-                canBrowseFolders = viewModel.canBrowseRemoteFolders(),
-                onLoadFolderChildren = viewModel::listRemoteChildFolders,
-                onBrowseFoldersUnavailable = {
-                    viewModel.setStatusMessage(
-                        context.getString(R.string.msg_folder_browse_need_account),
-                    )
-                },
             )
         }
     } else {

@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Nie teraz</string>
     <string name="folder_empty_suggest_message">Brak obrazów w „%1$s”. Przeglądać foldery Nextcloud i wybrać inny?</string>
     <string name="folder_empty_suggest_title">Brak obrazów</string>
-    <string name="field_remote_folder_hint">Puste = Photos. Przeglądanie: URL, użytkownik i hasło aplikacji (lub zalogowane konto).</string>
+    <string name="field_remote_folder_hint">Puste = Photos. Użyj «Przeglądaj foldery» poniżej, aby wybrać ścieżkę.</string>
+    <string name="folder_picker_open_a_folder">Otwórz folder na liście, potem dotknij Użyj tego folderu.</string>
+    <string name="field_remote_folder_hint_login">Puste = Photos. Po zalogowaniu przeglądaj foldery w Ustawieniach.</string>
     <string name="msg_folder_browse_need_account">Zaloguj się lub podaj URL, nazwę użytkownika i hasło aplikacji, aby przeglądać foldery.</string>
     <string name="folder_picker_empty">Brak podfolderów.</string>
     <string name="folder_picker_retry">Ponów</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Prawo</string>
     <string name="nc_library_title">Biblioteka</string>
     <string name="nc_library_empty_title">Brak obrazów w bibliotece</string>
-    <string name="nc_library_empty_body">Odśwież listę z folderu Nextcloud. Jeśli pozostanie pusta, zaproponujemy przeglądarkę folderów (także w Ustawieniach).</string>
+    <string name="nc_library_empty_body">Odśwież listę z folderu Nextcloud. Jeśli pozostanie pusta, przeglądaj foldery w Ustawieniach (lub z monitu po odświeżeniu).</string>
     <string name="nc_library_refresh">Odśwież listę</string>
     <string name="nc_library_count">%1$d obrazów</string>
     <string name="nc_library_tap_to_apply">Dotknij, aby ustawić</string>

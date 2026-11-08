@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Nicht jetzt</string>
     <string name="folder_empty_suggest_message">Keine Bilder unter „%1$s“. Nextcloud-Ordner durchsuchen und einen anderen wählen?</string>
     <string name="folder_empty_suggest_title">Keine Bilder gefunden</string>
-    <string name="field_remote_folder_hint">Leer bedeutet Photos. Zum Durchsuchen: URL, Benutzer und App-Passwort (oder angemeldetes Konto).</string>
+    <string name="field_remote_folder_hint">Leer bedeutet Photos. Mit „Ordner durchsuchen“ darunter einen Pfad wählen.</string>
+    <string name="folder_picker_open_a_folder">Öffnen Sie einen Ordner in der Liste und tippen Sie dann auf Diesen Ordner verwenden.</string>
+    <string name="field_remote_folder_hint_login">Leer bedeutet Photos. Nach dem Anmelden Ordner in den Einstellungen durchsuchen.</string>
     <string name="msg_folder_browse_need_account">Melden Sie sich an oder geben Sie URL, Benutzername und App-Passwort ein, um Ordner zu durchsuchen.</string>
     <string name="folder_picker_empty">Keine Unterordner hier.</string>
     <string name="folder_picker_retry">Erneut versuchen</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Rechts</string>
     <string name="nc_library_title">Bibliothek</string>
     <string name="nc_library_empty_title">Keine Bilder in der Bibliothek</string>
-    <string name="nc_library_empty_body">Aktualisieren Sie die Bildliste aus Ihrem Nextcloud-Ordner. Bleibt sie leer, wird ein Ordnerbrowser angeboten (auch in den Einstellungen).</string>
+    <string name="nc_library_empty_body">Aktualisieren Sie die Bildliste aus Ihrem Nextcloud-Ordner. Bleibt sie leer, können Sie Ordner in den Einstellungen durchsuchen (oder über den Hinweis nach dem Aktualisieren).</string>
     <string name="nc_library_refresh">Liste aktualisieren</string>
     <string name="nc_library_count">%1$d Bilder</string>
     <string name="nc_library_tap_to_apply">Tippen zum Anwenden</string>

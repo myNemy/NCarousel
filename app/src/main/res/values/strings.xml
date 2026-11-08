@@ -30,7 +30,9 @@
     <string name="folder_empty_suggest_dismiss">Not now</string>
     <string name="folder_empty_suggest_message">No images under “%1$s”. Browse Nextcloud folders and pick another path?</string>
     <string name="folder_empty_suggest_title">No images found</string>
-    <string name="field_remote_folder_hint">Empty means Photos. Browse needs server URL, user and app password (or a signed-in account).</string>
+    <string name="field_remote_folder_hint">Empty means Photos. Use Browse folders below to pick a path.</string>
+    <string name="folder_picker_open_a_folder">Open a folder in the list, then tap Use this folder.</string>
+    <string name="field_remote_folder_hint_login">Empty means Photos. After sign-in, browse folders in Settings.</string>
     <string name="msg_folder_browse_need_account">Sign in or enter server URL, username, and app password to browse folders.</string>
     <string name="folder_picker_empty">No subfolders here.</string>
     <string name="folder_picker_retry">Retry</string>
@@ -238,7 +240,7 @@
     <string name="nc_snake_cd_right">Right</string>
     <string name="nc_library_title">Library</string>
     <string name="nc_library_empty_title">No images in library</string>
-    <string name="nc_library_empty_body">Refresh the image list from your Nextcloud folder. If it stays empty, you will be offered a folder browser (also in Settings).</string>
+    <string name="nc_library_empty_body">Refresh the image list from your Nextcloud folder. If it stays empty, you can browse folders in Settings (or from the prompt after refresh).</string>
     <string name="nc_library_refresh">Refresh list</string>
     <string name="nc_library_count">%1$d images</string>
     <string name="nc_library_tap_to_apply">Tap to apply</string>

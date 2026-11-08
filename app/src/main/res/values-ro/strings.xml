@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Nu acum</string>
     <string name="folder_empty_suggest_message">Nicio imagine în „%1$s”. Răsfoiești folderele Nextcloud și alegi altul?</string>
     <string name="folder_empty_suggest_title">Nicio imagine</string>
-    <string name="field_remote_folder_hint">Gol = Photos. Pentru răsfoire: URL, utilizator și parola de aplicație (sau cont autentificat).</string>
+    <string name="field_remote_folder_hint">Gol = Photos. Folosește «Răsfoiește folderele» mai jos pentru a alege calea.</string>
+    <string name="folder_picker_open_a_folder">Deschide un folder din listă, apoi apasă Folosește acest folder.</string>
+    <string name="field_remote_folder_hint_login">Gol = Photos. După autentificare, răsfoiește folderele în Setări.</string>
     <string name="msg_folder_browse_need_account">Autentifică-te sau introdu URL, utilizator și parola de aplicație pentru a răsfoi folderele.</string>
     <string name="folder_picker_empty">Niciun subfolder aici.</string>
     <string name="folder_picker_retry">Reîncearcă</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Dreapta</string>
     <string name="nc_library_title">Bibliotecă</string>
     <string name="nc_library_empty_title">Nicio imagine în bibliotecă</string>
-    <string name="nc_library_empty_body">Reîmprospătează lista din dosarul Nextcloud. Dacă rămâne goală, ți se va propune răsfoirea folderelor (și în Setări).</string>
+    <string name="nc_library_empty_body">Reîmprospătează lista din dosarul Nextcloud. Dacă rămâne goală, răsfoiește folderele în Setări (sau din mesajul după reîmprospătare).</string>
     <string name="nc_library_refresh">Reîmprospătează lista</string>
     <string name="nc_library_count">%1$d imagini</string>
     <string name="nc_library_tap_to_apply">Atingeți pentru a aplica</string>

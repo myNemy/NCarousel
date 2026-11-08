@@ -118,6 +118,13 @@ fun RemoteFolderPickerDialog(
                     )
                 }
                 HorizontalDivider()
+                if (currentPath.isEmpty() && !loading && error == null) {
+                    Text(
+                        text = stringResource(R.string.folder_picker_open_a_folder),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 when {
                     loading -> {
                         Row(
@@ -186,7 +193,9 @@ fun RemoteFolderPickerDialog(
         confirmButton = {
             TextButton(
                 onClick = { onFolderSelected(currentPath) },
-                enabled = !loading,
+                // Account root is not a useful default (empty path becomes Photos and loops);
+                // require opening a real folder first.
+                enabled = !loading && currentPath.isNotEmpty(),
             ) {
                 Text(stringResource(R.string.folder_picker_use_this))
             }

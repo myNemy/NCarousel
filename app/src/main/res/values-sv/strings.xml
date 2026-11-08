@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Inte nu</string>
     <string name="folder_empty_suggest_message">Inga bilder under ”%1$s”. Bläddra bland Nextcloud-mappar och välja en annan?</string>
     <string name="folder_empty_suggest_title">Inga bilder</string>
-    <string name="field_remote_folder_hint">Tomt = Photos. För att bläddra: URL, användare och app-lösenord (eller inloggat konto).</string>
+    <string name="field_remote_folder_hint">Tomt = Photos. Använd «Bläddra bland mappar» nedan för att välja sökväg.</string>
+    <string name="folder_picker_open_a_folder">Öppna en mapp i listan och tryck sedan Använd den här mappen.</string>
+    <string name="field_remote_folder_hint_login">Tomt = Photos. Efter inloggning bläddrar du mappar i Inställningar.</string>
     <string name="msg_folder_browse_need_account">Logga in eller ange URL, användarnamn och app-lösenord för att bläddra bland mappar.</string>
     <string name="folder_picker_empty">Inga undermappar här.</string>
     <string name="folder_picker_retry">Försök igen</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Höger</string>
     <string name="nc_library_title">Bibliotek</string>
     <string name="nc_library_empty_title">Inga bilder i biblioteket</string>
-    <string name="nc_library_empty_body">Uppdatera listan från din Nextcloud-mapp. Om den förblir tom erbjuds en mappväljare (även i Inställningar).</string>
+    <string name="nc_library_empty_body">Uppdatera listan från din Nextcloud-mapp. Om den förblir tom kan du bläddra mappar i Inställningar (eller från prompten efter uppdatering).</string>
     <string name="nc_library_refresh">Uppdatera lista</string>
     <string name="nc_library_count">%1$d bilder</string>
     <string name="nc_library_tap_to_apply">Tryck för att använda</string>

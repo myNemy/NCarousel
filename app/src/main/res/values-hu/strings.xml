@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Most nem</string>
     <string name="folder_empty_suggest_message">Nincs kép itt: „%1$s”. Böngéssze a Nextcloud mappákat és válasszon másikat?</string>
     <string name="folder_empty_suggest_title">Nincs kép</string>
-    <string name="field_remote_folder_hint">Üres = Photos. Böngészéshez: URL, felhasználó és appjelszó (vagy bejelentkezett fiók).</string>
+    <string name="field_remote_folder_hint">Üres = Photos. Az útvonalhoz használd a «Mappák böngészése» gombot lent.</string>
+    <string name="folder_picker_open_a_folder">Nyisson meg egy mappát a listából, majd koppintson az Ezt a mappát használd gombra.</string>
+    <string name="field_remote_folder_hint_login">Üres = Photos. Bejelentkezés után a Beállításokban böngészhet mappákat.</string>
     <string name="msg_folder_browse_need_account">Jelentkezz be, vagy add meg az URL-t, felhasználónevet és appjelszót a mappák böngészéséhez.</string>
     <string name="folder_picker_empty">Nincsenek almappák.</string>
     <string name="folder_picker_retry">Újra</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Jobb</string>
     <string name="nc_library_title">Könyvtár</string>
     <string name="nc_library_empty_title">Nincs kép a könyvtárban</string>
-    <string name="nc_library_empty_body">Frissítse a listát a Nextcloud mappából. Ha üres marad, mappaválasztó jelenik meg (a Beállításokban is).</string>
+    <string name="nc_library_empty_body">Frissítse a listát a Nextcloud mappából. Ha üres marad, böngésszen mappákat a Beállításokban (vagy a frissítés utáni felkínálásból).</string>
     <string name="nc_library_refresh">Lista frissítése</string>
     <string name="nc_library_count">%1$d kép</string>
     <string name="nc_library_tap_to_apply">Érintse meg az alkalmazáshoz</string>

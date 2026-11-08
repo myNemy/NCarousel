@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Agora não</string>
     <string name="folder_empty_suggest_message">Sem imagens em “%1$s”. Explorar pastas Nextcloud e escolher outra?</string>
     <string name="folder_empty_suggest_title">Sem imagens</string>
-    <string name="field_remote_folder_hint">Vazio = Photos. Para explorar: URL, utilizador e palavra-passe da app (ou conta iniciada).</string>
+    <string name="field_remote_folder_hint">Vazio = Photos. Use «Explorar pastas» abaixo para escolher o caminho.</string>
+    <string name="folder_picker_open_a_folder">Abra uma pasta na lista e toque em Usar esta pasta.</string>
+    <string name="field_remote_folder_hint_login">Vazio = Photos. Após iniciar sessão, explore pastas em Definições.</string>
     <string name="msg_folder_browse_need_account">Inicie sessão ou introduza URL, utilizador e palavra-passe da app para explorar pastas.</string>
     <string name="folder_picker_empty">Sem subpastas aqui.</string>
     <string name="folder_picker_retry">Tentar novamente</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Direita</string>
     <string name="nc_library_title">Biblioteca</string>
     <string name="nc_library_empty_title">Sem imagens na biblioteca</string>
-    <string name="nc_library_empty_body">Atualize a lista a partir da pasta Nextcloud. Se ficar vazia, será oferecido um explorador de pastas (também em Definições).</string>
+    <string name="nc_library_empty_body">Atualize a lista a partir da pasta Nextcloud. Se ficar vazia, explore pastas em Definições (ou no aviso após atualizar).</string>
     <string name="nc_library_refresh">Atualizar lista</string>
     <string name="nc_library_count">%1$d imagens</string>
     <string name="nc_library_tap_to_apply">Toque para aplicar</string>

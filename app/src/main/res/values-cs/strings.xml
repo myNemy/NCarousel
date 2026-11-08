@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Teď ne</string>
     <string name="folder_empty_suggest_message">Žádné obrázky v „%1$s“. Procházet složky Nextcloud a vybrat jinou?</string>
     <string name="folder_empty_suggest_title">Žádné obrázky</string>
-    <string name="field_remote_folder_hint">Prázdné = Photos. Procházení: URL, uživatel a heslo aplikace (nebo přihlášený účet).</string>
+    <string name="field_remote_folder_hint">Prázdné = Photos. Cestu vyberte přes «Procházet složky» níže.</string>
+    <string name="folder_picker_open_a_folder">Otevřete složku v seznamu a klepněte na Použít tuto složku.</string>
+    <string name="field_remote_folder_hint_login">Prázdné = Photos. Po přihlášení procházejte složky v Nastavení.</string>
     <string name="msg_folder_browse_need_account">Přihlaste se nebo zadejte URL, uživatele a hesla aplikace pro procházení složek.</string>
     <string name="folder_picker_empty">Žádné podsložky.</string>
     <string name="folder_picker_retry">Zkusit znovu</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Vpravo</string>
     <string name="nc_library_title">Knihovna</string>
     <string name="nc_library_empty_title">V knihovně nejsou žádné obrázky</string>
-    <string name="nc_library_empty_body">Obnovte seznam ze složky Nextcloud. Pokud zůstane prázdný, nabídne se prohlížeč složek (také v Nastavení).</string>
+    <string name="nc_library_empty_body">Obnovte seznam ze složky Nextcloud. Pokud zůstane prázdný, procházejte složky v Nastavení (nebo z výzvy po obnovení).</string>
     <string name="nc_library_refresh">Obnovit seznam</string>
     <string name="nc_library_count">%1$d obrázků</string>
     <string name="nc_library_tap_to_apply">Klepnutím použít</string>

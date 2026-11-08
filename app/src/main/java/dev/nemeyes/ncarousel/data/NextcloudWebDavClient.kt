@@ -64,7 +64,7 @@ class NextcloudWebDavClient(
                 entries.mapNotNull { e ->
                     if (!e.isCollection) return@mapNotNull null
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
-                    hrefToRelativeUserPath(e.hrefDecoded)
+                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId)
                 }.distinct().sortedBy { it.lowercase() }
             }
         }
@@ -96,7 +96,7 @@ class NextcloudWebDavClient(
                     }
                     when {
                         e.isCollection -> {
-                            val child = hrefToRelativeUserPath(e.hrefDecoded) ?: continue
+                            val child = DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId) ?: continue
                             visit(child)
                         }
                         DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
@@ -136,7 +136,7 @@ class NextcloudWebDavClient(
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                     when {
                         e.isCollection -> {
-                            val child = hrefToRelativeUserPath(e.hrefDecoded) ?: continue
+                            val child = DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId) ?: continue
                             visit(child)
                         }
                         DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
@@ -268,14 +268,6 @@ class NextcloudWebDavClient(
         val path = folder.trim().trim('/')
         val suffix = if (path.isEmpty()) "" else "$path/"
         return "/remote.php/dav/files/$davUserId/$suffix"
-    }
-
-    private fun hrefToRelativeUserPath(href: String): String? {
-        val prefix = "/remote.php/dav/files/$davUserId/"
-        val decoded = Uri.decode(href.trim())
-        val idx = decoded.indexOf(prefix)
-        if (idx < 0) return null
-        return decoded.substring(idx + prefix.length).trimEnd('/')
     }
 
     private fun filesDavUrl(user: String, relativeFolder: String): String {

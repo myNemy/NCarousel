@@ -29,7 +29,10 @@ class SsoNextcloudDavAccess(
                 "PROPFIND",
                 filesDavPath(""),
                 body = DavPropfind.requestBodyXml,
-                headers = mapOf("Depth" to listOf("0")),
+                headers = mapOf(
+                    "Depth" to listOf("0"),
+                    "Content-Type" to listOf("application/xml; charset=utf-8"),
+                ),
             )
             Unit
         }
@@ -44,7 +47,7 @@ class SsoNextcloudDavAccess(
                 entries.mapNotNull { e ->
                     if (!e.isCollection) return@mapNotNull null
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
-                    hrefToRelativeUserPath(e.hrefDecoded)
+                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId)
                 }.distinct().sortedBy { it.lowercase() }
             }
         }
@@ -73,7 +76,7 @@ class SsoNextcloudDavAccess(
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                     when {
                         e.isCollection -> {
-                            val child = hrefToRelativeUserPath(e.hrefDecoded) ?: continue
+                            val child = DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId) ?: continue
                             visit(child)
                         }
                         DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
@@ -152,7 +155,10 @@ class SsoNextcloudDavAccess(
 
     private fun propfindDepthOne(folder: String): List<DavEntry> {
         val path = filesDavPath(folder)
-        val headers = mapOf("Depth" to listOf("1"))
+        val headers = mapOf(
+            "Depth" to listOf("1"),
+            "Content-Type" to listOf("application/xml; charset=utf-8"),
+        )
         val xml = try {
             requestString("PROPFIND", path, body = DavPropfind.requestBodyXml, headers = headers)
         } catch (e: NextcloudHttpRequestFailedException) {
@@ -208,14 +214,6 @@ class SsoNextcloudDavAccess(
         val path = folder.trim().trim('/')
         val suffix = if (path.isEmpty()) "" else "$path/"
         return "/remote.php/dav/files/$davUserId/$suffix"
-    }
-
-    private fun hrefToRelativeUserPath(href: String): String? {
-        val prefix = "/remote.php/dav/files/$davUserId/"
-        val decoded = Uri.decode(href.trim())
-        val idx = decoded.indexOf(prefix)
-        if (idx < 0) return null
-        return decoded.substring(idx + prefix.length).trimEnd('/')
     }
 
     private fun filesDavPath(relativeFolder: String): String {

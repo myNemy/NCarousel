@@ -801,7 +801,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshImageList() {
-        val s = _ui.value
         val active = activeOrNull()
         if (active == null) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
@@ -810,7 +809,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val token = beginBusy()
             try {
-                // Use the folder shown in the form, not only the last saved value (login v2 defaults to Photos).
+                // Read UI state inside the job so a folder pick just before refresh is not stale.
+                val s = _ui.value
                 val folder = s.remoteFolder.trim().trim('/').ifBlank {
                     active.remoteFolder.ifBlank { "Photos" }
                 }
@@ -832,7 +832,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         WallpaperOrderEngine(getApplication(), active.id).onLibraryFingerprintChanged(fp)
                         ImageListCache(getApplication(), active.id).write(list)
                         val excluded = ExcludedHrefStore(getApplication(), active.id).read()
-                        val carouselIndices = computeCarouselIndicesForActiveAccount(list, s.orderMode, excluded)
+                        val orderMode = _ui.value.orderMode
+                        val carouselIndices = computeCarouselIndicesForActiveAccount(list, orderMode, excluded)
                         _ui.update {
                             it.copy(
                                 imageHrefs = list,
@@ -854,19 +855,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     },
                     onFailure = { e ->
+                        val msg = e.message ?: e.javaClass.simpleName
+                        // Keep the previous list in the UI; only the status explains the failure.
                         _ui.update {
                             it.copy(
-                                imageHrefs = emptyList(),
-                                imageFileIds = emptyMap(),
-                                imageLastModifiedEpochMs = emptyMap(),
-                                imageContentLengthBytes = emptyMap(),
-                                imageCarouselIndexByHref = emptyMap(),
                                 remoteFolder = folder,
-                                statusMessage = appStr(R.string.msg_list_error, e.message ?: e.javaClass.simpleName),
+                                statusMessage = appStr(R.string.msg_list_error, msg),
                             )
                         }
-                        // Missing / wrong folder often surfaces as PROPFIND failure — offer browse.
-                        _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
+                        // Offer browse only when the remote folder itself looks wrong (404),
+                        // not on every network / SSO glitch.
+                        if (msg.contains("404") || msg.contains("HTTP 404", ignoreCase = true)) {
+                            _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
+                        }
                     },
                 )
             } finally {

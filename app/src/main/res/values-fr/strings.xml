@@ -26,7 +26,9 @@
     <string name="folder_empty_suggest_dismiss">Pas maintenant</string>
     <string name="folder_empty_suggest_message">Aucune image sous « %1$s ». Parcourir les dossiers Nextcloud et en choisir un autre ?</string>
     <string name="folder_empty_suggest_title">Aucune image</string>
-    <string name="field_remote_folder_hint">Vide = Photos. Pour parcourir : URL, utilisateur et mot de passe d’application (ou compte connecté).</string>
+    <string name="field_remote_folder_hint">Vide = Photos. Utilisez « Parcourir les dossiers » ci-dessous pour choisir le chemin.</string>
+    <string name="folder_picker_open_a_folder">Ouvrez un dossier dans la liste, puis touchez Utiliser ce dossier.</string>
+    <string name="field_remote_folder_hint_login">Vide = Photos. Après connexion, parcourez les dossiers dans Paramètres.</string>
     <string name="msg_folder_browse_need_account">Connectez-vous ou saisissez l’URL, l’utilisateur et le mot de passe d’application pour parcourir les dossiers.</string>
     <string name="folder_picker_empty">Aucun sous-dossier ici.</string>
     <string name="folder_picker_retry">Réessayer</string>
@@ -223,7 +225,7 @@
     <string name="nc_snake_cd_right">Droite</string>
     <string name="nc_library_title">Bibliothèque</string>
     <string name="nc_library_empty_title">Aucune image dans la bibliothèque</string>
-    <string name="nc_library_empty_body">Actualisez la liste depuis votre dossier Nextcloud. Si elle reste vide, un parcours des dossiers sera proposé (aussi dans Paramètres).</string>
+    <string name="nc_library_empty_body">Actualisez la liste depuis votre dossier Nextcloud. Si elle reste vide, parcourez les dossiers dans Paramètres (ou via l’invite après actualisation).</string>
     <string name="nc_library_refresh">Actualiser la liste</string>
     <string name="nc_library_count">%1$d images</string>
     <string name="nc_library_tap_to_apply">Appuyer pour appliquer</string>

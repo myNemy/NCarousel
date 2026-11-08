@@ -117,6 +117,22 @@ object DavPropfind {
     fun normalizeHref(href: String): String =
         Uri.decode(href.trim()).trimEnd('/').lowercase()
 
+    /**
+     * Turns a DAV href (absolute or path) into a path relative to
+     * `/remote.php/dav/files/{davUserId}/`. User id match is case-insensitive.
+     */
+    fun hrefToRelativeUserPath(href: String, davUserId: String): String? {
+        val decoded = Uri.decode(href.trim())
+        val marker = "/remote.php/dav/files/"
+        val idx = decoded.indexOf(marker, ignoreCase = true)
+        if (idx < 0) return null
+        val after = decoded.substring(idx + marker.length)
+        val slash = after.indexOf('/')
+        val pathUser = if (slash < 0) after else after.substring(0, slash)
+        if (!pathUser.equals(davUserId, ignoreCase = true)) return null
+        return if (slash < 0) "" else after.substring(slash + 1).trimEnd('/')
+    }
+
     private fun readTextElementContents(parser: XmlPullParser): String {
         val sb = StringBuilder()
         var type = parser.next()
