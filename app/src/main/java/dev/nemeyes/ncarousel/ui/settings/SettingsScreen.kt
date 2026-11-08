@@ -79,6 +79,8 @@ fun SettingsScreen(
     onUserChange: (String) -> Unit,
     onPassChange: (String) -> Unit,
     onFolderChange: (String) -> Unit,
+    /** Called when the user confirms a folder from the WebDAV browser (persist + refresh). */
+    onBrowseFolderSelected: (String) -> Unit,
     onSaveCredentials: () -> Unit,
     onLoginV2: () -> Unit,
     onLoginSso: () -> Unit,
@@ -842,8 +844,8 @@ fun SettingsScreen(
             onLoadChildren = onLoadFolderChildren,
             onDismiss = { showFolderPicker = false },
             onFolderSelected = { path ->
-                onFolderChange(path)
                 showFolderPicker = false
+                onBrowseFolderSelected(path)
             },
         )
     }

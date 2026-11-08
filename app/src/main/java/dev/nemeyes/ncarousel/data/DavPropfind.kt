@@ -24,10 +24,20 @@ object DavPropfind {
     """.trimIndent()
 
     fun parse(xml: String): List<DavEntry> {
+        val trimmed = xml.trim()
+        if (trimmed.isEmpty()) error("Empty PROPFIND body")
+        // HTML / JSON error pages must not look like an empty folder.
+        if (!trimmed.contains("multistatus", ignoreCase = true) &&
+            !trimmed.contains(":response", ignoreCase = true) &&
+            !trimmed.contains("<response", ignoreCase = true)
+        ) {
+            val preview = trimmed.take(120).replace('\n', ' ')
+            error("Unexpected PROPFIND response (not WebDAV Multistatus): $preview")
+        }
         val factory = XmlPullParserFactory.newInstance()
         factory.isNamespaceAware = true
         val parser = factory.newPullParser()
-        parser.setInput(StringReader(xml))
+        parser.setInput(StringReader(trimmed))
         val list = mutableListOf<DavEntry>()
         var currentHref: String? = null
         var inResourceType = false
@@ -114,23 +124,38 @@ object DavPropfind {
         return IMAGE_EXTENSIONS.any { lower.endsWith(it) }
     }
 
-    fun normalizeHref(href: String): String =
-        Uri.decode(href.trim()).trimEnd('/').lowercase()
-
     /**
-     * Turns a DAV href (absolute or path) into a path relative to
-     * `/remote.php/dav/files/{davUserId}/`. User id match is case-insensitive.
+     * Path-only identity for self/child comparisons (absolute `https://…` vs `/remote.php/…`).
      */
-    fun hrefToRelativeUserPath(href: String, davUserId: String): String? {
+    fun normalizeHref(href: String): String {
         val decoded = Uri.decode(href.trim())
         val marker = "/remote.php/dav/files/"
         val idx = decoded.indexOf(marker, ignoreCase = true)
-        if (idx < 0) return null
-        val after = decoded.substring(idx + marker.length)
-        val slash = after.indexOf('/')
-        val pathUser = if (slash < 0) after else after.substring(0, slash)
-        if (!pathUser.equals(davUserId, ignoreCase = true)) return null
-        return if (slash < 0) "" else after.substring(slash + 1).trimEnd('/')
+        val path = if (idx >= 0) decoded.substring(idx) else decoded
+        return path.trimEnd('/').lowercase()
+    }
+
+    /**
+     * Turns a DAV href (absolute, root-absolute, or relative) into a path relative to
+     * `/remote.php/dav/files/{davUserId}/`.
+     */
+    fun hrefToRelativeUserPath(href: String, davUserId: String, parentFolder: String = ""): String? {
+        val decoded = Uri.decode(href.trim())
+        val marker = "/remote.php/dav/files/"
+        val idx = decoded.indexOf(marker, ignoreCase = true)
+        if (idx >= 0) {
+            val after = decoded.substring(idx + marker.length)
+            val slash = after.indexOf('/')
+            val pathUser = if (slash < 0) after else after.substring(0, slash)
+            if (!pathUser.equals(davUserId, ignoreCase = true)) return null
+            return if (slash < 0) "" else after.substring(slash + 1).trimEnd('/')
+        }
+        // Relative href (segment or nested path) from Depth:1 under [parentFolder].
+        if (decoded.contains("://")) return null
+        val rel = decoded.trim().trimStart('/')
+        if (rel.isEmpty() || rel.startsWith("remote.php", ignoreCase = true)) return null
+        val parent = parentFolder.trim().trim('/')
+        return if (parent.isEmpty()) rel.trimEnd('/') else "$parent/${rel.trimEnd('/')}"
     }
 
     private fun readTextElementContents(parser: XmlPullParser): String {

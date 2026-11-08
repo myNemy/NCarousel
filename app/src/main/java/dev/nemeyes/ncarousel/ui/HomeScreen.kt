@@ -248,8 +248,7 @@ fun HomeScreen(viewModel: MainViewModel) {
             onDismiss = { showRemoteFolderPicker = false },
             onFolderSelected = { path ->
                 showRemoteFolderPicker = false
-                viewModel.updateRemoteFolder(path)
-                viewModel.refreshImageList()
+                viewModel.applyRemoteFolderAndRefresh(path)
             },
         )
     }
@@ -624,6 +623,7 @@ private fun AuthenticatedShell(
                                 onUserChange = viewModel::updateUsername,
                                 onPassChange = viewModel::updatePassword,
                                 onFolderChange = viewModel::updateRemoteFolder,
+                                onBrowseFolderSelected = viewModel::applyRemoteFolderAndRefresh,
                                 onSaveCredentials = viewModel::saveCredentials,
                                 onLoginV2 = viewModel::startNextcloudLoginV2,
                                 onLoginSso = viewModel::startNextcloudSsoImport,

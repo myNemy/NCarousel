@@ -227,6 +227,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Prevents a cancelled/slow job from clearing [MainUiState.busy] while a newer one runs. */
     private var busyToken = 0
     private var loginJob: Job? = null
+    private var refreshListJob: Job? = null
 
     private fun beginBusy(): Int {
         val token = ++busyToken
@@ -800,13 +801,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refreshImageList() {
+    /**
+     * Persists [path] as the remote folder and refreshes the image list.
+     * Does not re-open the folder-browser prompt (avoids confirm → empty → prompt loops).
+     */
+    fun applyRemoteFolderAndRefresh(path: String) {
+        val normalized = path.trim().trim('/')
+        if (normalized.isEmpty()) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.folder_picker_open_a_folder)) }
+            return
+        }
+        updateRemoteFolder(normalized)
+        activeOrNull()?.let { accounts.upsert(it.copy(remoteFolder = normalized)) }
+        refreshImageList(offerBrowseIfEmpty = false)
+    }
+
+    fun refreshImageList(offerBrowseIfEmpty: Boolean = true) {
         val active = activeOrNull()
         if (active == null) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_add_account)) }
             return
         }
-        viewModelScope.launch {
+        refreshListJob?.cancel()
+        refreshListJob = viewModelScope.launch {
             val token = beginBusy()
             try {
                 // Read UI state inside the job so a folder pick just before refresh is not stale.
@@ -850,11 +867,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         withContext(Dispatchers.IO) {
                             CarouselStatusNotifications.maybeShowListRefreshed(app, carousel, list.size)
                         }
-                        if (list.isEmpty()) {
+                        if (list.isEmpty() && offerBrowseIfEmpty) {
                             _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
                         }
                     },
                     onFailure = { e ->
+                        if (e is CancellationException) throw e
                         val msg = e.message ?: e.javaClass.simpleName
                         // Keep the previous list in the UI; only the status explains the failure.
                         _ui.update {
@@ -863,13 +881,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 statusMessage = appStr(R.string.msg_list_error, msg),
                             )
                         }
-                        // Offer browse only when the remote folder itself looks wrong (404),
-                        // not on every network / SSO glitch.
-                        if (msg.contains("404") || msg.contains("HTTP 404", ignoreCase = true)) {
+                        // Offer browse only when the *root* remote folder looks missing (404),
+                        // not when a nested subfolder is inaccessible.
+                        val rootMissing =
+                            msg.contains("PROPFIND at \"$folder\"", ignoreCase = false) &&
+                                (msg.contains("HTTP 404") || msg.contains(": HTTP 404"))
+                        if (offerBrowseIfEmpty && rootMissing) {
                             _events.tryEmit(UiEvent.SuggestBrowseRemoteFolder(folder))
                         }
                     },
                 )
+            } catch (e: CancellationException) {
+                throw e
             } finally {
                 endBusy(token)
             }

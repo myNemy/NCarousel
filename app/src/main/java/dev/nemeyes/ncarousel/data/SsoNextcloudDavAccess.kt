@@ -42,12 +42,12 @@ class SsoNextcloudDavAccess(
         withContext(Dispatchers.IO) {
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
-                val entries = propfindDepthOne(folder)
+                val entries = propfindDepthOne(folder, missingOk = false)
                 val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
                 entries.mapNotNull { e ->
                     if (!e.isCollection) return@mapNotNull null
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
-                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId)
+                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = folder)
                 }.distinct().sortedBy { it.lowercase() }
             }
         }
@@ -66,18 +66,21 @@ class SsoNextcloudDavAccess(
             val root = remoteFolder.trim().trim('/')
             val collected = mutableListOf<DavEntry>()
             val visited = mutableSetOf<String>()
-            fun visit(folder: String) {
+            fun visit(folder: String, isRoot: Boolean) {
                 val key = folder.trimEnd('/') + "/"
                 if (!visited.add(key)) return
-                val entries = propfindDepthOne(folder)
-                val selfHref = folderDavHref(folder)
-                val selfNorm = DavPropfind.normalizeHref(selfHref)
+                val entries = propfindDepthOne(folder, missingOk = !isRoot)
+                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
                 for (e in entries) {
                     if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
                     when {
                         e.isCollection -> {
-                            val child = DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId) ?: continue
-                            visit(child)
+                            val child = DavPropfind.hrefToRelativeUserPath(
+                                e.hrefDecoded,
+                                davUserId,
+                                parentFolder = folder,
+                            ) ?: continue
+                            visit(child, isRoot = false)
                         }
                         DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
                             val len = e.contentLengthBytes
@@ -87,7 +90,7 @@ class SsoNextcloudDavAccess(
                     }
                 }
             }
-            visit(root)
+            visit(root, isRoot = true)
             collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
         }
     }
@@ -153,7 +156,7 @@ class SsoNextcloudDavAccess(
         }
     }
 
-    private fun propfindDepthOne(folder: String): List<DavEntry> {
+    private fun propfindDepthOne(folder: String, missingOk: Boolean): List<DavEntry> {
         val path = filesDavPath(folder)
         val headers = mapOf(
             "Depth" to listOf("1"),
@@ -162,6 +165,7 @@ class SsoNextcloudDavAccess(
         val xml = try {
             requestString("PROPFIND", path, body = DavPropfind.requestBodyXml, headers = headers)
         } catch (e: NextcloudHttpRequestFailedException) {
+            if (missingOk && e.statusCode == 404) return emptyList()
             val where = folder.ifBlank { "(account root)" }
             val hint404 =
                 if (e.statusCode == 404) {
