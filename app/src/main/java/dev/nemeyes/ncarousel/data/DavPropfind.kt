@@ -12,8 +12,13 @@ object DavPropfind {
      * Pause between nested Depth:1 PROPFINDs during a recursive library walk.
      * Listing stays single-threaded; this only softens sustained PHP-FPM/DB load on
      * large folder trees (thousands of collections). Does not change which folders are visited.
+     *
+     * Raised 40→100ms as a secondary mitigation after large-folder repros: correct ~5k counts
+     * visit many more collections than the prior undercount path; a slightly longer gap reduces
+     * peak php-fpm pressure before Library preview traffic starts. Not a substitute for
+     * [LibraryPreviewGate] on thumbnails.
      */
-    const val INTER_PROPFIND_DELAY_MS: Long = 40L
+    const val INTER_PROPFIND_DELAY_MS: Long = 100L
 
     val requestBodyXml: String = """
         <?xml version="1.0" encoding="UTF-8"?>

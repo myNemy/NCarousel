@@ -91,8 +91,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import dev.nemeyes.ncarousel.data.SsoNextcloudDavAccess
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
@@ -834,6 +832,8 @@ fun LibraryScreen(
                     }
                 } else when (viewMode) {
                     LibraryViewMode.LIST -> {
+                        // LazyColumn only composes visible (+ small scroll prefetch) rows; preview
+                        // concurrency is capped in LibraryPreviewGate / LibraryPreviewImageLoader.
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             state = listState,
@@ -1388,12 +1388,12 @@ private fun LibraryThumbnail(
             Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
             return
         }
+        // produceState cancels when the cell leaves composition (fast scroll). Concurrency is
+        // capped inside SsoNextcloudDavAccess.downloadPreview via LibraryPreviewGate.
         val bytes by produceState<ByteArray?>(initialValue = null, fileId, ssoName, sizePx) {
-            value = withContext(Dispatchers.IO) {
-                SsoNextcloudDavAccess(ctx, ssoName, userId)
-                    .downloadPreview(fileId, sizePx)
-                    .getOrNull()
-            }
+            value = SsoNextcloudDavAccess(ctx, ssoName, userId)
+                .downloadPreview(fileId, sizePx)
+                .getOrNull()
         }
         if (bytes == null) {
             Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
@@ -1413,15 +1413,18 @@ private fun LibraryThumbnail(
         Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
         return
     }
+    val previewLoader = remember(ctx) { LibraryPreviewImageLoader.get(ctx) }
     val url = remember(state.serverUrl, fileId, sizePx) { previewUrl(state.serverUrl, fileId, sizePx) }
-    val model = remember(url, state.loginName, state.password) {
+    val model = remember(url, state.loginName, state.password, sizePx) {
         ImageRequest.Builder(ctx)
             .data(url)
+            .size(sizePx)
             .addHeader("Authorization", Credentials.basic(state.loginName, state.password))
             .build()
     }
     AsyncImage(
         model = model,
+        imageLoader = previewLoader,
         contentDescription = null,
         contentScale = contentScale,
         alignment = alignment,
@@ -1482,7 +1485,8 @@ private fun LibraryGridCell(
                 ctx = ctx,
                 state = state,
                 fileId = fileId,
-                sizePx = 512,
+                // Smaller than display cell: less php-fpm work per thumb (still sharp enough on phone).
+                sizePx = 256,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)

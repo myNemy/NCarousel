@@ -180,12 +180,15 @@ class SsoNextcloudDavAccess(
     }
 
     /** Downloads a Nextcloud core preview image for [fileId] (Library thumbnails). */
-    suspend fun downloadPreview(fileId: Long, sizePx: Int): Result<ByteArray> = withContext(Dispatchers.IO) {
-        runCatching {
-            val path = "/index.php/core/preview?fileId=$fileId&x=$sizePx&y=$sizePx&a=1"
-            requestBytes("GET", path)
+    suspend fun downloadPreview(fileId: Long, sizePx: Int): Result<ByteArray> =
+        LibraryPreviewGate.withPermit {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val path = "/index.php/core/preview?fileId=$fileId&x=$sizePx&y=$sizePx&a=1"
+                    requestBytes("GET", path)
+                }
+            }
         }
-    }
 
     private fun propfindPath(
         path: String,
