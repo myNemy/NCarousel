@@ -126,6 +126,8 @@ object DavPropfind {
 
     /**
      * Path-only identity for self/child comparisons (absolute `https://…` vs `/remote.php/…`).
+     * Strips down to `/remote.php/dav/files/…` when present so host-absolute and root-absolute
+     * forms of the same resource compare equal.
      */
     fun normalizeHref(href: String): String {
         val decoded = Uri.decode(href.trim())
@@ -133,6 +135,88 @@ object DavPropfind {
         val idx = decoded.indexOf(marker, ignoreCase = true)
         val path = if (idx >= 0) decoded.substring(idx) else decoded
         return path.trimEnd('/').lowercase()
+    }
+
+    /**
+     * Stable identity for image dedupe: prefer Nextcloud `oc:fileid`, else user-relative path.
+     * Never key only on the basename — Depth:1/infinity often returns relative hrefs that collide
+     * across folders (`IMG_0001.jpg` in many albums).
+     */
+    fun imageIdentityKey(entry: DavEntry, userRelativePath: String): String {
+        val id = entry.fileId
+        if (id != null && id > 0L) return "id:$id"
+        return "path:${userRelativePath.trim().trim('/').lowercase()}"
+    }
+
+    /**
+     * Canonical DAV href stored in the DB / used for downloads.
+     */
+    fun canonicalDavHref(davUserId: String, userRelativePath: String): String {
+        val rel = userRelativePath.trim().trim('/')
+        return if (rel.isEmpty()) {
+            "/remote.php/dav/files/$davUserId"
+        } else {
+            "/remote.php/dav/files/$davUserId/$rel"
+        }
+    }
+
+    /**
+     * True when [userRelativePath] is [rootFolder] itself or a nested path under it.
+     */
+    fun isUnderRemoteFolder(userRelativePath: String, rootFolder: String): Boolean {
+        val rel = userRelativePath.trim().trim('/')
+        val root = rootFolder.trim().trim('/')
+        if (root.isEmpty()) return true
+        if (rel.equals(root, ignoreCase = true)) return true
+        return rel.startsWith("$root/", ignoreCase = true)
+    }
+
+    /**
+     * Collect image files from a flat PROPFIND result (Depth:1 children or Depth:infinity tree).
+     * Resolves relative hrefs against [parentFolder], keeps only entries under [rootFolder],
+     * applies [maxImageBytes], and returns canonical hrefs (deduped by fileId/path).
+     */
+    fun collectImagesFromEntries(
+        entries: List<DavEntry>,
+        davUserId: String,
+        rootFolder: String,
+        parentFolder: String,
+        maxImageBytes: Long,
+    ): List<DavEntry> {
+        val root = rootFolder.trim().trim('/')
+        val parent = parentFolder.trim().trim('/')
+        val out = LinkedHashMap<String, DavEntry>()
+        for (e in entries) {
+            if (e.isCollection) continue
+            val rel = hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = parent) ?: continue
+            if (rel.equals(parent, ignoreCase = true)) continue
+            if (!isUnderRemoteFolder(rel, root)) continue
+            if (!isImageHref(e.hrefDecoded, e.contentType) && !isImageHref(rel, e.contentType)) continue
+            val len = e.contentLengthBytes
+            if (maxImageBytes > 0L && len != null && len > maxImageBytes) continue
+            val key = imageIdentityKey(e, rel)
+            if (out.containsKey(key)) continue
+            out[key] = e.copy(hrefDecoded = canonicalDavHref(davUserId, rel))
+        }
+        return out.values.toList()
+    }
+
+    /** Child collection paths (user-relative) under [parentFolder], excluding [parentFolder] itself. */
+    fun childCollectionPaths(
+        entries: List<DavEntry>,
+        davUserId: String,
+        parentFolder: String,
+    ): List<String> {
+        val parent = parentFolder.trim().trim('/')
+        val out = LinkedHashSet<String>()
+        for (e in entries) {
+            if (!e.isCollection) continue
+            val rel = hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = parent) ?: continue
+            if (rel.equals(parent, ignoreCase = true)) continue
+            if (rel.isEmpty()) continue
+            out += rel
+        }
+        return out.toList()
     }
 
     /**

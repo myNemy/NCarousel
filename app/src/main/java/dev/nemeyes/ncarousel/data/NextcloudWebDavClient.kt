@@ -59,64 +59,24 @@ class NextcloudWebDavClient(
         withContext(Dispatchers.IO) {
             runCatching {
                 val folder = relativeFolder.trim().trim('/')
-                val entries = propfindDepthOne(folder, missingOk = false)
-                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
-                entries.mapNotNull { e ->
-                    if (!e.isCollection) return@mapNotNull null
-                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) return@mapNotNull null
-                    DavPropfind.hrefToRelativeUserPath(e.hrefDecoded, davUserId, parentFolder = folder)
-                }.distinct().sortedBy { it.lowercase() }
+                val entries = propfind(folder, depth = "1", missingOk = false)
+                DavPropfind.childCollectionPaths(entries, davUserId, folder)
+                    .sortedBy { it.lowercase() }
             }
         }
 
     /**
-     * Lists image file paths (relative to `remote.php/dav/files/{userId}/`) under [remoteFolder],
-     * scanning subfolders recursively (same idea as the KDE [Nextcloud-Carousel](https://forgejo.it/Nemeyes/Nextcloud-Carousel) plugin).
-     */
-    /**
+     * Lists image file paths under [remoteFolder].
+     * Prefers a single `Depth: infinity` PROPFIND (same idea as the KDE Nextcloud-Carousel plugin);
+     * falls back to recursive `Depth: 1` when the server rejects infinity.
+     *
      * @param maxImageBytes if &gt; 0, skips files whose `getcontentlength` is known and larger than this.
      */
     override suspend fun listImageHrefsRecursive(
         remoteFolder: String,
         maxImageBytes: Long,
-    ): Result<List<String>> = withContext(Dispatchers.IO) {
-        runCatching {
-            val root = remoteFolder.trim().trim('/')
-            val collected = mutableListOf<String>()
-            val visited = mutableSetOf<String>()
-            fun visit(folder: String, isRoot: Boolean) {
-                val key = folder.trimEnd('/') + "/"
-                if (!visited.add(key)) return
-                // Nested 404 (gone / forbidden subfolder) must not abort the whole library sync.
-                val entries = propfindDepthOne(folder, missingOk = !isRoot)
-                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
-                for (e in entries) {
-                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) {
-                        continue
-                    }
-                    when {
-                        e.isCollection -> {
-                            val child = DavPropfind.hrefToRelativeUserPath(
-                                e.hrefDecoded,
-                                davUserId,
-                                parentFolder = folder,
-                            ) ?: continue
-                            visit(child, isRoot = false)
-                        }
-                        DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
-                            val len = e.contentLengthBytes
-                            if (maxImageBytes > 0L && len != null && len > maxImageBytes) {
-                                continue
-                            }
-                            collected += e.hrefDecoded
-                        }
-                    }
-                }
-            }
-            visit(root, isRoot = true)
-            collected.distinct()
-        }
-    }
+    ): Result<List<String>> =
+        listImageEntriesRecursive(remoteFolder, maxImageBytes).map { list -> list.map { it.hrefDecoded } }
 
     /**
      * Same as [listImageHrefsRecursive] but keeps WebDAV metadata when present (etag, lastModified, content length/type).
@@ -128,36 +88,49 @@ class NextcloudWebDavClient(
     ): Result<List<DavEntry>> = withContext(Dispatchers.IO) {
         runCatching {
             val root = remoteFolder.trim().trim('/')
-            val collected = mutableListOf<DavEntry>()
-            val visited = mutableSetOf<String>()
-            fun visit(folder: String, isRoot: Boolean) {
-                val key = folder.trimEnd('/') + "/"
-                if (!visited.add(key)) return
-                val entries = propfindDepthOne(folder, missingOk = !isRoot)
-                val selfNorm = DavPropfind.normalizeHref(folderDavHref(folder))
-                for (e in entries) {
-                    if (DavPropfind.normalizeHref(e.hrefDecoded) == selfNorm) continue
-                    when {
-                        e.isCollection -> {
-                            val child = DavPropfind.hrefToRelativeUserPath(
-                                e.hrefDecoded,
-                                davUserId,
-                                parentFolder = folder,
-                            ) ?: continue
-                            visit(child, isRoot = false)
-                        }
-                        DavPropfind.isImageHref(e.hrefDecoded, e.contentType) -> {
-                            val len = e.contentLengthBytes
-                            if (maxImageBytes > 0L && len != null && len > maxImageBytes) continue
-                            collected += e
-                        }
-                    }
-                }
-            }
-            visit(root, isRoot = true)
-            // Deduplicate by href; keep first occurrence.
-            collected.distinctBy { DavPropfind.normalizeHref(it.hrefDecoded) }
+            listImagesPreferInfinity(root, maxImageBytes)
         }
+    }
+
+    private fun listImagesPreferInfinity(root: String, maxImageBytes: Long): List<DavEntry> {
+        // One-shot tree listing when the server allows it (avoids Depth:1 path/join undercounts).
+        val infinity = runCatching { propfind(root, depth = "infinity", missingOk = false) }.getOrNull()
+        if (infinity != null) {
+            return DavPropfind.collectImagesFromEntries(
+                entries = infinity,
+                davUserId = davUserId,
+                rootFolder = root,
+                parentFolder = root,
+                maxImageBytes = maxImageBytes,
+            )
+        }
+        return listImagesDepthOneWalk(root, maxImageBytes)
+    }
+
+    private fun listImagesDepthOneWalk(root: String, maxImageBytes: Long): List<DavEntry> {
+        val collected = LinkedHashMap<String, DavEntry>()
+        val visited = mutableSetOf<String>()
+        fun visit(folder: String, isRoot: Boolean) {
+            val key = folder.trimEnd('/').lowercase() + "/"
+            if (!visited.add(key)) return
+            // Nested 404 (gone mount / broken link) must not abort the whole library sync.
+            val entries = propfind(folder, depth = "1", missingOk = !isRoot)
+            for (img in DavPropfind.collectImagesFromEntries(
+                entries = entries,
+                davUserId = davUserId,
+                rootFolder = root,
+                parentFolder = folder,
+                maxImageBytes = maxImageBytes,
+            )) {
+                val rel = DavPropfind.hrefToRelativeUserPath(img.hrefDecoded, davUserId) ?: continue
+                collected.putIfAbsent(DavPropfind.imageIdentityKey(img, rel), img)
+            }
+            for (child in DavPropfind.childCollectionPaths(entries, davUserId, folder)) {
+                visit(child, isRoot = false)
+            }
+        }
+        visit(root, isRoot = true)
+        return collected.values.toList()
     }
 
     override suspend fun downloadFile(hrefPath: String): Result<ByteArray> = withContext(Dispatchers.IO) {
@@ -247,17 +220,21 @@ class NextcloudWebDavClient(
         }
     }
 
-    private fun propfindDepthOne(folder: String, missingOk: Boolean): List<DavEntry> {
+    private fun propfind(folder: String, depth: String, missingOk: Boolean): List<DavEntry> {
         val url = filesDavUrl(davUserId, folder)
         val request = Request.Builder()
             .url(url)
             .header("Authorization", authHeader)
             .method("PROPFIND", propfindBody)
-            .header("Depth", "1")
+            .header("Depth", depth)
             .build()
         davHttp.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 if (missingOk && response.code == 404) return emptyList()
+                // Depth:infinity is often disabled (403/405/501) — caller may fall back to Depth:1.
+                if (depth.equals("infinity", ignoreCase = true)) {
+                    error("PROPFIND Depth:infinity unsupported: HTTP ${response.code}")
+                }
                 val where = folder.ifBlank { "(account root)" }
                 val hint404 =
                     if (response.code == 404) {
@@ -270,12 +247,6 @@ class NextcloudWebDavClient(
             val xml = response.body?.string() ?: error("Empty PROPFIND body")
             return DavPropfind.parse(xml)
         }
-    }
-
-    private fun folderDavHref(folder: String): String {
-        val path = folder.trim().trim('/')
-        val suffix = if (path.isEmpty()) "" else "$path/"
-        return "/remote.php/dav/files/$davUserId/$suffix"
     }
 
     private fun filesDavUrl(user: String, relativeFolder: String): String {

@@ -1,0 +1,13 @@
+---
+description: Stay inside the NCarousel project folder; no external paths without explicit user OK
+alwaysApply: true
+---
+
+# Workspace boundary (hard)
+
+- Work **only** under this repository root (`NCarousel`). Do not read, list, search, or execute against paths outside it.
+- **Forbidden without explicit user confirmation in the current message:** sibling repos under `SCRIPT/`, home-wide searches, other projects, browsing `~/.gradle`, SDKs, or unrelated system trees “for comparison.”
+- Allowed exceptions that are part of **this** project’s documented workflow only when the task requires them:
+  - git remotes / `gh` for **this** repo
+  - `../fdroiddata/metadata/dev.nemeyes.ncarousel.yml` when F-Droid sync rules apply
+- If a comparison with another codebase seems useful: **ask first** and wait for OK. Do not open those paths meanwhile.
