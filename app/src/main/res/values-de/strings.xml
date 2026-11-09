@@ -119,6 +119,7 @@
     <string name="msg_login_complete_saved">Anmeldung abgeschlossen: Zugangsdaten gespeichert (App-Passwort).</string>
     <string name="msg_login_failed">Anmeldung fehlgeschlagen: %1$s</string>
     <string name="msg_login_could_not_start">Anmeldung konnte nicht gestartet werden: %1$s</string>
+    <string name="msg_login_browser_open_failed">Could not open the browser. Install or enable a browser, then try again.</string>
     <string name="msg_carousel_options_saved">Karussell-Optionen gespeichert.</string>
     <string name="msg_no_active_account">Kein aktives Konto.</string>
     <string name="msg_disk_cache_cleared">Bild-Cache auf dem Speicher geleert (aktives Konto).</string>

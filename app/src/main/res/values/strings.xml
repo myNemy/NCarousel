@@ -129,6 +129,7 @@
     <string name="msg_login_complete_saved">Login complete: credentials saved (app password).</string>
     <string name="msg_login_failed">Login failed: %1$s</string>
     <string name="msg_login_could_not_start">Could not start login: %1$s</string>
+    <string name="msg_login_browser_open_failed">Could not open the browser. Install or enable a browser, then try again.</string>
     <string name="msg_carousel_options_saved">Carousel options saved.</string>
     <string name="msg_no_active_account">No active account.</string>
     <string name="msg_disk_cache_cleared">On-disk image cache cleared (active account).</string>

@@ -119,6 +119,7 @@
     <string name="msg_login_complete_saved">Sesión completada: credenciales guardadas (contraseña de aplicación).</string>
     <string name="msg_login_failed">Error de inicio de sesión: %1$s</string>
     <string name="msg_login_could_not_start">No se pudo iniciar el inicio de sesión: %1$s</string>
+    <string name="msg_login_browser_open_failed">Could not open the browser. Install or enable a browser, then try again.</string>
     <string name="msg_carousel_options_saved">Opciones del carrusel guardadas.</string>
     <string name="msg_no_active_account">No hay cuenta activa.</string>
     <string name="msg_disk_cache_cleared">Caché de imágenes en disco vaciada (cuenta activa).</string>

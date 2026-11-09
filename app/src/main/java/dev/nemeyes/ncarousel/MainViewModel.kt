@@ -38,6 +38,7 @@ import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
+import dev.nemeyes.ncarousel.ui.ExternalBrowser
 import dev.nemeyes.ncarousel.ui.login.LoginWizardStep
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
@@ -718,7 +719,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val started = flow.start(base)
                 started.fold(
                     onSuccess = { start ->
-                        _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
+                        // Open before polling so a missing browser fails fast (no 20‑minute wait).
+                        // Application context is OK: ExternalBrowser adds NEW_TASK when needed.
+                        if (!ExternalBrowser.open(getApplication(), start.loginUrl)) {
+                            _ui.update {
+                                it.copy(statusMessage = appStr(R.string.msg_login_browser_open_failed))
+                            }
+                            return@fold
+                        }
                         _ui.update { it.copy(statusMessage = appStr(R.string.status_complete_login_browser)) }
                         val polled = flow.pollUntilDone(
                             start.pollEndpoint,

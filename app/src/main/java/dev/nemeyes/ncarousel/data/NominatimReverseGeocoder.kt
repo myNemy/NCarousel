@@ -15,6 +15,10 @@ object NominatimReverseGeocoder {
 
     private const val MAX_LABEL_LEN = 160
 
+    /** Identifiable UA with contact URL (Nominatim usage policy); keep out of Nextcloud Login Flow UA. */
+    private const val NOMINATIM_USER_AGENT =
+        "NCarousel (Android; +https://github.com/myNemy/NCarousel)"
+
     fun reverse(http: OkHttpClient, lat: Double, lon: Double, acceptLanguage: String): String? {
         val url = "https://nominatim.openstreetmap.org/reverse"
             .toHttpUrl()
@@ -27,6 +31,7 @@ object NominatimReverseGeocoder {
         val req = Request.Builder()
             .url(url)
             .header("Accept", "application/json")
+            .header("User-Agent", NOMINATIM_USER_AGENT)
             .get()
             .build()
         http.newCall(req).execute().use { res ->

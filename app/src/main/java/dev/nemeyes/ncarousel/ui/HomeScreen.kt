@@ -60,7 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -180,8 +179,7 @@ fun HomeScreen(viewModel: MainViewModel) {
         viewModel.events.collect { ev ->
             when (ev) {
                 is UiEvent.OpenUrl -> {
-                    val intent = CustomTabsIntent.Builder().build()
-                    intent.launchUrl(context, android.net.Uri.parse(ev.url))
+                    ExternalBrowser.open(context, ev.url)
                 }
                 UiEvent.RequestIgnoreBatteryOptimizations -> {
                     BatteryOptimizationHelper.startExemptionRequest(context)
@@ -546,8 +544,7 @@ private fun AuthenticatedShell(
                     KofiDrawerSupport(
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val intent = CustomTabsIntent.Builder().build()
-                            intent.launchUrl(context, android.net.Uri.parse(KOFI_SUPPORT_URL))
+                            ExternalBrowser.open(context, KOFI_SUPPORT_URL)
                         },
                     )
                 }
@@ -802,10 +799,7 @@ private fun AuthenticatedShell(
                         ) { inner ->
                             AboutScreen(
                                 modifier = Modifier.padding(inner),
-                                onOpenUrl = { url ->
-                                    val intent = CustomTabsIntent.Builder().build()
-                                    intent.launchUrl(context, android.net.Uri.parse(url))
-                                },
+                                onOpenUrl = { url -> ExternalBrowser.open(context, url) },
                             )
                         }
                     }

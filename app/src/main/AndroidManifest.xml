@@ -12,10 +12,16 @@
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <!-- Package visibility for Nextcloud Files (SSO). Merged again from the SSO library. -->
+    <!-- https VIEW: helps resolve Custom Tabs / default browser on API 30+ (Login Flow v2). -->
     <queries>
         <package android:name="com.nextcloud.client" />
         <package android:name="com.nextcloud.android.beta" />
         <package android:name="com.nextcloud.android.qa" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 
     <application

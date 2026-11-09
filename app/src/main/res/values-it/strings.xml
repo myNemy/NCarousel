@@ -125,6 +125,7 @@
     <string name="msg_login_complete_saved">Login completato: credenziali salvate (app password).</string>
     <string name="msg_login_failed">Login fallito: %1$s</string>
     <string name="msg_login_could_not_start">Impossibile avviare login: %1$s</string>
+    <string name="msg_login_browser_open_failed">Impossibile aprire il browser. Installa o abilita un browser, poi riprova.</string>
     <string name="msg_carousel_options_saved">Opzioni carosello salvate.</string>
     <string name="msg_no_active_account">Nessun account attivo.</string>
     <string name="msg_disk_cache_cleared">Cache immagini sul disco svuotata (account attivo).</string>

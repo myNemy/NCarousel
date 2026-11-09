@@ -119,6 +119,7 @@
     <string name="msg_login_complete_saved">Přihlášení dokončeno: údaje uloženy (heslo aplikace).</string>
     <string name="msg_login_failed">Přihlášení selhalo: %1$s</string>
     <string name="msg_login_could_not_start">Nelze spustit přihlášení: %1$s</string>
+    <string name="msg_login_browser_open_failed">Could not open the browser. Install or enable a browser, then try again.</string>
     <string name="msg_carousel_options_saved">Možnosti karuselu uloženy.</string>
     <string name="msg_no_active_account">Žádný aktivní účet.</string>
     <string name="msg_disk_cache_cleared">Mezipaměť obrázků na disku vymazána (aktivní účet).</string>

@@ -119,6 +119,7 @@
     <string name="msg_login_complete_saved">Connexion terminée : identifiants enregistrés (mot de passe d\'application).</string>
     <string name="msg_login_failed">Échec de la connexion : %1$s</string>
     <string name="msg_login_could_not_start">Impossible de démarrer la connexion : %1$s</string>
+    <string name="msg_login_browser_open_failed">Could not open the browser. Install or enable a browser, then try again.</string>
     <string name="msg_carousel_options_saved">Options du carrousel enregistrées.</string>
     <string name="msg_no_active_account">Aucun compte actif.</string>
     <string name="msg_disk_cache_cleared">Cache d\'images sur disque vidé (compte actif).</string>
