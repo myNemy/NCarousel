@@ -891,10 +891,7 @@ fun LibraryScreen(
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
                                 val loadThumb =
-                                    remoteThumbnailsEnabled &&
-                                        thumbsSettled &&
-                                        !isContentScrolling &&
-                                        row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
                                 ListItem(
                                     leadingContent = {
                                         LibraryThumbnail(
@@ -1032,10 +1029,7 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val loadThumb =
-                                    remoteThumbnailsEnabled &&
-                                        thumbsSettled &&
-                                        !isContentScrolling &&
-                                        row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
                                 LibraryGridCell(
                                     ctx = ctx,
                                     state = state,
@@ -1445,63 +1439,47 @@ private fun LibraryThumbnail(
 
     val previewLoader = remember(ctx) { LibraryPreviewImageLoader.get(ctx) }
 
-    // Prefer OkHttp + Basic Auth for thumbs (v0.2.55). SSO listing still uses NextcloudAPI;
-    // per-thumb binder GETs refused connections on large libraries even when single-flight.
-    val authUser: String
-    val authPass: String
     if (state.accountUsesSso) {
         val ssoName = state.ssoAccountName
-        if (ssoName.isNullOrBlank() || state.serverUrl.isBlank()) {
+        val userId = state.username
+        if (ssoName.isNullOrBlank() || userId.isBlank()) {
             Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
             return
         }
-        val ssoAuth = remember(ssoName) { SsoPreviewAuth.load(ctx, ssoName) }
-        if (ssoAuth == null) {
-            // Token unavailable (Files locked / account gone): binder fallback, still gated.
-            val userId = state.username
-            if (userId.isBlank()) {
-                Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
-                return
-            }
-            val model = remember(ssoName, userId, fileId, sizePx) {
-                ImageRequest.Builder(ctx)
-                    .data(
-                        SsoPreviewData(
-                            ssoAccountName = ssoName,
-                            davUserId = userId,
-                            fileId = fileId,
-                            sizePx = sizePx,
-                        ),
-                    )
-                    .size(sizePx)
-                    .build()
-            }
-            AsyncImage(
-                model = model,
-                imageLoader = previewLoader,
-                contentDescription = null,
-                contentScale = contentScale,
-                alignment = alignment,
-                modifier = imageModifier,
-            )
-            return
+        val model = remember(ssoName, userId, fileId, sizePx) {
+            ImageRequest.Builder(ctx)
+                .data(
+                    SsoPreviewData(
+                        ssoAccountName = ssoName,
+                        davUserId = userId,
+                        fileId = fileId,
+                        sizePx = sizePx,
+                    ),
+                )
+                .size(sizePx)
+                .build()
         }
-        authUser = ssoAuth.userId
-        authPass = ssoAuth.token
-    } else if (state.serverUrl.isBlank() || state.loginName.isBlank() || state.password.isBlank()) {
-        Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        AsyncImage(
+            model = model,
+            imageLoader = previewLoader,
+            contentDescription = null,
+            contentScale = contentScale,
+            alignment = alignment,
+            modifier = imageModifier,
+        )
         return
-    } else {
-        authUser = state.loginName
-        authPass = state.password
     }
 
+    if (state.serverUrl.isBlank() || state.loginName.isBlank() || state.password.isBlank()) {
+        Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        return
+    }
     val url = remember(state.serverUrl, fileId, sizePx) { previewUrl(state.serverUrl, fileId, sizePx) }
-    val model = remember(url, authUser, authPass, sizePx) {
+    val model = remember(url, state.loginName, state.password, sizePx) {
         ImageRequest.Builder(ctx)
             .data(url)
             .size(sizePx)
-            .addHeader("Authorization", Credentials.basic(authUser, authPass))
+            .addHeader("Authorization", Credentials.basic(state.loginName, state.password))
             .build()
     }
     AsyncImage(
