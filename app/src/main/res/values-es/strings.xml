@@ -273,13 +273,16 @@
     <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_thumbs_sso_cd">Remote thumbnails unavailable for SSO-only account</string>
     <string name="nc_library_thumbs_sso_hint">SSO-only: Library auto-thumbnails are off. Complete browser Login Flow in Settings to enable them.</string>
+
+    <string name="nc_library_thumb_placeholder">Miniatura de imagen</string>
     <string name="nc_library_current_wallpaper_short">Actual</string>
     <string name="nc_library_preview">Vista previa</string>
     <string name="nc_library_preview_apply">Establecer como fondo</string>
     <string name="nc_library_preview_apply_only">Solo establecer fondo</string>
     <string name="nc_library_preview_apply_advance">Establecer y avanzar carrusel</string>
     <string name="nc_library_preview_close">Cerrar</string>
-    <string name="nc_library_preview_frame_hint">Arrastra para encuadrar · doble toque para centrar</string>
+    <string name="nc_library_preview_frame_hint">El marco coincide con la pantalla · arrastra para encuadrar · doble toque para centrar</string>
+    <string name="nc_library_preview_frame_guide">Área de recorte del fondo (pantalla del dispositivo)</string>
     <string name="nc_library_preview_adjust_frame">Encuadrar</string>
     <string name="nc_library_preview_view_full">Imagen completa</string>
     <string name="nc_library_share">Compartir imagen</string>

@@ -100,6 +100,12 @@ class WallpaperRepository(private val context: Context) {
     }
 
     /**
+     * Pixel size used when applying wallpaper (physical panel). Same as Library framing guide.
+     * Prefer this over [WallpaperManager.desiredMinimumWidth], which is often ~2× for parallax.
+     */
+    fun wallpaperTargetSizePx(): Pair<Int, Int> = resolveTargetBitmapSize()
+
+    /**
      * Prefer physical display size so home and lock match. [WallpaperManager.desiredMinimumWidth]
      * is often ~2× screen width for scrolling wallpapers; using it alone misaligns lock on many
      * OEMs. If desired is unset (≤0), platform docs also say to use the display size—never 1×1.

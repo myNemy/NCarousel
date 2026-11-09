@@ -273,13 +273,16 @@
     <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_thumbs_sso_cd">Remote thumbnails unavailable for SSO-only account</string>
     <string name="nc_library_thumbs_sso_hint">SSO-only: Library auto-thumbnails are off. Complete browser Login Flow in Settings to enable them.</string>
+
+    <string name="nc_library_thumb_placeholder">Afbeeldingsminiatuur</string>
     <string name="nc_library_current_wallpaper_short">Huidig</string>
     <string name="nc_library_preview">Voorbeeld</string>
     <string name="nc_library_preview_apply">Instellen als achtergrond</string>
     <string name="nc_library_preview_apply_only">Alleen als achtergrond</string>
     <string name="nc_library_preview_apply_advance">Instellen en carrousel doorzetten</string>
     <string name="nc_library_preview_close">Sluiten</string>
-    <string name="nc_library_preview_frame_hint">Sleep om in te kaderen · dubbeltik om te centreren</string>
+    <string name="nc_library_preview_frame_hint">Kader volgt scherm · sleep om in te kaderen · dubbeltik om te centreren</string>
+    <string name="nc_library_preview_frame_guide">Wallpaper-uitsnede (apparaatscherm)</string>
     <string name="nc_library_preview_adjust_frame">Kaderen</string>
     <string name="nc_library_preview_view_full">Hele afbeelding</string>
     <string name="nc_library_share">Afbeelding delen</string>

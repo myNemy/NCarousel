@@ -273,13 +273,16 @@
     <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_thumbs_sso_cd">Remote thumbnails unavailable for SSO-only account</string>
     <string name="nc_library_thumbs_sso_hint">SSO-only: Library auto-thumbnails are off. Complete browser Login Flow in Settings to enable them.</string>
+
+    <string name="nc_library_thumb_placeholder">Μικρογραφία εικόνας</string>
     <string name="nc_library_current_wallpaper_short">Τρέχουσα</string>
     <string name="nc_library_preview">Προεπισκόπηση</string>
     <string name="nc_library_preview_apply">Ορισμός ως ταπετσαρία</string>
     <string name="nc_library_preview_apply_only">Μόνο ορισμός ταπετσαρίας</string>
     <string name="nc_library_preview_apply_advance">Ορισμός και προώθηση καρουζέλ</string>
     <string name="nc_library_preview_close">Κλείσιμο</string>
-    <string name="nc_library_preview_frame_hint">Σύρετε για καδράρισμα · διπλό πάτημα για κέντρο</string>
+    <string name="nc_library_preview_frame_hint">Το πλαίσιο ταιριάζει στην οθόνη · σύρετε για καδράρισμα · διπλό πάτημα για κέντρο</string>
+    <string name="nc_library_preview_frame_guide">Περιοχή περικοπής ταπετσαρίας (οθόνη συσκευής)</string>
     <string name="nc_library_preview_adjust_frame">Καδράρισμα</string>
     <string name="nc_library_preview_view_full">Ολόκληρη εικόνα</string>
     <string name="nc_library_share">Κοινοποίηση εικόνας</string>

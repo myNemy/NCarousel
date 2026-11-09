@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -98,13 +99,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -119,9 +128,11 @@ import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CropOffset
 import dev.nemeyes.ncarousel.data.WallpaperCropMode
+import dev.nemeyes.ncarousel.data.WallpaperRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
+import kotlin.math.max
 
 private enum class LibrarySortMode { NAME, FOLDERS, DATE, INDEX }
 
@@ -1106,8 +1117,9 @@ fun LibraryScreen(
 /**
  * Preview image gestures:
  * - Full view (default): ContentScale.Fit + pinch-to-zoom / pan.
- * - Framing mode (Cover/Center only, via toggle): Crop + drag offset; pinch for inspect.
- * Double-tap: if zoomed, reset zoom; else if framing, reset crop offset to center.
+ * - Framing mode (Cover/Center only, via toggle): Crop inside a guide matching the physical
+ *   display aspect (same target as [WallpaperRepository.wallpaperTargetSizePx]); drag offset;
+ *   pinch for inspect. Double-tap: if zoomed, reset zoom; else if framing, reset crop to center.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -1119,6 +1131,13 @@ private fun ZoomablePreviewPane(
     modifier: Modifier = Modifier,
     content: @Composable (imageModifier: Modifier, contentScale: ContentScale, alignment: Alignment) -> Unit,
 ) {
+    val context = LocalContext.current
+    val displayAspect = remember(framingEnabled) {
+        if (!framingEnabled) return@remember 0f
+        val (sw, sh) = WallpaperRepository(context).wallpaperTargetSizePx()
+        max(1, sw).toFloat() / max(1, sh).toFloat()
+    }
+    val displayAspectState = rememberUpdatedState(displayAspect)
     var scale by remember(resetKey) { mutableFloatStateOf(1f) }
     var inspectPanX by remember(resetKey) { mutableFloatStateOf(0f) }
     var inspectPanY by remember(resetKey) { mutableFloatStateOf(0f) }
@@ -1137,6 +1156,13 @@ private fun ZoomablePreviewPane(
         }
     }
 
+    val imageLayer = Modifier.graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+        translationX = inspectPanX
+        translationY = inspectPanY
+    }
+
     Box(
         modifier = modifier
             .clipToBounds()
@@ -1145,16 +1171,19 @@ private fun ZoomablePreviewPane(
                 // When framing at 1×, leave drag to crop-offset gestures; pan only while inspecting.
                 canPan = { !framingEnabled || inspecting },
             )
-            .pointerInput(resetKey, framingEnabled, inspecting) {
+            .pointerInput(resetKey, framingEnabled, inspecting, displayAspect) {
                 if (framingEnabled && !inspecting) {
                     detectDragGestures { _, dragAmount ->
-                        val w = size.width.toFloat().coerceAtLeast(1f)
-                        val h = size.height.toFloat().coerceAtLeast(1f)
+                        val aspect = displayAspectState.value
+                        val paneW = size.width.toFloat().coerceAtLeast(1f)
+                        val paneH = size.height.toFloat().coerceAtLeast(1f)
+                        val (guideW, guideH) = fitRectInside(paneW, paneH, aspect)
                         val current = cropOffsetState.value
                         // Drag image with finger: content moves with drag → bias decreases.
+                        // Sensitivity uses the display-aspect guide (wallpaper crop window).
                         val next = CropOffset(
-                            x = (current.x - dragAmount.x / (w * 0.5f)).coerceIn(-1f, 1f),
-                            y = (current.y - dragAmount.y / (h * 0.5f)).coerceIn(-1f, 1f),
+                            x = (current.x - dragAmount.x / (guideW * 0.5f)).coerceIn(-1f, 1f),
+                            y = (current.y - dragAmount.y / (guideH * 0.5f)).coerceIn(-1f, 1f),
                         )
                         onCropOffsetChangeState.value(next)
                     }
@@ -1179,21 +1208,91 @@ private fun ZoomablePreviewPane(
             },
         contentAlignment = Alignment.Center,
     ) {
-        val contentScale = if (framingEnabled) ContentScale.Crop else ContentScale.Fit
-        val alignment: Alignment = if (framingEnabled) {
-            BiasAlignment(cropOffset.x, cropOffset.y)
+        if (framingEnabled && displayAspect > 0f) {
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                val guideModifier =
+                    if (maxWidth / maxHeight > displayAspect) {
+                        Modifier.fillMaxHeight().aspectRatio(displayAspect)
+                    } else {
+                        Modifier.fillMaxWidth().aspectRatio(displayAspect)
+                    }
+                Box(
+                    modifier = guideModifier.clipToBounds(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    content(
+                        imageLayer.fillMaxSize(),
+                        ContentScale.Crop,
+                        BiasAlignment(cropOffset.x, cropOffset.y),
+                    )
+                }
+                FramingCropGuideOverlay(
+                    displayAspect = displayAspect,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         } else {
-            Alignment.Center
+            content(
+                imageLayer.fillMaxSize(),
+                ContentScale.Fit,
+                Alignment.Center,
+            )
         }
-        content(
-            Modifier.graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                translationX = inspectPanX
-                translationY = inspectPanY
-            },
-            contentScale,
-            alignment,
+    }
+}
+
+/** Largest rect of [aspect] (width/height) that fits inside [paneW]×[paneH]. */
+private fun fitRectInside(paneW: Float, paneH: Float, aspect: Float): Pair<Float, Float> {
+    val safeAspect = aspect.coerceAtLeast(1e-4f)
+    return if (paneW / paneH > safeAspect) {
+        val h = paneH
+        (h * safeAspect) to h
+    } else {
+        val w = paneW
+        w to (w / safeAspect)
+    }
+}
+
+/**
+ * Letterbox scrim + dual-tone border around the physical-display crop window.
+ * Readable on both light and dark image content.
+ */
+@Composable
+private fun FramingCropGuideOverlay(
+    displayAspect: Float,
+    modifier: Modifier = Modifier,
+) {
+    val guideLabel = stringResource(R.string.nc_library_preview_frame_guide)
+    Canvas(
+        modifier = modifier.semantics {
+            contentDescription = guideLabel
+        },
+    ) {
+        val (guideW, guideH) = fitRectInside(size.width, size.height, displayAspect)
+        val left = (size.width - guideW) / 2f
+        val top = (size.height - guideH) / 2f
+        val hole = Rect(left, top, left + guideW, top + guideH)
+        val scrim = Path().apply {
+            fillType = PathFillType.EvenOdd
+            addRect(Rect(Offset.Zero, size))
+            addRect(hole)
+        }
+        drawPath(scrim, Color.Black.copy(alpha = 0.55f))
+        // Outer dark stroke then light stroke so the edge reads on any photo.
+        drawRect(
+            color = Color.Black.copy(alpha = 0.55f),
+            topLeft = Offset(left, top),
+            size = Size(guideW, guideH),
+            style = Stroke(width = 3.dp.toPx()),
+        )
+        drawRect(
+            color = Color.White.copy(alpha = 0.92f),
+            topLeft = Offset(left, top),
+            size = Size(guideW, guideH),
+            style = Stroke(width = 1.5.dp.toPx()),
         )
     }
 }
@@ -1452,14 +1551,12 @@ private fun LibraryThumbnail(
             Modifier.clip(RoundedCornerShape(8.dp))
         },
     )
-    // Off / not visible / missing fileId → placeholder (no /core/preview). Leaving composition
-    // or flipping loadRemote off cancels in-flight Coil work (same idea as v0.2.55 AsyncImage).
+    // Off / not visible / missing fileId → icon placeholder (no /core/preview). Leaving
+    // composition or flipping loadRemote off cancels in-flight Coil work (v0.2.55-style).
     // Cell thumbs never pass loadRemote=true for SSO accounts; fullscreen may still request
     // one on-demand preview via NextcloudAPI (not SSO token as Basic Auth).
     if (!loadRemote || fileId == null) {
-        Box(
-            modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
-        )
+        LibraryThumbPlaceholder(modifier = imageModifier)
         return
     }
 
@@ -1471,7 +1568,7 @@ private fun LibraryThumbnail(
         val ssoName = state.ssoAccountName
         val userId = state.username
         if (ssoName.isNullOrBlank() || userId.isBlank()) {
-            Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+            LibraryThumbPlaceholder(modifier = imageModifier)
             return
         }
         val model = remember(ssoName, userId, fileId, sizePx) {
@@ -1487,19 +1584,23 @@ private fun LibraryThumbnail(
                 .size(sizePx)
                 .build()
         }
-        AsyncImage(
-            model = model,
-            imageLoader = previewLoader,
-            contentDescription = null,
-            contentScale = contentScale,
-            alignment = alignment,
-            modifier = imageModifier,
-        )
+        // Icon underneath so loading / failed SSO previews are not blank boxes.
+        Box(modifier = imageModifier) {
+            LibraryThumbPlaceholder(modifier = Modifier.fillMaxSize())
+            AsyncImage(
+                model = model,
+                imageLoader = previewLoader,
+                contentDescription = null,
+                contentScale = contentScale,
+                alignment = alignment,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         return
     }
 
     if (state.serverUrl.isBlank() || state.loginName.isBlank() || state.password.isBlank()) {
-        Box(modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        LibraryThumbPlaceholder(modifier = imageModifier)
         return
     }
     val url = remember(state.serverUrl, fileId, sizePx) { previewUrl(state.serverUrl, fileId, sizePx) }
@@ -1518,6 +1619,22 @@ private fun LibraryThumbnail(
         alignment = alignment,
         modifier = imageModifier,
     )
+}
+
+/** Material image icon when remote thumbs are off, unavailable, or still loading (SSO). */
+@Composable
+private fun LibraryThumbPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Image,
+            contentDescription = stringResource(R.string.nc_library_thumb_placeholder),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            modifier = Modifier.fillMaxSize(0.45f),
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)

@@ -273,13 +273,16 @@
     <string name="nc_library_thumbs_disable">Hide remote thumbnails</string>
     <string name="nc_library_thumbs_sso_cd">Remote thumbnails unavailable for SSO-only account</string>
     <string name="nc_library_thumbs_sso_hint">SSO-only: Library auto-thumbnails are off. Complete browser Login Flow in Settings to enable them.</string>
+
+    <string name="nc_library_thumb_placeholder">Bildvorschau</string>
     <string name="nc_library_current_wallpaper_short">Aktuell</string>
     <string name="nc_library_preview">Vorschau</string>
     <string name="nc_library_preview_apply">Als Hintergrundbild festlegen</string>
     <string name="nc_library_preview_apply_only">Nur als Hintergrund setzen</string>
     <string name="nc_library_preview_apply_advance">Setzen und Karussell fortsetzen</string>
     <string name="nc_library_preview_close">Schließen</string>
-    <string name="nc_library_preview_frame_hint">Ziehen zum Ausrichten · Doppeltipp zum Zentrieren</string>
+    <string name="nc_library_preview_frame_hint">Rahmen = Display · Ziehen zum Ausrichten · Doppeltipp zum Zentrieren</string>
+    <string name="nc_library_preview_frame_guide">Wallpaper-Ausschnitt (Gerätedisplay)</string>
     <string name="nc_library_preview_adjust_frame">Ausrichten</string>
     <string name="nc_library_preview_view_full">Ganzes Bild</string>
     <string name="nc_library_share">Bild teilen</string>
