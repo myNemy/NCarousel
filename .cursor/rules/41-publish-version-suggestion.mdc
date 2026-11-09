@@ -21,7 +21,7 @@ Run this **before** step **D.3** bump / changelog edits:
 2. Inspect commits on this repo only: `git log main..dev --oneline` (and skim bodies with `git log main..dev` if subjects are weak).
 3. Classify the ship set (highest wins):
    - **major** — breaking user/API/data migration that intentionally breaks old installs or settings contracts.
-   - **minor** — new user-visible capability / feature (`feat`, SSO, folder browser, new Settings surface, Library mode, etc.), even if commit prefixes are weak or say `fix`.
+   - **minor** — new user-visible capability / feature (`feat`, folder browser, new Settings surface, Library mode, etc.), even if commit prefixes are weak or say `fix`.
    - **patch** — fixes, chore, docs-only that still touch the APK, small UX polish without a new capability.
 4. Propose exact next numbers from current `X.Y.Z` / `versionCode`:
    - **patch** → `X.Y.(Z+1)`
@@ -46,7 +46,7 @@ Continue workflow **D** as usual: merge → apply the **confirmed** bump + Fastl
 
 | Signal in `main..dev` | Prefer |
 |----------------------|--------|
-| SSO login, remote folder browser, new Library/Settings capability | **minor** |
+| Remote folder browser, new Library/Settings capability | **minor** |
 | Bugfix, undercount, crash, polish of existing UI | **patch** |
 | Breaking settings schema / remove required permission without migration | **major** |
 

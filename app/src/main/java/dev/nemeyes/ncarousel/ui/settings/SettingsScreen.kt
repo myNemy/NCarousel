@@ -366,7 +366,7 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.folder_picker_browse))
             }
-            Button(
+            OutlinedButton(
                 onClick = onLoginSso,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),

@@ -64,9 +64,9 @@ fi
 
 # Notable product features even with weak prefixes
 if [[ "$level" != "major" ]]; then
-  if has 'sso|folder browser|browse cartell|remote folder|feat(\(|:|/)|add:|new (settings|library|login)|user-visible'; then
+  if has 'folder browser|browse cartell|remote folder|feat(\(|:|/)|add:|new (settings|library|login)|user-visible'; then
     level="minor"
-    reasons+=("new user-visible capability signals (e.g. feat/SSO/folder browser)")
+    reasons+=("new user-visible capability signals (e.g. feat/folder browser)")
   elif has '^[^ ]* feat|feat:'; then
     level="minor"
     reasons+=("feat-style commit subjects")

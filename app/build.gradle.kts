@@ -166,6 +166,8 @@ dependencies {
 
     // Nextcloud Files SSO. 1.3.3+ pulls Retrofit 3 / Kotlin 2.2 stdlib (breaks Kotlin 2.0.21 + AGP 8.9);
     // 1.3.5+ also needs compileSdk 37. Import UI: local trampoline [dev.nemeyes.ncarousel.sso.ImportSsoAccount].
+    // Official path: https://docs.nextcloud.com/server/latest/developer_manual/client_apis/android_library/index.html
+    // Network must use NextcloudAPI (never SSO token as OkHttp Basic Auth).
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("com.github.nextcloud:Android-SingleSignOn:1.3.2")
     implementation("com.google.code.gson:gson:2.11.0")

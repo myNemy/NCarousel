@@ -19,10 +19,13 @@ import dev.nemeyes.ncarousel.data.ImageShareHelper
 import dev.nemeyes.ncarousel.data.ImageSyncRepository
 import dev.nemeyes.ncarousel.data.LastAppliedWallpaperStore
 import dev.nemeyes.ncarousel.data.NextcloudLoginFlowV2
+import dev.nemeyes.ncarousel.data.NextcloudServerProbe
+import dev.nemeyes.ncarousel.data.NextcloudServerUrl
 import dev.nemeyes.ncarousel.data.NextWallpaperApplicator
 import dev.nemeyes.ncarousel.data.NextcloudDavAccess
 import dev.nemeyes.ncarousel.data.NextcloudDavAccessFactory
 import dev.nemeyes.ncarousel.data.NextcloudWebDavClient
+import dev.nemeyes.ncarousel.data.SsoNextcloudDavAccess
 import dev.nemeyes.ncarousel.data.GeocoderOrderMode
 import dev.nemeyes.ncarousel.data.OrderMode
 import dev.nemeyes.ncarousel.data.WallpaperCropMode
@@ -35,6 +38,7 @@ import dev.nemeyes.ncarousel.data.accounts.NextcloudAccountStore
 import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.ocs.OcsCapabilitiesClient
 import dev.nemeyes.ncarousel.data.ocs.OcsUserClient
+import dev.nemeyes.ncarousel.ui.login.LoginWizardStep
 import dev.nemeyes.ncarousel.work.HomeWallpaperResync
 import dev.nemeyes.ncarousel.work.WallpaperWorkScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,6 +86,12 @@ data class MainUiState(
     val geocoderOrderMode: GeocoderOrderMode = GeocoderOrderMode.NOMINATIM_FIRST,
     /** First launch: show consent dialog and request notification permission where required. */
     val needsInitialConsent: Boolean = false,
+    /** Empty-account wizard: server URL first, then browser / app-password sign-in. */
+    val loginWizardStep: LoginWizardStep = LoginWizardStep.SERVER,
+    /** Short label from status.php after a successful probe (product + version). */
+    val serverProbeLabel: String? = null,
+    /** Expand username / app-password fields on the sign-in step. */
+    val showManualLoginFields: Boolean = false,
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
@@ -129,7 +139,7 @@ data class AccountUi(
 sealed interface UiEvent {
     data class OpenUrl(val url: String) : UiEvent
     data object RequestIgnoreBatteryOptimizations : UiEvent
-    /** Launch Nextcloud Files SSO account picker ([com.nextcloud.android.sso.ImportSsoAccount]). */
+    /** Launch Nextcloud Files SSO account picker ([dev.nemeyes.ncarousel.sso.ImportSsoAccount]). */
     data object RequestSsoImport : UiEvent
     /**
      * Refresh found no images under [folderLabel] (blank / default → Photos).
@@ -286,10 +296,98 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateServerUrl(value: String) = _ui.update { it.copy(serverUrl = value) }
+    fun updateServerUrl(value: String) {
+        val s = _ui.value
+        if (!s.hasActiveAccount && s.serverUrl != value) {
+            // Drop in-flight status.php / login poll when editing on the empty-account wizard.
+            loginJob?.cancel()
+            clearBusyState()
+            _ui.update {
+                it.copy(
+                    serverUrl = value,
+                    serverProbeLabel = null,
+                    loginWizardStep = LoginWizardStep.SERVER,
+                    showManualLoginFields = false,
+                )
+            }
+        } else {
+            _ui.update { it.copy(serverUrl = value) }
+        }
+    }
     fun updateUsername(value: String) = _ui.update { it.copy(username = value, loginName = value) }
     fun updatePassword(value: String) = _ui.update { it.copy(password = value) }
     fun updateRemoteFolder(value: String) = _ui.update { it.copy(remoteFolder = value) }
+
+    fun backToLoginServerStep() {
+        _ui.update {
+            it.copy(
+                loginWizardStep = LoginWizardStep.SERVER,
+                showManualLoginFields = false,
+                serverProbeLabel = null,
+            )
+        }
+    }
+
+    fun toggleManualLoginFields() {
+        _ui.update { it.copy(showManualLoginFields = !it.showManualLoginFields) }
+    }
+
+    fun checkServerAndContinueLogin() {
+        val raw = _ui.value.serverUrl
+        if (raw.isBlank()) {
+            _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_server_url)) }
+            return
+        }
+        loginJob?.cancel()
+        loginJob = viewModelScope.launch {
+            val token = beginBusy()
+            _ui.update { it.copy(statusMessage = appStr(R.string.status_checking_server)) }
+            try {
+                when (val outcome = NextcloudServerProbe(http).probe(raw)) {
+                    is NextcloudServerProbe.Outcome.Success -> {
+                        val ok = outcome.ok
+                        val label = if (ok.versionString.isBlank()) {
+                            ok.productName
+                        } else {
+                            "${ok.productName} ${ok.versionString}"
+                        }
+                        _ui.update {
+                            it.copy(
+                                serverUrl = ok.normalizedBaseUrl,
+                                serverProbeLabel = label,
+                                loginWizardStep = LoginWizardStep.SIGN_IN,
+                                statusMessage = appStr(R.string.msg_server_reachable, label),
+                            )
+                        }
+                    }
+                    is NextcloudServerProbe.Outcome.Error -> {
+                        _ui.update {
+                            it.copy(
+                                loginWizardStep = LoginWizardStep.SERVER,
+                                serverProbeLabel = null,
+                                statusMessage = probeFailureMessage(outcome.failure),
+                            )
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } finally {
+                endBusy(token)
+            }
+        }
+    }
+
+    private fun probeFailureMessage(failure: NextcloudServerProbe.Failure): String = when (failure) {
+        NextcloudServerProbe.Failure.HttpsRequired -> appStr(R.string.msg_https_required)
+        NextcloudServerProbe.Failure.InvalidUrl -> appStr(R.string.msg_server_url_invalid)
+        NextcloudServerProbe.Failure.Unreachable -> appStr(R.string.msg_server_unreachable)
+        NextcloudServerProbe.Failure.NotNextcloud -> appStr(R.string.msg_server_not_nextcloud)
+        NextcloudServerProbe.Failure.NotInstalled -> appStr(R.string.msg_server_not_installed)
+        NextcloudServerProbe.Failure.Maintenance -> appStr(R.string.msg_server_maintenance)
+        is NextcloudServerProbe.Failure.Http ->
+            appStr(R.string.msg_server_http_error, failure.code)
+    }
     fun updateOrderMode(value: OrderMode) = _ui.update { it.copy(orderMode = value) }
     fun updateWallpaperTarget(value: WallpaperTarget) = _ui.update { it.copy(wallpaperTarget = value) }
     fun updateWallpaperCropMode(value: WallpaperCropMode) = _ui.update { it.copy(wallpaperCropMode = value) }
@@ -409,17 +507,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_url_user_password)) }
             return
         }
-        if (!s.serverUrl.trim().startsWith("https://", ignoreCase = true)) {
-            _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
+        val base = NextcloudServerUrl.normalizeHttpsBase(s.serverUrl).getOrElse { e ->
+            _ui.update {
+                it.copy(
+                    statusMessage = when (e.message) {
+                        "https_required" -> appStr(R.string.msg_https_required)
+                        else -> appStr(R.string.msg_server_url_invalid)
+                    },
+                )
+            }
             return
         }
         // Manual account: assume provided username is UID for WebDAV.
-        val acc = dev.nemeyes.ncarousel.data.accounts.NextcloudAccount(
-            serverBaseUrl = s.serverUrl,
+        val acc = NextcloudAccount(
+            serverBaseUrl = base,
             userId = s.username,
             loginName = s.username,
             appPassword = s.password,
+            // Login wizard omits folder (defaults Photos); Settings may set a path.
             remoteFolder = s.remoteFolder.ifBlank { "Photos" },
+            ssoAccountName = null,
         )
         accounts.upsert(acc)
         accounts.setActiveAccountId(acc.id)
@@ -431,6 +538,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ssoAccountName = null,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
+                serverUrl = base,
+                loginWizardStep = LoginWizardStep.SERVER,
+                showManualLoginFields = false,
+                serverProbeLabel = null,
                 statusMessage = appStr(R.string.msg_account_saved_encrypted),
                 instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
                 instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
@@ -446,7 +557,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Persists an account imported from Nextcloud Files SSO.
-     * Network for this account must use [NextcloudDavAccessFactory] (SSO bridge), not Basic Auth.
+     * Network for this account must use [NextcloudDavAccessFactory] (SSO / NextcloudAPI), not Basic Auth.
      */
     fun importSsoAccount(
         serverUrl: String,
@@ -495,6 +606,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ssoAccountName = name,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
+                loginWizardStep = LoginWizardStep.SERVER,
+                showManualLoginFields = false,
+                serverProbeLabel = null,
                 statusMessage = appStr(R.string.msg_sso_import_saved),
                 instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
                 instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
@@ -514,17 +628,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(statusMessage = appStr(R.string.msg_fill_server_url)) }
             return
         }
-        if (!s.serverUrl.trim().startsWith("https://", ignoreCase = true)) {
-            _ui.update { it.copy(statusMessage = appStr(R.string.msg_https_required)) }
+        val base = NextcloudServerUrl.normalizeHttpsBase(s.serverUrl).getOrElse { e ->
+            _ui.update {
+                it.copy(
+                    statusMessage = when (e.message) {
+                        "https_required" -> appStr(R.string.msg_https_required)
+                        else -> appStr(R.string.msg_server_url_invalid)
+                    },
+                )
+            }
             return
         }
         loginJob?.cancel()
         loginJob = viewModelScope.launch {
             val token = beginBusy()
-            _ui.update { it.copy(statusMessage = appStr(R.string.status_login_starting_nextcloud)) }
+            _ui.update {
+                it.copy(
+                    serverUrl = base,
+                    statusMessage = appStr(R.string.status_login_starting_nextcloud),
+                )
+            }
             try {
                 val flow = NextcloudLoginFlowV2(http)
-                val started = flow.start(s.serverUrl)
+                val started = flow.start(base)
                 started.fold(
                     onSuccess = { start ->
                         _events.tryEmit(UiEvent.OpenUrl(start.loginUrl))
@@ -532,18 +658,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         val polled = flow.pollUntilDone(
                             start.pollEndpoint,
                             start.pollToken,
-                            expectedServerBaseUrl = s.serverUrl,
+                            expectedServerBaseUrl = base,
                         )
                         polled.fold(
                             onSuccess = { ok ->
                                 val userId = OcsUserClient(http).fetchUserId(ok.server, ok.loginName, ok.appPassword)
                                     .getOrElse { ok.loginName }
-                                val acc = dev.nemeyes.ncarousel.data.accounts.NextcloudAccount(
+                                val acc = NextcloudAccount(
                                     serverBaseUrl = ok.server,
                                     userId = userId,
                                     loginName = ok.loginName,
                                     appPassword = ok.appPassword,
                                     remoteFolder = "Photos",
+                                    ssoAccountName = null,
                                 )
                                 accounts.upsert(acc)
                                 accounts.setActiveAccountId(acc.id)
@@ -551,8 +678,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     val active = accounts.getActiveAccount()
                                     it.copy(
                                         hasActiveAccount = true,
-                                        accountUsesSso = active?.usesSso == true,
-                                        ssoAccountName = active?.ssoAccountName,
+                                        accountUsesSso = false,
+                                        ssoAccountName = null,
                                         accounts = accountsUi(),
                                         activeAccountId = accounts.getActiveAccountId(),
                                         serverUrl = active?.serverBaseUrl.orEmpty(),
@@ -560,6 +687,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         loginName = active?.loginName.orEmpty(),
                                         password = active?.appPassword.orEmpty(),
                                         remoteFolder = active?.remoteFolder.orEmpty(),
+                                        loginWizardStep = LoginWizardStep.SERVER,
+                                        showManualLoginFields = false,
+                                        serverProbeLabel = null,
                                         statusMessage = appStr(R.string.msg_login_complete_saved),
                                         instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
                                         instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },
@@ -1296,7 +1426,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Lists immediate child folders under [relativePath] (empty = account root).
-     * Uses the active account when present; otherwise form credentials (non-SSO).
+     * Uses the active account when present; otherwise form credentials (Basic Auth).
      */
     fun listRemoteChildFolders(
         relativePath: String,
@@ -1484,6 +1614,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteAccount(id: String) {
         loginJob?.cancel()
         clearBusyState()
+        val removing = accounts.getAccounts().firstOrNull { it.id == id }
+        removing?.ssoAccountName?.takeIf { it.isNotBlank() }?.let { SsoNextcloudDavAccess.closeCached(it) }
         carousel.clearThemingForAccount(id)
         LastAppliedWallpaperStore.clearForAccount(getApplication(), id)
         ExcludedHrefStore(getApplication(), id).clear()
@@ -1503,6 +1635,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 loginName = a?.loginName.orEmpty(),
                 password = a?.appPassword.orEmpty(),
                 remoteFolder = a?.remoteFolder.orEmpty(),
+                loginWizardStep = LoginWizardStep.SERVER,
+                showManualLoginFields = false,
+                serverProbeLabel = null,
                 imageHrefs = emptyList(),
                 imageFileIds = emptyMap(),
                 imageLastModifiedEpochMs = emptyMap(),

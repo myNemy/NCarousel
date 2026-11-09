@@ -1,8 +1,7 @@
 package dev.nemeyes.ncarousel.data
 
 /**
- * File/WebDAV operations against a Nextcloud account.
- * Implementations: OkHttp Basic Auth ([NextcloudWebDavClient]) or Files-app SSO ([SsoNextcloudDavAccess]).
+ * File/WebDAV operations against a Nextcloud account (OkHttp Basic Auth).
  */
 interface NextcloudDavAccess {
     suspend fun verifyReachable(): Result<Unit>

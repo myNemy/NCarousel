@@ -890,7 +890,6 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
-                                // SSO thumbs: NextcloudAPI only (Android-SingleSignOn). Never SSO token→Basic Auth.
                                 val loadThumb =
                                     remoteThumbnailsEnabled &&
                                         thumbsSettled &&

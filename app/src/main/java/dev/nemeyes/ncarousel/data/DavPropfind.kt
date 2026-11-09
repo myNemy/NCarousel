@@ -5,7 +5,7 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
 
-/** Shared WebDAV PROPFIND body + Multistatus XML parsing for OkHttp and SSO clients. */
+/** Shared WebDAV PROPFIND body + Multistatus XML parsing for OkHttp WebDAV clients. */
 object DavPropfind {
 
     /**
@@ -154,7 +154,7 @@ object DavPropfind {
      * `/remote.php/dav/files/{user}/` (the `{user}` segment is stripped, not kept).
      *
      * [davUserId] is accepted for API compatibility; the first path segment after `files/` is
-     * always stripped so SSO/login-name vs UID mismatches do not drop whole subtrees.
+     * always stripped so login-name vs UID mismatches do not drop whole subtrees.
      *
      * RFC 4918 §8.3 relative refs in Multistatus are **path-absolute** (start with `/`) or
      * absolute-URI. Path-absolute hrefs that are not under `/remote.php/dav/files/` return

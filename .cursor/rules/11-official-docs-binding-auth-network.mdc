@@ -1,15 +1,22 @@
 ---
-description: Binding — official docs before any auth/SSO/WebDAV/preview network change
+description: Binding — official docs before any auth/WebDAV/preview network change
 alwaysApply: true
 ---
 
-# Official documentation is binding (auth / SSO / WebDAV / previews)
+# Official documentation is binding (auth / WebDAV / previews)
 
-This rule exists because inventing auth shortcuts (e.g. SSO token as OkHttp Basic Auth) caused real harm (Nextcloud user lockout). **No exceptions.**
+This rule exists because inventing auth shortcuts caused real harm (Nextcloud user lockout). **No exceptions.**
+
+## Allowed account paths
+
+1. **Login Flow v2** and/or **username + app password** over OkHttp Basic Auth (store app password in EncryptedSharedPreferences).
+2. **Nextcloud Files Android Single Sign-On** via the official Android-SingleSignOn library / `NextcloudAPI`, when the user depends on the Nextcloud Files app — as documented in the Android client APIs page.
+
+There is **no** approved “SSO token as OkHttp Basic Auth” bridge.
 
 ## Hard guarantee
 
-For **any** change that touches Nextcloud login, credentials, SSO, WebDAV, OCS, `/core/preview`, or how secrets leave the device:
+For **any** change that touches Nextcloud login, credentials, WebDAV, OCS, `/core/preview`, or how secrets leave the device:
 
 1. **Read the official doc first** (fetch/open the canonical page in-session). Do not rely on memory or analogy.
 2. **Cite the doc in chat** (URL + the constraint that applies) **before** writing or proposing code.
@@ -20,15 +27,20 @@ For **any** change that touches Nextcloud login, credentials, SSO, WebDAV, OCS, 
 
 - Nextcloud Login Flow (incl. v2): https://docs.nextcloud.com/server/latest/developer_manual/client_apis/LoginFlow/index.html
 - Nextcloud WebDAV: https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html
-- Android-SingleSignOn: https://github.com/nextcloud/Android-SingleSignOn/blob/master/README.md  
-  → SSO traffic uses **Nextcloud Files / NextcloudAPI**. Do **not** reuse SSO `token` as direct Basic Auth against the server unless the official SSO docs explicitly say so (they do not).
+- Nextcloud Android / SSO option: https://docs.nextcloud.com/server/latest/developer_manual/client_apis/android_library/index.html
+- Android-SingleSignOn usage: https://github.com/nextcloud/Android-SingleSignOn (network via `NextcloudAPI` / Files stack)
 - Android data at rest / EncryptedSharedPreferences (when storing secrets): Android developer docs current for the APIs in use.
 
 ## Explicitly forbidden
 
-- Using `SingleSignOnAccount.token` (or Files-derived secrets) as OkHttp/`Authorization: Basic` against Nextcloud for “thumbnails like pre-SSO”.
-- Bypassing Login Flow / SSO with ad-hoc password handling that contradicts Login Flow (“client never stores the user password”; prefer app passwords from the flow).
+- Bypassing Login Flow with ad-hoc password handling that contradicts Login Flow (“client never stores the user password”; prefer app passwords from the flow).
 - Claiming compliance without having opened the doc in that work session.
+- Using an SSO / AccountManager **token as OkHttp Basic Auth** (or any undocumented credential remapping) for WebDAV or `/core/preview`.
+- Reintroducing Files SSO **without** routing SSO account traffic through `NextcloudAPI` (or without a fresh docs check).
+
+## Library thumbs (product constraint)
+
+SSO accounts must share the same **LibraryPreviewGate** policy as Basic Auth (visible cells, settle delay, single-flight + spacing, Coil cache). SSO thumbs use the SSO Coil fetcher over a **reused** `NextcloudAPI`, not a parallel ungated path.
 
 ## If unsure
 
