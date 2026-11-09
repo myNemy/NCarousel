@@ -1,0 +1,35 @@
+---
+description: Binding — official docs before any auth/SSO/WebDAV/preview network change
+alwaysApply: true
+---
+
+# Official documentation is binding (auth / SSO / WebDAV / previews)
+
+This rule exists because inventing auth shortcuts (e.g. SSO token as OkHttp Basic Auth) caused real harm (Nextcloud user lockout). **No exceptions.**
+
+## Hard guarantee
+
+For **any** change that touches Nextcloud login, credentials, SSO, WebDAV, OCS, `/core/preview`, or how secrets leave the device:
+
+1. **Read the official doc first** (fetch/open the canonical page in-session). Do not rely on memory or analogy.
+2. **Cite the doc in chat** (URL + the constraint that applies) **before** writing or proposing code.
+3. **Implement only what that doc allows.** If the doc does not describe a path, **stop and ask** — do not invent “equivalent” auth.
+4. **One concern at a time** when the user asked for that workflow.
+
+## Canonical references (use current “latest” / stable official pages)
+
+- Nextcloud Login Flow (incl. v2): https://docs.nextcloud.com/server/latest/developer_manual/client_apis/LoginFlow/index.html
+- Nextcloud WebDAV: https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html
+- Android-SingleSignOn: https://github.com/nextcloud/Android-SingleSignOn/blob/master/README.md  
+  → SSO traffic uses **Nextcloud Files / NextcloudAPI**. Do **not** reuse SSO `token` as direct Basic Auth against the server unless the official SSO docs explicitly say so (they do not).
+- Android data at rest / EncryptedSharedPreferences (when storing secrets): Android developer docs current for the APIs in use.
+
+## Explicitly forbidden
+
+- Using `SingleSignOnAccount.token` (or Files-derived secrets) as OkHttp/`Authorization: Basic` against Nextcloud for “thumbnails like pre-SSO”.
+- Bypassing Login Flow / SSO with ad-hoc password handling that contradicts Login Flow (“client never stores the user password”; prefer app passwords from the flow).
+- Claiming compliance without having opened the doc in that work session.
+
+## If unsure
+
+Match the official client pattern documented for that API. Prefer asking the user over shipping an undocumented auth path.

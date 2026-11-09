@@ -21,14 +21,17 @@ import kotlinx.coroutines.withContext
  * (SSO Coil fetcher) share the same lock without gating Coil memory/disk cache hits.
  */
 object LibraryPreviewGate {
-    /** One in-flight `/core/preview` app-wide (Basic Auth OkHttp + SSO). */
+    /**
+     * One in-flight `/core/preview` app-wide (Basic Auth OkHttp + SSO NextcloudAPI).
+     * Single-flight protects php-fpm; spacing is the secondary brake (not token Basic Auth).
+     */
     const val MAX_CONCURRENT: Int = 1
 
     /**
      * Pause between starting consecutive preview fetches so php-fpm / Imagick can
      * finish one decode before the next starts.
      */
-    const val MIN_INTERVAL_MS: Long = 500L
+    const val MIN_INTERVAL_MS: Long = 1000L
 
     private val permits = Semaphore(MAX_CONCURRENT, true)
     private val spacingLock = Any()

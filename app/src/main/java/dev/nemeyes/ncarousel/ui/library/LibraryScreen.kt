@@ -274,7 +274,7 @@ fun LibraryScreen(
      */
     var thumbsSettled by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(400)
+        delay(800)
         thumbsSettled = true
     }
     var query by remember { mutableStateOf("") }
@@ -890,11 +890,9 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
-                                // SSO: never auto-fetch cell /core/preview (binder storm + do not
-                                // misuse SSO token as Basic Auth). Fullscreen preview stays on demand.
+                                // SSO thumbs: NextcloudAPI only (Android-SingleSignOn). Never SSO token→Basic Auth.
                                 val loadThumb =
                                     remoteThumbnailsEnabled &&
-                                        !state.accountUsesSso &&
                                         thumbsSettled &&
                                         row.href in visibleItemKeys
                                 ListItem(
@@ -1035,7 +1033,6 @@ fun LibraryScreen(
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val loadThumb =
                                     remoteThumbnailsEnabled &&
-                                        !state.accountUsesSso &&
                                         thumbsSettled &&
                                         row.href in visibleItemKeys
                                 LibraryGridCell(

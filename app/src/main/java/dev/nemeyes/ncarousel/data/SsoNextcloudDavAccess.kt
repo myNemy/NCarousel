@@ -204,9 +204,10 @@ class SsoNextcloudDavAccess(
     /**
      * Downloads a Nextcloud core preview image for [fileId] (Library thumbs / fullscreen).
      *
-     * Acquires [LibraryPreviewGate] **before** the per-account API lock so queued SSO
-     * thumbs wait on the shared preview permit (not the binder). Reuses one
-     * [NextcloudAPI] — do not open/close the binder per thumb.
+     * Official SSO path: [NextcloudAPI] via Files (Android-SingleSignOn README §5).
+     * Takes the per-account API lock **before** [LibraryPreviewGate] so queued SSO callers
+     * wait on the binder, not on preview permits (Basic Auth Coil can still progress).
+     * Reuses one [NextcloudAPI] — do not open/close the binder per thumb.
      */
     suspend fun downloadPreview(fileId: Long, sizePx: Int): Result<ByteArray> =
         withContext(Dispatchers.IO) {
@@ -215,8 +216,9 @@ class SsoNextcloudDavAccess(
                 // property nc:has-preview indicates availability). Generation is CPU/RAM
                 // heavy; Nextcloud documents preview_concurrency_* on the server side.
                 val path = "/index.php/core/preview?fileId=$fileId&x=$sizePx&y=$sizePx&a=1"
-                LibraryPreviewGate.withPermitBlocking {
-                    synchronized(lockFor(ssoAccountName)) {
+                val lock = lockFor(ssoAccountName)
+                synchronized(lock) {
+                    LibraryPreviewGate.withPermitBlocking {
                         requestBytesLocked("GET", path)
                     }
                 }

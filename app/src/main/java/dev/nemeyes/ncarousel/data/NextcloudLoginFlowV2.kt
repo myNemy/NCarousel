@@ -63,7 +63,8 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
         token: String,
         expectedServerBaseUrl: String,
         timeoutMs: Long = 20L * 60L * 1000L,
-        intervalMs: Long = 1500L,
+        // Official Login flow v2 sequence: poll about every second.
+        intervalMs: Long = 1000L,
     ): Result<PollSuccess> = withContext(Dispatchers.IO) {
         runCatching { pollUntilSuccess(pollEndpoint, token, expectedServerBaseUrl, timeoutMs, intervalMs) }
     }
@@ -81,11 +82,12 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
 
         val pollUrl = pollEndpoint.trim().toHttpUrlOrNull() ?: error("Invalid poll endpoint")
         if (pollUrl.scheme.lowercase() != "https") error("Poll endpoint must use https://")
-        val sameOrigin =
-            pollUrl.scheme == expected.scheme &&
-                pollUrl.host == expected.host &&
-                pollUrl.port == expected.port
-        if (!sameOrigin) error("Poll endpoint origin mismatch")
+        // Docs require polling the returned endpoint; host must match the server the user
+        // started against (defense vs open redirect). Compare host case-insensitively;
+        // default HTTPS ports (443 / -1) are treated as equal.
+        if (!sameHttpsOrigin(pollUrl, expected)) {
+            error("Poll endpoint origin mismatch")
+        }
 
         val deadline = System.currentTimeMillis() + timeoutMs
         val body = "token=$token".toRequestBody("application/x-www-form-urlencoded".toMediaType())
@@ -99,8 +101,14 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
                 when (res.code) {
                     200 -> {
                         val json = JSONObject(res.body?.string().orEmpty())
+                        val server = json.getString("server").replace("\\/", "/").trimEnd('/')
+                        val serverUrl = server.toHttpUrlOrNull()
+                            ?: error("Invalid server from poll")
+                        if (serverUrl.scheme.lowercase() != "https") {
+                            error("Poll returned non-https server")
+                        }
                         PollSuccess(
-                            server = json.getString("server").replace("\\/", "/").trimEnd('/'),
+                            server = server,
                             loginName = json.getString("loginName"),
                             appPassword = json.getString("appPassword"),
                         )
@@ -112,6 +120,18 @@ class NextcloudLoginFlowV2(private val http: OkHttpClient) {
             if (done != null) return done
             delay(intervalMs)
         }
+    }
+
+    companion object {
+        /** Login flow v2 docs: poll ~every second until grant or 20 minutes. */
+        private fun httpsPort(url: okhttp3.HttpUrl): Int =
+            if (url.port == -1 || url.port == 443) 443 else url.port
+
+        fun sameHttpsOrigin(a: okhttp3.HttpUrl, b: okhttp3.HttpUrl): Boolean =
+            a.scheme.equals("https", ignoreCase = true) &&
+                b.scheme.equals("https", ignoreCase = true) &&
+                a.host.equals(b.host, ignoreCase = true) &&
+                httpsPort(a) == httpsPort(b)
     }
 }
 
