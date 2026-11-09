@@ -890,8 +890,13 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
+                                // SSO: never auto-fetch cell /core/preview (binder storm + do not
+                                // misuse SSO token as Basic Auth). Fullscreen preview stays on demand.
                                 val loadThumb =
-                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled &&
+                                        !state.accountUsesSso &&
+                                        thumbsSettled &&
+                                        row.href in visibleItemKeys
                                 ListItem(
                                     leadingContent = {
                                         LibraryThumbnail(
@@ -1029,7 +1034,10 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val loadThumb =
-                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled &&
+                                        !state.accountUsesSso &&
+                                        thumbsSettled &&
+                                        row.href in visibleItemKeys
                                 LibraryGridCell(
                                     ctx = ctx,
                                     state = state,
