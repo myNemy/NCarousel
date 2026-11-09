@@ -1,0 +1,6 @@
+- Add: optional Nextcloud Files SSO; Library thumbs stay off for SSO-only until Login Flow
+- Add: server-check login wizard before SSO or credentials
+- Add: Library thumb placeholders while previews load
+- Add: display-aspect framing guide for wallpaper preview
+- Fix: harden Login Flow browser open and shorten the Login Flow user-agent
+- Fix: WebDAV listing and Library refresh reliability
