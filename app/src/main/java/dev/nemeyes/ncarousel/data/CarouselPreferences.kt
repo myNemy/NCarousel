@@ -115,8 +115,12 @@ class CarouselPreferences(context: Context) {
 
     /**
      * When true, Library list/grid cells fetch Nextcloud `/core/preview` thumbnails
-     * (visible-only + [LibraryPreviewGate]; default **on**). Opt-out toggle in Library header.
-     * Fullscreen preview always loads on demand regardless of this flag.
+     * for **Basic Auth / app-password** accounts (visible-only + [LibraryPreviewGate];
+     * default **on**). Opt-out toggle in Library header.
+     *
+     * SSO-only accounts ignore this for cell thumbs (forced off in UI) until the user
+     * completes browser Login Flow and stores an app password. Fullscreen preview still
+     * loads on demand regardless of this flag.
      */
     var libraryRemoteThumbnailsEnabled: Boolean
         get() = prefs.getBoolean(KEY_LIBRARY_REMOTE_THUMBS, true)

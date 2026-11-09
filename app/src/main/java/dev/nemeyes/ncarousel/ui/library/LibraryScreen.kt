@@ -264,9 +264,19 @@ fun LibraryScreen(
             if (libraryPrefs.libraryViewIsGrid) LibraryViewMode.GRID else LibraryViewMode.LIST,
         )
     }
-    // Default on; paced + visible-only loads protect Nextcloud (opt-out toggle remains).
+    // Basic Auth: default on (paced + visible-only). SSO-only: force off for cell thumbs
+    // (no auto /core/preview on SSO path — fail2ban risk); fullscreen still on demand.
     var remoteThumbnailsEnabled by remember {
-        mutableStateOf(libraryPrefs.libraryRemoteThumbnailsEnabled)
+        mutableStateOf(
+            if (state.accountUsesSso) false else libraryPrefs.libraryRemoteThumbnailsEnabled,
+        )
+    }
+    LaunchedEffect(state.accountUsesSso, state.activeAccountId) {
+        remoteThumbnailsEnabled = if (state.accountUsesSso) {
+            false
+        } else {
+            libraryPrefs.libraryRemoteThumbnailsEnabled
+        }
     }
     /**
      * First paint of Library composes many visible cells at once. Delay remote
@@ -277,6 +287,7 @@ fun LibraryScreen(
         delay(800)
         thumbsSettled = true
     }
+    val cellThumbsAllowed = remoteThumbnailsEnabled && !state.accountUsesSso
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
     var folderFilter by remember { mutableStateOf<String?>(null) }
@@ -609,21 +620,23 @@ fun LibraryScreen(
                     }
                     IconButton(
                         onClick = {
+                            if (state.accountUsesSso) return@IconButton
                             remoteThumbnailsEnabled = !remoteThumbnailsEnabled
                             libraryPrefs.libraryRemoteThumbnailsEnabled = remoteThumbnailsEnabled
                         },
+                        enabled = !state.accountUsesSso,
                     ) {
                         Icon(
-                            imageVector = if (remoteThumbnailsEnabled) {
+                            imageVector = if (cellThumbsAllowed) {
                                 Icons.Outlined.Image
                             } else {
                                 Icons.Outlined.HideImage
                             },
                             contentDescription = stringResource(
-                                if (remoteThumbnailsEnabled) {
-                                    R.string.nc_library_thumbs_disable
-                                } else {
-                                    R.string.nc_library_thumbs_enable
+                                when {
+                                    state.accountUsesSso -> R.string.nc_library_thumbs_sso_cd
+                                    cellThumbsAllowed -> R.string.nc_library_thumbs_disable
+                                    else -> R.string.nc_library_thumbs_enable
                                 },
                             ),
                         )
@@ -828,6 +841,13 @@ fun LibraryScreen(
                         }
                     }
                 }
+                if (state.accountUsesSso) {
+                    Text(
+                        text = stringResource(R.string.nc_library_thumbs_sso_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
@@ -891,7 +911,7 @@ fun LibraryScreen(
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
                                 val loadThumb =
-                                    remoteThumbnailsEnabled &&
+                                    cellThumbsAllowed &&
                                         thumbsSettled &&
                                         row.href in visibleItemKeys
                                 ListItem(
@@ -1031,7 +1051,7 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val loadThumb =
-                                    remoteThumbnailsEnabled &&
+                                    cellThumbsAllowed &&
                                         thumbsSettled &&
                                         row.href in visibleItemKeys
                                 LibraryGridCell(
@@ -1434,6 +1454,8 @@ private fun LibraryThumbnail(
     )
     // Off / not visible / missing fileId → placeholder (no /core/preview). Leaving composition
     // or flipping loadRemote off cancels in-flight Coil work (same idea as v0.2.55 AsyncImage).
+    // Cell thumbs never pass loadRemote=true for SSO accounts; fullscreen may still request
+    // one on-demand preview via NextcloudAPI (not SSO token as Basic Auth).
     if (!loadRemote || fileId == null) {
         Box(
             modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
@@ -1443,6 +1465,8 @@ private fun LibraryThumbnail(
 
     val previewLoader = remember(ctx) { LibraryPreviewImageLoader.get(ctx) }
 
+    // SSO NextcloudAPI preview: on-demand fullscreen only while still SSO-only
+    // (Library cells never set loadRemote for SSO). Never use SSO token as Basic Auth.
     if (state.accountUsesSso) {
         val ssoName = state.ssoAccountName
         val userId = state.username

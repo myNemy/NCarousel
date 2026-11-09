@@ -10,14 +10,16 @@ data class NextcloudAccount(
     /** Login identifier returned by login flow (can differ from UID, e.g. email). */
     val loginName: String,
     /**
-     * App password for direct OkHttp Basic Auth.
-     * Empty when [ssoAccountName] is set (traffic goes through Nextcloud Files SSO).
+     * App password for direct OkHttp Basic Auth (Library cell thumbs, WebDAV when not SSO).
+     * Empty when [ssoAccountName] is set (listing/wallpaper go through Nextcloud Files SSO;
+     * Library auto-thumbs stay off until Login Flow stores an app password here).
      */
     val appPassword: String,
     val remoteFolder: String = "Photos",
     /**
      * Android Account Manager name from Nextcloud Files SSO.
-     * When non-null, network access must use [com.nextcloud.android.sso.api.NextcloudAPI].
+     * When non-null, network access must use [com.nextcloud.android.sso.api.NextcloudAPI]
+     * — never use the SSO local token as OkHttp Basic Auth.
      */
     val ssoAccountName: String? = null,
 ) {

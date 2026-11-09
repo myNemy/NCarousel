@@ -152,6 +152,11 @@ fun LoginScreen(
                     ) {
                         Text(stringResource(R.string.login_sso_nextcloud_app))
                     }
+                    Text(
+                        text = stringResource(R.string.login_sso_thumbs_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     OutlinedButton(
                         onClick = onToggleManualLogin,
                         enabled = !state.busy,

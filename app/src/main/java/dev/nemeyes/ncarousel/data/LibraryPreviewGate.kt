@@ -14,8 +14,9 @@ import kotlinx.coroutines.withContext
  * (repro: ~5k library via SSO, refuse right after opening Library; listing alone was fine).
  *
  * Policy: **single-flight** network preview + spacing between starts. Combined with
- * visible-only cell loads, a short Library enter settle, and a reused SSO
- * [com.nextcloud.android.sso.api.NextcloudAPI], thumbs stay on by default without a storm.
+ * visible-only cell loads and a short Library enter settle. Cell thumbs are **Basic Auth
+ * only** by product policy (SSO-only accounts skip auto `/core/preview`; optional
+ * on-demand fullscreen may still use a reused SSO NextcloudAPI).
  *
  * Uses a JDK [Semaphore] so OkHttp network interceptors (Basic Auth Coil) and coroutines
  * (SSO Coil fetcher) share the same lock without gating Coil memory/disk cache hits.

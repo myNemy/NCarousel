@@ -366,6 +366,13 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(R.string.folder_picker_browse))
             }
+            if (state.accountUsesSso) {
+                Text(
+                    text = stringResource(R.string.settings_sso_thumbs_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             OutlinedButton(
                 onClick = onLoginSso,
                 enabled = !state.busy,
@@ -378,7 +385,15 @@ fun SettingsScreen(
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.login_browser_recommended))
+                Text(
+                    stringResource(
+                        if (state.accountUsesSso) {
+                            R.string.login_browser_enable_thumbs
+                        } else {
+                            R.string.login_browser_recommended
+                        },
+                    ),
+                )
             }
             FilledTonalButton(
                 onClick = onSaveCredentials,

@@ -13,7 +13,7 @@ Android app that downloads images from a folder on your **Nextcloud** server and
 
 ## Features
 
-- Sign in to your own Nextcloud (check server URL, then Nextcloud app SSO, browser Login Flow, or username / app password); multiple accounts
+- Sign in to your own Nextcloud (check server URL, then Nextcloud app SSO, browser Login Flow, or username / app password); multiple accounts. SSO-only can list and set wallpaper without browser login; Library auto-thumbnails stay off until you complete browser Login Flow (app password)
 - Browse Nextcloud folders in Settings (default Photos if empty); after a refresh with no images, the app can offer the folder browser
 - Automatic wallpaper rotation (minimum interval 1 minute; WorkManager may delay in Doze)
 - Order modes: sequential, random, shuffle once, smart random, no-repeat
@@ -21,7 +21,7 @@ Android app that downloads images from a folder on your **Nextcloud** server and
 - Apply to home, lock screen, or both
 - Image fit: fill (crop), fit with soft blurred edges, or center
 - Optional Wi‑Fi-only mode for scheduled downloads (manual apply still works on any network)
-- Library: search, sort (name, date, folders, carousel index; tap again to invert), folder filter, grid or list, pin current wallpaper; remote thumbnails on by default (visible cells only, paced); optional opt-out; fullscreen preview loads on demand
+- Library: search, sort (name, date, folders, carousel index; tap again to invert), folder filter, grid or list, pin current wallpaper; remote thumbnails on by default for app-password accounts (visible cells only, paced; optional opt-out); SSO-only accounts keep auto-thumbnails off; fullscreen preview loads on demand
 - Fullscreen preview (full image by default, pinch-to-zoom; optional Adjust frame for Cover/Center, offset remembered per image); apply only or apply and advance; share image via Android share sheet; exclude images from the automatic carousel
 - Manage exclusions (Library filters: in carousel / excluded; export/import; optional save/load under `.ncarousel` on Nextcloud)
 - Optional on-device image cache; EXIF / place info for the last wallpaper applied by the app

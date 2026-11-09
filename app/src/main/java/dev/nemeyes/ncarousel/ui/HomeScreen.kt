@@ -243,6 +243,24 @@ fun HomeScreen(viewModel: MainViewModel) {
         )
     }
 
+    if (state.ssoEnableThumbsPromptVisible) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissSsoEnableThumbsPrompt,
+            title = { Text(stringResource(R.string.sso_thumbs_prompt_title)) },
+            text = { Text(stringResource(R.string.sso_thumbs_prompt_message)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmSsoEnableThumbsViaLoginFlow) {
+                    Text(stringResource(R.string.sso_thumbs_prompt_enable))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissSsoEnableThumbsPrompt) {
+                    Text(stringResource(R.string.sso_thumbs_prompt_skip))
+                }
+            },
+        )
+    }
+
     if (showRemoteFolderPicker) {
         RemoteFolderPickerDialog(
             // Start at account root so Photos (or another folder) can be chosen explicitly.

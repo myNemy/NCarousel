@@ -62,7 +62,7 @@ data class MainUiState(
     val password: String = "",
     val remoteFolder: String = "",
     val hasActiveAccount: Boolean = false,
-    /** Active account uses Nextcloud Files SSO (Library previews must not use Basic Auth). */
+    /** Active account uses Nextcloud Files SSO (Library cell thumbs forced off until app password). */
     val accountUsesSso: Boolean = false,
     /** Android Account Manager name when [accountUsesSso] is true. */
     val ssoAccountName: String? = null,
@@ -92,6 +92,11 @@ data class MainUiState(
     val serverProbeLabel: String? = null,
     /** Expand username / app-password fields on the sign-in step. */
     val showManualLoginFields: Boolean = false,
+    /**
+     * After SSO-only import: offer browser Login Flow so Library cell thumbs can use
+     * Basic Auth app password (SSO listing/wallpaper continue either way).
+     */
+    val ssoEnableThumbsPromptVisible: Boolean = false,
     val busy: Boolean = false,
     val statusMessage: String? = null,
     val imageHrefs: List<String> = emptyList(),
@@ -519,29 +524,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         // Manual account: assume provided username is UID for WebDAV.
-        val acc = NextcloudAccount(
-            serverBaseUrl = base,
-            userId = s.username,
-            loginName = s.username,
-            appPassword = s.password,
-            // Login wizard omits folder (defaults Photos); Settings may set a path.
-            remoteFolder = s.remoteFolder.ifBlank { "Photos" },
-            ssoAccountName = null,
-        )
+        // If the active account is SSO-only, upgrade in place to Basic Auth (app password)
+        // so Library thumbs use the OkHttp path — never reuse the SSO token as Basic Auth.
+        val existing = accounts.getActiveAccount()
+        val folder = s.remoteFolder.ifBlank {
+            existing?.remoteFolder?.takeIf { it.isNotBlank() } ?: "Photos"
+        }
+        val acc = if (existing?.usesSso == true) {
+            upgradeSsoAccountToBasicAuth(
+                existing = existing,
+                serverBaseUrl = base,
+                userId = s.username,
+                loginName = s.username,
+                appPassword = s.password,
+                remoteFolder = folder,
+            )
+        } else {
+            NextcloudAccount(
+                serverBaseUrl = base,
+                userId = s.username,
+                loginName = s.username,
+                appPassword = s.password,
+                remoteFolder = folder,
+                ssoAccountName = null,
+            )
+        }
         accounts.upsert(acc)
         accounts.setActiveAccountId(acc.id)
+        // App-password accounts: Library cell thumbs use gated OkHttp/Coil (default on).
+        carousel.libraryRemoteThumbnailsEnabled = true
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         _ui.update {
             it.copy(
                 hasActiveAccount = true,
                 accountUsesSso = false,
                 ssoAccountName = null,
+                password = acc.appPassword,
+                username = acc.userId,
+                loginName = acc.loginName,
+                remoteFolder = acc.remoteFolder,
                 accounts = accountsUi(),
                 activeAccountId = accounts.getActiveAccountId(),
                 serverUrl = base,
                 loginWizardStep = LoginWizardStep.SERVER,
                 showManualLoginFields = false,
                 serverProbeLabel = null,
+                ssoEnableThumbsPromptVisible = false,
                 statusMessage = appStr(R.string.msg_account_saved_encrypted),
                 instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
                 instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
@@ -593,6 +621,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
         accounts.upsert(acc)
         accounts.setActiveAccountId(acc.id)
+        // SSO-only: never auto-hit /core/preview for Library cells (fail2ban risk).
+        // Pref stays global for Basic Auth accounts; Library forces thumbs off while usesSso.
         WallpaperWorkScheduler.sync(getApplication(), ExistingWorkPolicy.REPLACE)
         _ui.update {
             it.copy(
@@ -609,6 +639,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 loginWizardStep = LoginWizardStep.SERVER,
                 showManualLoginFields = false,
                 serverProbeLabel = null,
+                ssoEnableThumbsPromptVisible = true,
                 statusMessage = appStr(R.string.msg_sso_import_saved),
                 instanceThemingPrimaryHex = carousel.getThemingPrimaryHex(acc.id),
                 instanceThemingOnPrimaryHex = carousel.getThemingOnPrimaryHex(acc.id),
@@ -620,6 +651,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onSsoImportCancelled() {
         _ui.update { it.copy(statusMessage = appStr(R.string.msg_sso_import_cancelled)) }
+    }
+
+    /** Dismiss SSO “enable Library thumbs via browser login” prompt; keep SSO-only. */
+    fun dismissSsoEnableThumbsPrompt() {
+        _ui.update { it.copy(ssoEnableThumbsPromptVisible = false) }
+    }
+
+    /** Start Login Flow v2 so the active SSO account can gain an app password for thumbs. */
+    fun confirmSsoEnableThumbsViaLoginFlow() {
+        _ui.update { it.copy(ssoEnableThumbsPromptVisible = false) }
+        startNextcloudLoginV2()
+    }
+
+    /**
+     * Convert an SSO-linked account to stored app-password Basic Auth (OkHttp thumbs).
+     * Closes the cached NextcloudAPI; does **not** mint passwords from the SSO token.
+     */
+    private fun upgradeSsoAccountToBasicAuth(
+        existing: NextcloudAccount,
+        serverBaseUrl: String,
+        userId: String,
+        loginName: String,
+        appPassword: String,
+        remoteFolder: String,
+    ): NextcloudAccount {
+        existing.ssoAccountName?.takeIf { it.isNotBlank() }?.let { SsoNextcloudDavAccess.closeCached(it) }
+        return existing.copy(
+            serverBaseUrl = serverBaseUrl,
+            userId = userId,
+            loginName = loginName,
+            appPassword = appPassword,
+            remoteFolder = remoteFolder,
+            ssoAccountName = null,
+        )
     }
 
     fun startNextcloudLoginV2() {
@@ -664,16 +729,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             onSuccess = { ok ->
                                 val userId = OcsUserClient(http).fetchUserId(ok.server, ok.loginName, ok.appPassword)
                                     .getOrElse { ok.loginName }
-                                val acc = NextcloudAccount(
-                                    serverBaseUrl = ok.server,
-                                    userId = userId,
-                                    loginName = ok.loginName,
-                                    appPassword = ok.appPassword,
-                                    remoteFolder = "Photos",
-                                    ssoAccountName = null,
-                                )
+                                // Login Flow yields a real app password. If the active account was
+                                // SSO-only, upgrade it in place so thumbs switch to OkHttp Basic Auth.
+                                val existing = accounts.getActiveAccount()
+                                val folder = existing?.remoteFolder?.takeIf { it.isNotBlank() } ?: "Photos"
+                                val acc = if (existing?.usesSso == true) {
+                                    upgradeSsoAccountToBasicAuth(
+                                        existing = existing,
+                                        serverBaseUrl = ok.server,
+                                        userId = userId,
+                                        loginName = ok.loginName,
+                                        appPassword = ok.appPassword,
+                                        remoteFolder = folder,
+                                    )
+                                } else {
+                                    NextcloudAccount(
+                                        serverBaseUrl = ok.server,
+                                        userId = userId,
+                                        loginName = ok.loginName,
+                                        appPassword = ok.appPassword,
+                                        remoteFolder = folder,
+                                        ssoAccountName = null,
+                                    )
+                                }
                                 accounts.upsert(acc)
                                 accounts.setActiveAccountId(acc.id)
+                                carousel.libraryRemoteThumbnailsEnabled = true
                                 _ui.update {
                                     val active = accounts.getActiveAccount()
                                     it.copy(
@@ -690,6 +771,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         loginWizardStep = LoginWizardStep.SERVER,
                                         showManualLoginFields = false,
                                         serverProbeLabel = null,
+                                        ssoEnableThumbsPromptVisible = false,
                                         statusMessage = appStr(R.string.msg_login_complete_saved),
                                         instanceThemingPrimaryHex = active?.let { a -> carousel.getThemingPrimaryHex(a.id) },
                                         instanceThemingOnPrimaryHex = active?.let { a -> carousel.getThemingOnPrimaryHex(a.id) },

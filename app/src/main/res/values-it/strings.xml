@@ -9,9 +9,9 @@
     <string name="nav_support_kofi">Supportami su Ko-fi</string>
     <string name="top_sign_in">Accedi</string>
 
-    <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Conferma il server, poi usa l’account dell’app Nextcloud (SSO), il Login Flow nel browser oppure utente / app password.</string>
+    <string name="login_intro">Collega il tuo server Nextcloud per usare le foto come sfondo. Conferma il server, poi usa l’account dell’app Nextcloud (SSO), il Login Flow nel browser oppure utente / app password. Solo SSO: le miniature Library restano spente finché non completi il Login Flow nel browser.</string>
     <string name="login_intro_step_server">Passo 1 di 2 — Inserisci l’indirizzo del server Nextcloud. NCarousel verifica che risponda prima di chiederti di accedere.</string>
-    <string name="login_intro_step_sign_in">Passo 2 di 2 — Accedi con il browser (consigliato), l’account dell’app Nextcloud (SSO), oppure espandi app password se ne hai già una.</string>
+    <string name="login_intro_step_sign_in">Passo 2 di 2 — Login Flow nel browser (consigliato, abilita le miniature Library), SSO app Nextcloud (sfondo senza miniature automatiche), oppure un’app password già creata.</string>
     <string name="login_step_server_title">1. Server</string>
     <string name="login_step_sign_in_title">2. Accesso</string>
     <string name="login_server_url_hint">Esempio: cloud.example.com oppure https://cloud.example.com</string>
@@ -54,9 +54,16 @@
         <string name="msg_sso_import_failed_detail">Impossibile importare l’account Nextcloud: %1$s</string>
     <string name="msg_sso_import_failed">Impossibile importare l’account Nextcloud.</string>
     <string name="msg_sso_import_cancelled">Importazione account Nextcloud annullata.</string>
-    <string name="msg_sso_import_saved">Account importato dall’app Nextcloud.</string>
+    <string name="msg_sso_import_saved">Account importato dall’app Nextcloud. Le miniature automatiche della Library restano spente finché non usi il Login Flow nel browser.</string>
     <string name="login_sso_nextcloud_app">Usa account app Nextcloud</string>
+    <string name="login_sso_thumbs_note">L’SSO collega l’account Files per elenco e sfondo. Le miniature griglia della Library restano spente finché non completi il Login Flow nel browser (app password).</string>
+    <string name="sso_thumbs_prompt_title">Abilitare le miniature Library?</string>
+    <string name="sso_thumbs_prompt_message">L’SSO basta per elenco e sfondo senza login nel browser. Le miniature delle celle Library richiedono il Login Flow nel browser (salva un’app password per le preview Basic Auth). Salta per continuare senza miniature automatiche.</string>
+    <string name="sso_thumbs_prompt_enable">Abilita con login nel browser</string>
+    <string name="sso_thumbs_prompt_skip">Continua senza miniature</string>
+    <string name="settings_sso_thumbs_hint">Questo account usa l’SSO dell’app Nextcloud. Le miniature automatiche della Library sono spente. Accedi con il browser qui sotto per salvare un’app password e abilitarle.</string>
     <string name="login_browser_recommended">Accedi con il browser (consigliato)</string>
+    <string name="login_browser_enable_thumbs">Accedi con il browser per abilitare le miniature</string>
     <string name="save_credentials">Salva credenziali</string>
     <string name="settings_active_account">Account attivo</string>
     <string name="remove_active_account">Rimuovi account attivo</string>
@@ -273,6 +280,8 @@
 
     <string name="nc_library_thumbs_enable">Mostra miniature remote</string>
     <string name="nc_library_thumbs_disable">Nascondi miniature remote</string>
+    <string name="nc_library_thumbs_sso_cd">Miniature remote non disponibili con account solo SSO</string>
+    <string name="nc_library_thumbs_sso_hint">Solo SSO: le miniature automatiche della Library sono spente. Completa il Login Flow nel browser in Impostazioni per abilitarle.</string>
     <string name="nc_library_current_wallpaper_short">Attuale</string>
     <string name="nc_library_preview">Anteprima</string>
     <string name="nc_library_preview_apply">Imposta come sfondo</string>
