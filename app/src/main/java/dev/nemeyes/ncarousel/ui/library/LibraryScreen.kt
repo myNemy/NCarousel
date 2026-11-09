@@ -119,6 +119,7 @@ import dev.nemeyes.ncarousel.R
 import dev.nemeyes.ncarousel.data.CarouselPreferences
 import dev.nemeyes.ncarousel.data.CropOffset
 import dev.nemeyes.ncarousel.data.WallpaperCropMode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 
@@ -266,6 +267,15 @@ fun LibraryScreen(
     // Default on; paced + visible-only loads protect Nextcloud (opt-out toggle remains).
     var remoteThumbnailsEnabled by remember {
         mutableStateOf(libraryPrefs.libraryRemoteThumbnailsEnabled)
+    }
+    /**
+     * First paint of Library composes many visible cells at once. Delay remote
+     * `/core/preview` until after a short settle so we do not overlap post-sync load.
+     */
+    var thumbsSettled by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(400)
+        thumbsSettled = true
     }
     var query by remember { mutableStateOf("") }
     /** null = all folders; "" = remote root; else relative path under remote folder. */
@@ -881,7 +891,7 @@ fun LibraryScreen(
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val rowShape = RoundedCornerShape(12.dp)
                                 val loadThumb =
-                                    remoteThumbnailsEnabled && row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
                                 ListItem(
                                     leadingContent = {
                                         LibraryThumbnail(
@@ -1019,7 +1029,7 @@ fun LibraryScreen(
                                 val carouselIndex = state.imageCarouselIndexByHref[row.href]
                                 val isCurrent = state.lastWallpaperHref != null && row.href == state.lastWallpaperHref
                                 val loadThumb =
-                                    remoteThumbnailsEnabled && row.href in visibleItemKeys
+                                    remoteThumbnailsEnabled && thumbsSettled && row.href in visibleItemKeys
                                 LibraryGridCell(
                                     ctx = ctx,
                                     state = state,

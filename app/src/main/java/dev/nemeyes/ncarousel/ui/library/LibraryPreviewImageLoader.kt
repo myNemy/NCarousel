@@ -13,8 +13,8 @@ import okhttp3.OkHttpClient
  * Shared Coil [ImageLoader] for Library previews (Basic Auth URLs + SSO [SsoPreviewData]).
  *
  * Mirrors the v0.2.55 Coil path for Basic Auth (shared OkHttp, disk/memory cache) while
- * capping real network preview starts via [LibraryPreviewGate]. SSO uses a dedicated
- * fetcher over a reused NextcloudAPI instead of unbounded produceState jobs.
+ * capping real network preview starts via [LibraryPreviewGate] (single-flight + spacing).
+ * SSO uses a dedicated fetcher over a reused NextcloudAPI.
  */
 object LibraryPreviewImageLoader {
     @Volatile

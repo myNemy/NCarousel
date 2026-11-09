@@ -9,26 +9,26 @@ import kotlinx.coroutines.withContext
  * Caps Nextcloud `/index.php/core/preview` traffic from the Library.
  *
  * Opening Library after a large sync (thousands of `oc:fileid`s) can compose many Lazy
- * cells. Each `/core/preview` hit runs PHP image decode/scale; unbounded parallel GETs
- * knock out php-fpm. Listing (Depth:1 PROPFIND) is separate and already serial.
+ * cells. Each `/core/preview` hit runs PHP image decode/scale; a burst of parallel GETs
+ * can exhaust php-fpm / reverse-proxy workers until the host starts refusing connections
+ * (repro: ~5k library via SSO, refuse right after opening Library; listing alone was fine).
  *
- * This gate allows a **modest** parallel burst (not a hard single-flight) plus a short
- * spacing between starts. Combined with visible-only cell loads and a reused SSO
- * [com.nextcloud.android.sso.api.NextcloudAPI], thumbs can stay **on by default** without
- * the storm that followed the SSO produceState-per-cell path.
+ * Policy: **single-flight** network preview + spacing between starts. Combined with
+ * visible-only cell loads, a short Library enter settle, and a reused SSO
+ * [com.nextcloud.android.sso.api.NextcloudAPI], thumbs stay on by default without a storm.
  *
  * Uses a JDK [Semaphore] so OkHttp network interceptors (Basic Auth Coil) and coroutines
  * (SSO Coil fetcher) share the same lock without gating Coil memory/disk cache hits.
  */
 object LibraryPreviewGate {
-    /** Modest parallel preview fetches app-wide (Basic Auth OkHttp + SSO). */
-    const val MAX_CONCURRENT: Int = 3
+    /** One in-flight `/core/preview` app-wide (Basic Auth OkHttp + SSO). */
+    const val MAX_CONCURRENT: Int = 1
 
     /**
-     * Small pause between starting consecutive preview fetches so php-fpm / Imagick can
-     * recycle between bursts. Not a 750ms single-flight workaround.
+     * Pause between starting consecutive preview fetches so php-fpm / Imagick can
+     * finish one decode before the next starts.
      */
-    const val MIN_INTERVAL_MS: Long = 120L
+    const val MIN_INTERVAL_MS: Long = 500L
 
     private val permits = Semaphore(MAX_CONCURRENT, true)
     private val spacingLock = Any()
